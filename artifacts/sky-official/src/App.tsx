@@ -661,8 +661,8 @@ function GameSelectSection() {
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
                 )}
               </div>
-              <div style={{ padding: "6px 8px 10px", textAlign: "center" }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>{game.name}</span>
+              <div style={{ padding: "6px 8px 12px", textAlign: "center" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.35, wordBreak: "break-word" }}>{game.name}</span>
               </div>
             </button>
           );
