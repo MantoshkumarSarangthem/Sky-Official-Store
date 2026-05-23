@@ -599,7 +599,17 @@ function GameSelectSection() {
     );
   }
 
-  if (games.length === 0) return null;
+  if (games.length === 0) {
+    return (
+      <section style={{ background: "transparent", padding: "28px 16px", minHeight: "38vh", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 10 }}>
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.18 }}>
+          <rect x="3" y="6" width="18" height="13" rx="3" stroke="#f59e0b" strokeWidth="1.4"/>
+          <path d="M7 12h4m-2-2v4M15 12h2" stroke="#f59e0b" strokeWidth="1.4" strokeLinecap="round"/>
+        </svg>
+        <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 13, fontWeight: 600 }}>No games available yet</span>
+      </section>
+    );
+  }
 
   const PANEL_GLOWS = [
     { glow: "rgba(245,158,11,0.28)", border: "rgba(245,158,11,0.55)", icon: "rgba(245,158,11,0.5)" },
