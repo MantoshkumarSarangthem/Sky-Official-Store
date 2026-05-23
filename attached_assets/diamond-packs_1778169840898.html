@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Diamond Packs</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #06080f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  :root {
+    --gold: #f5c842;
+    --gold-light: #ffe97a;
+    --gold-dark: #b8860b;
+    --cyan: #00e5ff;
+    --cyan-dark: #0090aa;
+    --deep: #060c1a;
+  }
+
+  .scene {
+    width: 300px;
+    height: 480px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* ── Radial glow backdrop ── */
+  .backdrop {
+    position: absolute;
+    inset: -30px;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 60%, rgba(0,180,220,0.10) 0%, transparent 70%),
+      radial-gradient(ellipse 80% 40% at 50% 90%, rgba(245,200,40,0.08) 0%, transparent 60%);
+    z-index: 0;
+    animation: backdropPulse 3s ease-in-out infinite;
+  }
+  @keyframes backdropPulse {
+    0%,100% { opacity: 0.6; }
+    50%      { opacity: 1; }
+  }
+
+  /* ── Hexagon ring frame ── */
+  .hex-frame {
+    position: absolute;
+    width: 270px;
+    height: 270px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -54%);
+    z-index: 1;
+    animation: hexSpin 20s linear infinite;
+  }
+  @keyframes hexSpin {
+    from { transform: translate(-50%, -54%) rotate(0deg); }
+    to   { transform: translate(-50%, -54%) rotate(360deg); }
+  }
+
+  /* ── Float group ── */
+  .float-group {
+    position: absolute;
+    width: 220px;
+    height: 300px;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    animation: floatBob 3.2s ease-in-out infinite;
+  }
+  @keyframes floatBob {
+    0%,100% { transform: translateX(-50%) translateY(0px); }
+    50%     { transform: translateX(-50%) translateY(-16px); }
+  }
+
+  /* ── Chest body ── */
+  .chest {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 170px;
+    height: 150px;
+  }
+
+  /* Chest bottom */
+  .chest-base {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 90px;
+    background: linear-gradient(170deg, #1a1000 0%, #0d0800 100%);
+    border: 2px solid var(--gold-dark);
+    border-radius: 6px 6px 10px 10px;
+    box-shadow:
+      0 8px 30px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(245,200,40,0.15),
+      0 0 30px rgba(245,180,30,0.2);
+    overflow: hidden;
+  }
+
+  /* Wood plank lines */
+  .chest-base::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 30px,
+      rgba(245,200,40,0.06) 30px,
+      rgba(245,200,40,0.06) 31px
+    );
+  }
+
+  /* Metal band across middle */
+  .chest-band {
+    position: absolute;
+    bottom: 36px;
+    left: -2px;
+    right: -2px;
+    height: 20px;
+    background: linear-gradient(180deg, #b8860b 0%, #f5c842 40%, #f5c842 60%, #8b6400 100%);
+    border-top: 1px solid var(--gold-light);
+    border-bottom: 1px solid var(--gold-dark);
+    z-index: 2;
+  }
+
+  /* Lock on band */
+  .chest-lock {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 28px;
+    z-index: 3;
+  }
+
+  /* Chest lid */
+  .chest-lid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 62px;
+    background: linear-gradient(160deg, #221500 0%, #150e00 60%, #0d0900 100%);
+    border: 2px solid var(--gold-dark);
+    border-radius: 60px 60px 4px 4px / 30px 30px 4px 4px;
+    box-shadow:
+      0 -4px 20px rgba(245,200,40,0.15),
+      inset 0 -1px 0 rgba(245,200,40,0.1);
+    transform-origin: center bottom;
+    animation: lidOpen 3.2s ease-in-out infinite;
+    overflow: hidden;
+  }
+
+  @keyframes lidOpen {
+    0%,100% { transform: rotateX(0deg); }
+    50%     { transform: rotateX(-22deg); }
+  }
+
+  /* Lid shine */
+  .chest-lid::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 15%;
+    width: 70%;
+    height: 20px;
+    background: linear-gradient(90deg, transparent, rgba(245,200,40,0.12), transparent);
+    border-radius: 50%;
+    animation: lidShine 3.2s ease-in-out infinite;
+  }
+  @keyframes lidShine {
+    0%,100% { opacity: 0.4; }
+    50%     { opacity: 1; }
+  }
+
+  /* Lid top metal trim */
+  .chest-lid::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -2px;
+    right: -2px;
+    height: 12px;
+    background: linear-gradient(180deg, #b8860b, #f5c842, #8b6400);
+  }
+
+  /* ── Burst of diamonds from chest ── */
+  .burst {
+    position: absolute;
+    bottom: 105px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    z-index: 10;
+  }
+
+  .bd {
+    position: absolute;
+    animation: burstDiamond var(--dur) ease-out var(--del) infinite;
+    opacity: 0;
+    transform-origin: center;
+  }
+
+  @keyframes burstDiamond {
+    0%   { opacity: 0;   transform: translate(0,0) scale(0.2) rotate(0deg); }
+    15%  { opacity: 1;   transform: translate(calc(var(--bx)*0.3), calc(var(--by)*0.3)) scale(1) rotate(40deg); }
+    60%  { opacity: 0.9; transform: translate(var(--bx), var(--by)) scale(1.05) rotate(var(--br)); }
+    85%  { opacity: 0.5; transform: translate(calc(var(--bx)*1.15), calc(var(--by)*1.15 + 10px)) scale(0.8) rotate(calc(var(--br) + 20deg)); }
+    100% { opacity: 0;   transform: translate(calc(var(--bx)*1.3), calc(var(--by)*1.3 + 25px)) scale(0.3) rotate(calc(var(--br) + 40deg)); }
+  }
+
+  /* ── Gold glow pool under chest ── */
+  .glow-pool {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 30px;
+    background: radial-gradient(ellipse, rgba(245,200,40,0.35) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 2;
+    animation: poolPulse 3.2s ease-in-out infinite;
+  }
+  @keyframes poolPulse {
+    0%,100% { opacity: 0.5; transform: translateX(-50%) scaleX(0.85); }
+    50%     { opacity: 1;   transform: translateX(-50%) scaleX(1); }
+  }
+
+  /* ── Ambient floating diamonds (background) ── */
+  .ambient {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .amb {
+    position: absolute;
+    animation: ambFloat var(--dur) ease-in-out var(--del) infinite;
+    opacity: 0;
+  }
+  @keyframes ambFloat {
+    0%        { opacity: 0;   transform: translateY(20px) rotate(var(--r0)) scale(0.6); }
+    20%,80%   { opacity: var(--op); transform: translateY(0px) rotate(var(--r1)) scale(1); }
+    100%      { opacity: 0;   transform: translateY(-30px) rotate(var(--r2)) scale(0.5); }
+  }
+
+  /* ── Sparkle stars ── */
+  .spark {
+    position: absolute;
+    animation: sparkPop var(--dur) ease-in-out var(--del) infinite;
+    opacity: 0;
+  }
+  @keyframes sparkPop {
+    0%,100% { opacity:0; transform: scale(0) rotate(0deg); }
+    40%,60% { opacity:1; transform: scale(1) rotate(45deg); }
+  }
+
+  /* ── Spine label ── */
+  .spine-label {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 32px;
+    background: linear-gradient(180deg, #b8860b 0%, #f5c842 50%, #b8860b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid rgba(255,240,150,0.4);
+    border-radius: 0 6px 6px 0;
+    z-index: 20;
+  }
+  .spine-label span {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #06080f;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-transform: uppercase;
+  }
+
+  /* ── Cyan light rays from chest opening ── */
+  .rays {
+    position: absolute;
+    bottom: 103px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 160px;
+    z-index: 6;
+    animation: raysAppear 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes raysAppear {
+    0%,30%  { opacity: 0; transform: translateX(-50%) scaleY(0.2); }
+    50%     { opacity: 0.7; transform: translateX(-50%) scaleY(1); }
+    80%,100%{ opacity: 0; transform: translateX(-50%) scaleY(0.3); }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="scene">
+
+  <div class="backdrop"></div>
+
+  <!-- Spinning hex ring -->
+  <div class="hex-frame">
+    <svg viewBox="0 0 270 270" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#f5c842;stop-opacity:0.6"/>
+          <stop offset="50%" style="stop-color:#00e5ff;stop-opacity:0.4"/>
+          <stop offset="100%" style="stop-color:#f5c842;stop-opacity:0.1"/>
+        </linearGradient>
+      </defs>
+      <!-- Outer hex -->
+      <polygon points="135,8 247,72 247,198 135,262 23,198 23,72"
+        fill="none" stroke="url(#hexGrad)" stroke-width="1" stroke-dasharray="6,8"/>
+      <!-- Inner hex -->
+      <polygon points="135,35 222,83 222,187 135,235 48,187 48,83"
+        fill="none" stroke="rgba(0,229,255,0.15)" stroke-width="1"/>
+      <!-- Corner dots -->
+      <circle cx="135" cy="8"   r="3" fill="#f5c842" opacity="0.8"/>
+      <circle cx="247" cy="72"  r="3" fill="#f5c842" opacity="0.8"/>
+      <circle cx="247" cy="198" r="3" fill="#00e5ff" opacity="0.8"/>
+      <circle cx="135" cy="262" r="3" fill="#f5c842" opacity="0.8"/>
+      <circle cx="23"  cy="198" r="3" fill="#f5c842" opacity="0.8"/>
+      <circle cx="23"  cy="72"  r="3" fill="#00e5ff" opacity="0.8"/>
+    </svg>
+  </div>
+
+  <!-- Glow pool -->
+  <div class="glow-pool"></div>
+
+  <!-- Floating chest group -->
+  <div class="float-group">
+
+    <!-- Spine label on the side -->
+    <div class="spine-label"><span>Diamond Packs</span></div>
+
+    <!-- Light rays from chest -->
+    <div class="rays">
+      <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="rayGrad" cx="50%" cy="100%" r="100%">
+            <stop offset="0%" style="stop-color:#00e5ff;stop-opacity:0.6"/>
+            <stop offset="100%" style="stop-color:#00e5ff;stop-opacity:0"/>
+          </radialGradient>
+        </defs>
+        <polygon points="80,160 40,0 80,20 120,0" fill="url(#rayGrad)" opacity="0.5"/>
+        <polygon points="80,160 10,30 50,60 80,20" fill="url(#rayGrad)" opacity="0.3"/>
+        <polygon points="80,160 150,30 110,60 80,20" fill="url(#rayGrad)" opacity="0.3"/>
+        <polygon points="80,160 0,80 30,100 80,20" fill="url(#rayGrad)" opacity="0.2"/>
+        <polygon points="80,160 160,80 130,100 80,20" fill="url(#rayGrad)" opacity="0.2"/>
+      </svg>
+    </div>
+
+    <!-- Chest -->
+    <div class="chest">
+      <!-- Lid -->
+      <div class="chest-lid"></div>
+
+      <!-- Base -->
+      <div class="chest-base">
+        <div class="chest-band"></div>
+      </div>
+
+      <!-- Lock SVG -->
+      <div class="chest-lock">
+        <svg viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lockG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#ffe97a"/>
+              <stop offset="100%" style="stop-color:#b8860b"/>
+            </linearGradient>
+          </defs>
+          <!-- Lock shackle -->
+          <path d="M6,14 L6,9 C6,5 18,5 18,9 L18,14" fill="none" stroke="url(#lockG)" stroke-width="3" stroke-linecap="round"/>
+          <!-- Lock body -->
+          <rect x="3" y="13" width="18" height="13" rx="3" fill="url(#lockG)"/>
+          <!-- Keyhole -->
+          <circle cx="12" cy="19" r="3" fill="#06080f"/>
+          <rect x="10.5" y="19" width="3" height="4" rx="1" fill="#06080f"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Diamond burst from chest opening -->
+    <div class="burst">
+
+      <!-- Large burst diamonds -->
+      <div class="bd" style="--dur:3.2s;--del:0s;--bx:-60px;--by:-90px;--br:120deg;">
+        <svg width="28" height="28" viewBox="0 0 20 20"><defs><linearGradient id="bd1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#c0eeff"/><stop offset="100%" style="stop-color:#0080cc"/></linearGradient></defs><polygon points="10,1 18,8 10,19 2,8" fill="url(#bd1)"/><polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.55)"/></svg>
+      </div>
+      <div class="bd" style="--dur:3.2s;--del:0.15s;--bx:65px;--by:-85px;--br:-100deg;">
+        <svg width="32" height="32" viewBox="0 0 20 20"><defs><linearGradient id="bd2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#d0f4ff"/><stop offset="100%" style="stop-color:#00a0dd"/></linearGradient></defs><polygon points="10,1 18,8 10,19 2,8" fill="url(#bd2)"/><polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.5)"/></svg>
+      </div>
+      <div class="bd" style="--dur:3.2s;--del:0.05s;--bx:0px;--by:-110px;--br:80deg;">
+        <svg width="36" height="36" viewBox="0 0 20 20"><defs><linearGradient id="bd3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#e0f8ff"/><stop offset="100%" style="stop-color:#0070bb"/></linearGradient></defs><polygon points="10,1 18,8 10,19 2,8" fill="url(#bd3)"/><polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.6)"/></svg>
+      </div>
+
+      <!-- Medium -->
+      <div class="bd" style="--dur:3.2s;--del:0.1s;--bx:-90px;--by:-50px;--br:150deg;">
+        <svg width="20" height="20" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#70c8ff"/><polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.5)"/></svg>
+      </div>
+      <div class="bd" style="--dur:3.2s;--del:0.2s;--bx:88px;--by:-48px;--br:-140deg;">
+        <svg width="18" height="18" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#90d8ff"/><polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.45)"/></svg>
+      </div>
+      <div class="bd" style="--dur:3.2s;--del:0.08s;--bx:-45px;--by:-115px;--br:60deg;">
+        <svg width="16" height="16" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#a0e0ff"/></svg>
+      </div>
+      <div class="bd" style="--dur:3.2s;--del:0.18s;--bx:42px;--by:-112px;--br:-55deg;">
+        <svg width="14" height="14" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#80d0ff"/></svg>
+      </div>
+
+      <!-- Small scattered -->
+      <div class="bd" style="--dur:3.2s;--del:0.25s;--bx:-110px;--by:-20px;--br:170deg;">
+        <svg width="11" height="11" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#60c0ff" opacity="0.9"/></svg>
+      </div>
+      <div class="bd" style="--dur:3.2s;--del:0.3s;--bx:108px;--by:-18px;--br:-160deg;">
+        <svg width="10" height="10" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#70c8ff" opacity="0.85"/></svg>
+      </div>
+    </div>
+
+    <!-- Ambient floating diamonds around scene -->
+    <div class="ambient">
+      <div class="amb" style="top:10px;left:5px;--dur:4s;--del:0.3s;--op:0.7;--r0:10deg;--r1:30deg;--r2:60deg;">
+        <svg width="14" height="14" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#f5c842" opacity="0.8"/><polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.4)"/></svg>
+      </div>
+      <div class="amb" style="top:30px;right:10px;--dur:3.5s;--del:1s;--op:0.65;--r0:-5deg;--r1:-20deg;--r2:-45deg;">
+        <svg width="12" height="12" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#ffe97a" opacity="0.75"/></svg>
+      </div>
+      <div class="amb" style="top:140px;left:2px;--dur:5s;--del:0.7s;--op:0.6;--r0:15deg;--r1:40deg;--r2:70deg;">
+        <svg width="16" height="16" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#00e5ff" opacity="0.7"/><polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.35)"/></svg>
+      </div>
+      <div class="amb" style="top:160px;right:8px;--dur:4.2s;--del:1.5s;--op:0.55;--r0:-10deg;--r1:-30deg;--r2:-55deg;">
+        <svg width="13" height="13" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#f5c842" opacity="0.65"/></svg>
+      </div>
+      <div class="amb" style="top:240px;left:15px;--dur:3.8s;--del:0.2s;--op:0.5;--r0:5deg;--r1:20deg;--r2:40deg;">
+        <svg width="10" height="10" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#00e5ff" opacity="0.6"/></svg>
+      </div>
+      <div class="amb" style="top:250px;right:18px;--dur:4.5s;--del:2s;--op:0.5;--r0:-8deg;--r1:-22deg;--r2:-40deg;">
+        <svg width="11" height="11" viewBox="0 0 20 20"><polygon points="10,1 18,8 10,19 2,8" fill="#ffe97a" opacity="0.55"/></svg>
+      </div>
+    </div>
+
+    <!-- Sparkles -->
+    <div class="spark" style="top:15px;left:55px;--dur:2s;--del:0.1s;">
+      <svg width="14" height="14" viewBox="0 0 20 20"><path d="M10,1 L11.5,8.5 L19,10 L11.5,11.5 L10,19 L8.5,11.5 L1,10 L8.5,8.5 Z" fill="#f5c842"/></svg>
+    </div>
+    <div class="spark" style="top:15px;right:55px;--dur:1.8s;--del:0.7s;">
+      <svg width="10" height="10" viewBox="0 0 20 20"><path d="M10,1 L11.5,8.5 L19,10 L11.5,11.5 L10,19 L8.5,11.5 L1,10 L8.5,8.5 Z" fill="#00e5ff"/></svg>
+    </div>
+    <div class="spark" style="top:80px;left:8px;--dur:2.2s;--del:0.4s;">
+      <svg width="12" height="12" viewBox="0 0 20 20"><path d="M10,1 L11.5,8.5 L19,10 L11.5,11.5 L10,19 L8.5,11.5 L1,10 L8.5,8.5 Z" fill="#ffe97a"/></svg>
+    </div>
+    <div class="spark" style="top:80px;right:5px;--dur:1.9s;--del:1.2s;">
+      <svg width="11" height="11" viewBox="0 0 20 20"><path d="M10,1 L11.5,8.5 L19,10 L11.5,11.5 L10,19 L8.5,11.5 L1,10 L8.5,8.5 Z" fill="#00e5ff"/></svg>
+    </div>
+    <div class="spark" style="top:215px;left:40px;--dur:2.1s;--del:0.9s;">
+      <svg width="9" height="9" viewBox="0 0 20 20"><path d="M10,1 L11.5,8.5 L19,10 L11.5,11.5 L10,19 L8.5,11.5 L1,10 L8.5,8.5 Z" fill="#f5c842"/></svg>
+    </div>
+    <div class="spark" style="top:215px;right:42px;--dur:2.3s;--del:1.6s;">
+      <svg width="10" height="10" viewBox="0 0 20 20"><path d="M10,1 L11.5,8.5 L19,10 L11.5,11.5 L10,19 L8.5,11.5 L1,10 L8.5,8.5 Z" fill="#ffffff" opacity="0.9"/></svg>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

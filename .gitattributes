@@ -1,0 +1,6 @@
+artifacts/sky-official/public/hero.mp4 filter=lfs diff=lfs merge=lfs -text
+attached_assets/lv_0_20260507201427_1778165742852.mp4 filter=lfs diff=lfs merge=lfs -text
+artifacts/sky-official/public/bg1.mp4 filter=lfs diff=lfs merge=lfs -text
+artifacts/sky-official/public/bg2.mp4 filter=lfs diff=lfs merge=lfs -text
+attached_assets/lv_0_20260510124456_1778399518002.mp4 filter=lfs diff=lfs merge=lfs -text
+attached_assets/lv_0_20260510124746_1778399518166.mp4 filter=lfs diff=lfs merge=lfs -text

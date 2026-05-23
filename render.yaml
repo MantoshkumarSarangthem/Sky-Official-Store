@@ -1,0 +1,39 @@
+databases:
+  - name: sky-official-db
+    databaseName: sky_official
+    plan: free
+
+services:
+  - type: web
+    name: sky-official
+    plan: free
+    runtime: node
+    buildCommand: bash scripts/render-build.sh
+    startCommand: node artifacts/api-server/dist/index.mjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sky-official-db
+          property: connectionString
+      # Fill these in on the Render dashboard after deploying:
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      # Optional — only needed for WhatsApp/email notifications:
+      - key: NOTIFY_EMAIL
+        sync: false
+      - key: NOTIFY_EMAIL_APP_PASSWORD
+        sync: false
+      - key: GREENAPI_INSTANCE_ID
+        sync: false
+      - key: GREENAPI_TOKEN
+        sync: false

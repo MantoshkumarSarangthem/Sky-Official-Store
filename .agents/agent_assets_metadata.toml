@@ -1,0 +1,44 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "QaJxrhQO0ij0wMPaot8fh"
+uri = "file://artifacts/sky-official/public/pack1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "51qcf-ZF1MSr_vRNMoCLE"
+uri = "file://artifacts/sky-official/public/pack2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "4fUN2GcIQ2HsdOmK4rfi7"
+uri = "file://artifacts/sky-official/public/pack3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "gkEgPVOGlPO1i6ngUjTqY"
+uri = "file://artifacts/sky-official/public/pack4.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "J9B67xBbBgeqUdYhEFPAf"
+uri = "file://artifacts/sky-official/public/pack5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "wIxTpMV71kILXtkbMQu7H"
+uri = "file://artifacts/sky-official/public/pack6.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "2uyXbTVdRCfTNMph7eQKg"
+uri = "file://artifacts/sky-official/public/pack7.png"
+type = "image"
+title = "generated_image"

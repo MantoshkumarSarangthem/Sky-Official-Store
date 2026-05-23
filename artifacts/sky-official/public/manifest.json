@@ -1,0 +1,14 @@
+{
+  "name": "Sky Official",
+  "short_name": "Sky Official",
+  "description": "MLBB Diamond Top-Up Store — instant recharges for Mobile Legends",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
