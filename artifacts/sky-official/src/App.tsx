@@ -556,22 +556,48 @@ function PromoBannerSlider() {
 // ── Game Select Section ─────────────────────────────────────────────────────
 interface GameItem { id: number; name: string; image: string | null; }
 
+const GAME_SKELETON_COUNT = 6;
+
 function GameSelectSection() {
   const [games, setGames] = useState<GameItem[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
   const { navigateTo } = usePageNav();
 
-  const fetchGames = useCallback(() => {
-    fetch(`${API}/games`, { cache: "no-store" })
+  const fetchGames = useCallback((forceRefresh = false) => {
+    fetch(`${API}/games`, forceRefresh ? { cache: "no-store" } : {})
       .then(r => r.ok ? r.json() : [])
-      .then(d => setGames(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .then(d => { setGames(Array.isArray(d) ? d : []); setGamesLoading(false); })
+      .catch(() => setGamesLoading(false));
   }, []);
 
   useEffect(() => {
     fetchGames();
-    window.addEventListener("skyAdminUpdate", fetchGames);
-    return () => window.removeEventListener("skyAdminUpdate", fetchGames);
+    const onUpdate = () => fetchGames(true);
+    window.addEventListener("skyAdminUpdate", onUpdate);
+    return () => window.removeEventListener("skyAdminUpdate", onUpdate);
   }, [fetchGames]);
+
+  if (gamesLoading) {
+    return (
+      <section style={{ background: "transparent", padding: "28px 16px 28px" }}>
+        <style>{`@keyframes gameSkel{0%,100%{opacity:0.35}50%{opacity:0.75}}`}</style>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
+          <div style={{ width: 14, height: 14, borderRadius: 3, background: "rgba(245,158,11,0.25)", animation: "gameSkel 1.5s ease-in-out infinite" }} />
+          <div style={{ width: 90, height: 12, borderRadius: 4, background: "rgba(255,255,255,0.07)", animation: "gameSkel 1.5s ease-in-out 0.1s infinite" }} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {Array.from({ length: GAME_SKELETON_COUNT }).map((_, i) => (
+            <div key={i} style={{ borderRadius: 16, background: "rgba(13,13,13,0.72)", border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden", animation: `gameSkel 1.6s ease-in-out ${i * 0.08}s infinite` }}>
+              <div style={{ width: "100%", aspectRatio: "1/1", background: "rgba(255,255,255,0.04)" }} />
+              <div style={{ padding: "6px 8px 10px", display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "65%", height: 10, borderRadius: 4, background: "rgba(255,255,255,0.06)" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (games.length === 0) return null;
 

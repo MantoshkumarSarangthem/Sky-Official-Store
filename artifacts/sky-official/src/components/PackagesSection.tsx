@@ -783,14 +783,26 @@ function PassCard({ pack, index, onSelect, isSelected, isExiting, passImagesCfg 
   );
 }
 
-function SkeletonCard() {
+function SkeletonCard({ index = 0 }: { index?: number }) {
   return (
-    <div style={{ background: "#111", borderRadius: 18, border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden" }}>
-      <div style={{ height: 100, background: "rgba(255,255,255,0.04)" }} />
-      <div style={{ padding: "11px 13px 13px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ height: 15, width: "60%", background: "rgba(255,255,255,0.07)", borderRadius: 6 }} />
-        <div style={{ height: 10, width: "45%", background: "rgba(255,255,255,0.05)", borderRadius: 6 }} />
-        <div style={{ height: 20, width: "40%", background: "rgba(255,255,255,0.07)", borderRadius: 6 }} />
+    <div style={{ background: "rgba(14,14,14,0.88)", borderRadius: 18, border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden", position: "relative" }}>
+      <style>{`@keyframes skelPulse{0%,100%{opacity:0.35}50%{opacity:0.75}}`}</style>
+      {/* Image area */}
+      <div style={{ height: 112, background: "radial-gradient(ellipse at 50% 65%,#0c1a2e,#080a10)", position: "relative", animation: `skelPulse 1.6s ease-in-out ${index * 0.1}s infinite` }}>
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.03)" }} />
+      </div>
+      {/* Body */}
+      <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 9, animation: `skelPulse 1.6s ease-in-out ${index * 0.1 + 0.1}s infinite` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 17, height: 17, borderRadius: 4, background: "rgba(245,158,11,0.12)", flexShrink: 0 }} />
+          <div style={{ height: 14, width: "55%", background: "rgba(255,255,255,0.07)", borderRadius: 5 }} />
+        </div>
+        <div style={{ height: 10, width: "40%", background: "rgba(255,255,255,0.04)", borderRadius: 4 }} />
+        <div style={{ height: 18, width: "38%", background: "rgba(245,158,11,0.1)", borderRadius: 5 }} />
+        <div style={{ display: "flex", gap: 5 }}>
+          <div style={{ height: 18, width: 52, background: "rgba(34,197,94,0.07)", borderRadius: 999 }} />
+          <div style={{ height: 18, width: 48, background: "rgba(56,189,248,0.07)", borderRadius: 999 }} />
+        </div>
       </div>
     </div>
   );
@@ -1146,7 +1158,7 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
           <div key={activeCategory.id}>
             {loading && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+                {[...Array(6)].map((_, i) => <SkeletonCard key={i} index={i} />)}
               </div>
             )}
             {!loading && activePacks.length === 0 && (

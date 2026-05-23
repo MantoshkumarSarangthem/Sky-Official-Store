@@ -106,6 +106,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
   interface Game { id: number; name: string; image: string | null; sort_order: number; }
   const [games, setGames] = useState<Game[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(false);
   const [newGame, setNewGame] = useState({ name: "", sort_order: "0" });
   const [gamesSaving, setGamesSaving] = useState(false);
   const gameImgRef = useRef<HTMLInputElement>(null);
@@ -113,10 +114,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const gameUpdateImgRef = useRef<HTMLInputElement>(null);
 
   const fetchGames = async () => {
+    setGamesLoading(true);
     try {
       const res = await fetch(`${API}/admin/games`, { headers });
       if (res.ok) setGames(await res.json());
-    } catch {}
+    } catch {} finally { setGamesLoading(false); }
   };
 
   const addGame = async () => {
@@ -1025,7 +1027,21 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         if (file && updatingGameId !== null) updateGameImage(file, updatingGameId);
                       }}
                     />
-                    {games.length === 0 ? (
+                    {gamesLoading ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <style>{`@keyframes admSkel{0%,100%{opacity:0.35}50%{opacity:0.7}}`}</style>
+                        {[0,1,2,3].map(i => (
+                          <div key={i} style={{ borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden", animation: `admSkel 1.5s ease-in-out ${i * 0.1}s infinite` }}>
+                            <div style={{ width: "100%", aspectRatio: "1/1", background: "rgba(255,255,255,0.03)" }} />
+                            <div style={{ padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                              <div style={{ height: 11, borderRadius: 4, background: "rgba(255,255,255,0.06)" }} />
+                              <div style={{ height: 26, borderRadius: 8, background: "rgba(245,158,11,0.06)" }} />
+                              <div style={{ height: 26, borderRadius: 8, background: "rgba(239,68,68,0.06)" }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : games.length === 0 ? (
                       <div className="text-gray-500 text-xs py-4 text-center">No games added yet. Add one below.</div>
                     ) : (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
