@@ -1228,18 +1228,20 @@ function MainSite() {
   return (
     <>
       {/* Main content always rendered so video starts immediately */}
-      <div style={{ pointerEvents: introDone ? "auto" : "none", overflowX: "hidden", paddingTop: "88px" }}>
-        <AnimatedPage>
-          <PromoBannerSlider />
-          <GameSelectSection />
-          <AnnouncementBar />
-          <PromoCarousel />
-          <StatsSection />
-          <WhyChooseUs />
-          <LiveTicker />
-          <WhatsAppSection />
-          <Footer />
-        </AnimatedPage>
+      <div style={{ pointerEvents: introDone ? "auto" : "none", overflowX: "hidden", paddingTop: "88px", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+        <div style={{ flex: 1 }}>
+          <AnimatedPage>
+            <PromoBannerSlider />
+            <GameSelectSection />
+            <AnnouncementBar />
+            <PromoCarousel />
+            <StatsSection />
+            <WhyChooseUs />
+            <LiveTicker />
+            <WhatsAppSection />
+          </AnimatedPage>
+        </div>
+        <Footer />
         <WhatsAppFAB />
         {introDone && <LatestNewsPopup />}
       </div>
