@@ -116,7 +116,7 @@ export default function GameProductsPage() {
   }, [userId, serverId, isMLBB, game, currencyLabel, setLocation]);
 
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingBottom: 64 }}>
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingTop: 88, paddingBottom: 64 }}>
       <style>{`
         @keyframes gpFadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes gpPulse { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
@@ -141,7 +141,7 @@ export default function GameProductsPage() {
         <button
           onClick={() => setLocation("/")}
           style={{
-            position: "absolute", top: 72, left: 14, zIndex: 10,
+            position: "absolute", top: 14, left: 14, zIndex: 10,
             background: "rgba(10,10,10,0.72)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             border: "1px solid rgba(245,158,11,0.35)",
             borderRadius: 999, padding: "7px 14px 7px 10px",
