@@ -136,11 +136,11 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: "#0a0a0a" }}>
       <div style={{ position: "absolute", width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle, rgba(245,158,11,0.07) 0%, transparent 70%)", pointerEvents: "none" }} />
       <div className="relative flex flex-col items-center z-10" style={{ gap: 28 }}>
-        <div style={{ position: "relative", width: 58, height: 58 }}>
+        <div style={{ position: "relative", width: 74, height: 74 }}>
           <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(245,158,11,0.15)" }} />
           <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid transparent", borderTopColor: "#f59e0b", animation: "skySpin 1.1s linear infinite" }} />
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#f59e0b", opacity: 0.85 }} />
+            <img src="/logo-phoenix.png" alt="Sky Official" style={{ width: 48, height: 48, objectFit: "contain" }} />
           </div>
         </div>
         <div className="flex flex-col items-center" style={{ gap: 6 }}>
@@ -406,14 +406,10 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
 }
 
 // ── Shared persistent video background (home + packages only) ────────────────
-const VIDEOS = ["/bg1.mp4", "/bg2.mp4"];
-
 function SharedVideoBg() {
   const [location] = useLocation();
   const active = location === "/" || location === "/packages";
 
-  // Pick ONE video randomly at mount — fixed for the whole session
-  const chosenIdx = useRef(Math.random() < 0.5 ? 0 : 1);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [fadeBlack, setFadeBlack] = useState(false);
   const loopingRef = useRef(false);
@@ -466,7 +462,7 @@ function SharedVideoBg() {
     }}>
       <video
         ref={videoRef}
-        src={VIDEOS[chosenIdx.current]}
+        src="/bg1.mp4"
         muted playsInline preload="auto"
         onEnded={handleEnded}
         style={{
@@ -537,7 +533,18 @@ function PromoBannerSlider() {
         style={{ position: "relative", width: "100%", aspectRatio: "21/9", overflow: "hidden", cursor: banner.link ? "pointer" : "default", borderRadius: 18, boxShadow: "0 8px 32px rgba(245,158,11,0.15), 0 4px 24px rgba(0,0,0,0.6)" }}
         onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
         onTouchEnd={e => { const dx = e.changedTouches[0].clientX - touchStartX.current; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); }}
-        onClick={() => { if (banner.link) { if (banner.link.startsWith("/")) setLocation(banner.link); else window.open(banner.link, "_blank", "noopener,noreferrer"); } }}
+        onClick={() => {
+          if (!banner.link) return;
+          if (banner.link.startsWith("cart:")) {
+            const ids = banner.link.replace("cart:", "").split(",").map(Number).filter(Boolean);
+            sessionStorage.setItem("pendingCartPackIds", JSON.stringify(ids));
+            setLocation("/cart");
+          } else if (banner.link.startsWith("/")) {
+            setLocation(banner.link);
+          } else {
+            window.open(banner.link, "_blank", "noopener,noreferrer");
+          }
+        }}
       >
         {banners.map((b, i) => (
           <img key={b.id} src={b.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
@@ -627,7 +634,7 @@ function GameSelectSection() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>Select Game</span>
       </div>
-      <style>{`@keyframes nameMarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
+      <style>{`@keyframes nameMarquee{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(-50%)}}`}</style>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         {games.map((game, idx) => {
           const c = PANEL_GLOWS[idx % PANEL_GLOWS.length];
@@ -668,10 +675,10 @@ function GameSelectSection() {
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
                 )}
               </div>
-              <div style={{ padding: "5px 7px 8px", height: game.region ? 42 : 30, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ padding: "5px 7px 9px", minHeight: game.region ? 44 : 32, display: "flex", flexDirection: "column", justifyContent: "center" }}>
                 {needsMarquee ? (
                   <div style={{ overflow: "hidden", width: "100%" }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-block", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(4, game.name.length * 0.28)}s linear infinite`, paddingRight: "1.5em" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-block", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(14, game.name.length * 0.65)}s linear infinite`, paddingRight: "2em" }}>
                       {game.name}&emsp;{game.name}
                     </span>
                   </div>
@@ -864,7 +871,7 @@ function LiveTicker() {
           <div className="flex gap-6 whitespace-nowrap" style={{ animation: `scrollTicker ${duration}s linear infinite`, willChange: "transform" }}>
             {doubled.map((p, i) => (
               <span key={i} className="text-gray-700 flex-shrink-0" style={{ fontSize: 13 }}>
-                <span className="font-bold text-amber-600">{maskName(p.mlbb_ign ?? "Player")}</span>{" bought "}<span className="font-bold">{Number(p.diamonds).toLocaleString()} diamonds</span>
+                <span className="font-bold text-amber-600">{maskName(p.mlbb_ign ?? "Player")}</span>{" bought "}<span className="font-bold">{Number(p.diamonds).toLocaleString()} products</span>
                 <span className="ml-5 text-gray-300">|</span>
               </span>
             ))}
@@ -993,7 +1000,7 @@ function AnnouncementBar() {
     "🔒 100% secure UPI payments — your data is safe",
     "💬 24/7 WhatsApp support — real humans, not bots",
     "🏆 Trusted by gamers across India",
-    "💎 Best prices guaranteed — we beat any deal!",
+    "📦 Best prices guaranteed — we beat any deal!",
     "🎮 Multiple games — top up any game, any time",
   ];
   const doubled = [...items, ...items];
@@ -1075,12 +1082,12 @@ function LatestNewsPopup() {
 // ── Why Choose Us ──────────────────────────────────────────────────────────
 function WhyChooseUs() {
   const reasons = [
-    { icon: "⚡", title: "Instant Delivery",      desc: "Diamonds credited within minutes of payment. No waiting around." },
+    { icon: "⚡", title: "Instant Delivery",      desc: "Products credited within minutes of payment. No waiting around." },
     { icon: "🔒", title: "100% Secure",           desc: "All transactions are protected. We never store your payment details." },
-    { icon: "💰", title: "Best Prices",           desc: "Guaranteed lowest prices on all diamond packs — beat any deal." },
-    { icon: "🏆", title: "A professional gamer's choice", desc: "Join our growing community of satisfied MLBB players." },
+    { icon: "💰", title: "Best Prices",           desc: "Guaranteed lowest prices on all products — beat any deal." },
+    { icon: "🏆", title: "A professional gamer's choice", desc: "Join our growing community of satisfied gamers." },
     { icon: "💬", title: "24/7 Support",          desc: "Reach us on WhatsApp anytime. Real humans, not bots." },
-    { icon: "♦",  title: "All Pack Types",        desc: "Small packs, normal, double diamond, passes, and rank boosting." },
+    { icon: "📦", title: "All Types of Products & Services", desc: "Diamonds, UC, passes, rank boosting, and more." },
   ];
   return (
     <section className="py-10 px-5" style={{ background: "#f5f5f5" }}>
@@ -1088,7 +1095,7 @@ function WhyChooseUs() {
         <div className="text-center mb-6">
           <div className="inline-block px-3.5 py-1 rounded-full font-bold uppercase tracking-widest mb-3" style={{ fontSize: 10, background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}>Why Us</div>
           <h2 className="text-gray-900 font-extrabold text-2xl">Why Choose Sky Official?</h2>
-          <p className="text-gray-400 mt-1" style={{ fontSize: 14 }}>Everything you need from a diamond top-up store</p>
+          <p className="text-gray-400 mt-1" style={{ fontSize: 14 }}>Everything you need from a game top-up store</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {reasons.map((r, i) => (

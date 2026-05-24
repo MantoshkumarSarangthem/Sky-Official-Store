@@ -5,6 +5,13 @@ import { setSelectedPackage } from "./PaymentPage";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
+const FAV_KEY = "skyFavoritePkgs";
+function loadFavs(): number[] {
+  try { return JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); } catch { return []; }
+}
+function saveFavs(ids: number[]) { localStorage.setItem(FAV_KEY, JSON.stringify(ids)); }
+export function getFavoritePkgIds(): number[] { return loadFavs(); }
+
 interface GamePackage {
   id: number;
   name: string | null;
@@ -49,11 +56,23 @@ function isStarlightGame(name: string): boolean {
 
 const WA_SUPPORT = "919362003788";
 
-function DiamondSVG({ size = 30 }: { size?: number }) {
+function DiamondSVG({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-      <polygon points="20,4 36,14 36,26 20,36 4,26 4,14" stroke="rgba(245,158,11,0.55)" strokeWidth="1.5" fill="rgba(245,158,11,0.1)" />
-      <polygon points="20,4 36,14 20,22 4,14" fill="rgba(245,158,11,0.18)" />
+      <polygon points="20,4 36,14 36,26 20,36 4,26 4,14" stroke="rgba(139,92,246,0.55)" strokeWidth="1.5" fill="rgba(139,92,246,0.1)" />
+      <polygon points="20,4 36,14 20,22 4,14" fill="rgba(139,92,246,0.18)" />
+    </svg>
+  );
+}
+
+function HeartIcon({ filled }: { filled: boolean }) {
+  return filled ? (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="#ef4444">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+    </svg>
+  ) : (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="rgba(255,255,255,0.35)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -69,6 +88,12 @@ export default function GameProductsPage() {
   const [serverId, setServerId] = useState("");
   const [idError, setIdError] = useState("");
 
+  const [selectedPkgId, setSelectedPkgId] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "wallet">("upi");
+  const [favorites, setFavorites] = useState<number[]>(loadFavs);
+
+  const selectedPkg = packages.find(p => p.id === selectedPkgId) ?? null;
+
   useEffect(() => {
     if (!gameId) return;
     setLoading(true);
@@ -77,6 +102,7 @@ export default function GameProductsPage() {
     setUserId("");
     setServerId("");
     setIdError("");
+    setSelectedPkgId(null);
     Promise.all([
       fetch(`${API}/games/${gameId}`).then(r => r.ok ? r.json() : null).catch(() => null),
       fetch(`${API}/packages?game_id=${gameId}`).then(r => r.ok ? r.json() : []).catch(() => []),
@@ -93,25 +119,28 @@ export default function GameProductsPage() {
   const isMLBB = game ? isMlbbGame(game.name) : false;
   const isStarlight = game ? isStarlightGame(game.name) : false;
 
-  const handleStarlightBuy = useCallback((pkg: GamePackage) => {
-    if (!userId.trim()) {
-      setIdError("Please enter your User ID first.");
-      return;
-    }
+  const toggleFav = useCallback((id: number) => {
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      saveFavs(next);
+      return next;
+    });
+  }, []);
+
+  const handleStarlightBuy = useCallback(() => {
+    if (!selectedPkg) return;
+    if (!userId.trim()) { setIdError("Please enter your User ID first."); return; }
     setIdError("");
-    const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
-    const pkgName = pkg.name || `${total.toLocaleString()} ${currencyLabel}`;
+    const total = selectedPkg.diamonds + (selectedPkg.bonus_diamonds || 0);
+    const pkgName = selectedPkg.name || `${total.toLocaleString()} ${currencyLabel}`;
     const msg = encodeURIComponent(
-      `Hello! I'd like to order:\n` +
-      `*${pkgName}*\n` +
-      `Price: ₹${parseFloat(pkg.price).toFixed(0)}\n` +
-      `User ID: ${userId.trim()}\n` +
-      `Game: ${game?.name ?? "Starlight"}`
+      `Hello! I'd like to order:\n*${pkgName}*\nPrice: ₹${parseFloat(selectedPkg.price).toFixed(0)}\nUser ID: ${userId.trim()}\nGame: ${game?.name ?? "Starlight"}`
     );
     window.open(`https://wa.me/${WA_SUPPORT}?text=${msg}`, "_blank", "noopener,noreferrer");
-  }, [userId, game, currencyLabel]);
+  }, [selectedPkg, userId, game, currencyLabel]);
 
-  const handleBuyNow = useCallback((pkg: GamePackage) => {
+  const handleBuy = useCallback(() => {
+    if (!selectedPkg) return;
     if (!userId.trim()) {
       setIdError(isMLBB ? "Please enter your User ID first." : "Please enter your Player ID first.");
       return;
@@ -126,65 +155,50 @@ export default function GameProductsPage() {
       currencyLabel,
     });
     setSelectedPackage({
-      id: pkg.id,
-      diamonds: pkg.diamonds,
-      bonus_diamonds: pkg.bonus_diamonds,
-      price: pkg.price,
-      old_price: pkg.old_price ?? null,
-      name: pkg.name,
-      category: pkg.category,
-      image: pkg.image ?? null,
+      id: selectedPkg.id,
+      diamonds: selectedPkg.diamonds,
+      bonus_diamonds: selectedPkg.bonus_diamonds,
+      price: selectedPkg.price,
+      old_price: selectedPkg.old_price ?? null,
+      name: selectedPkg.name,
+      category: selectedPkg.category,
+      image: selectedPkg.image ?? null,
       gameName: game?.name || "",
       currencyLabel,
     });
+    sessionStorage.setItem("preferredPaymentMethod", paymentMethod);
     setLocation("/pay");
-  }, [userId, serverId, isMLBB, game, currencyLabel, setLocation]);
+  }, [selectedPkg, userId, serverId, isMLBB, game, currencyLabel, paymentMethod, setLocation]);
 
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingTop: 88, paddingBottom: 64 }}>
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingTop: 88, paddingBottom: 80 }}>
       <style>{`
-        @keyframes gpFadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes gpPulse { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
-        @keyframes gpCardIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
-        @keyframes gpBannerSkel { 0%,100%{opacity:0.35} 50%{opacity:0.65} }
+        @keyframes gpFadeIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes gpPulse   { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
+        @keyframes gpBankSkel{ 0%,100%{opacity:0.35} 50%{opacity:0.65} }
+        @keyframes gpCardIn  { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+        @keyframes gpCoIn    { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
       `}</style>
 
-      {/* Game Banner — always reserves space, back button floats inside */}
-      <div style={{ height: 148, overflow: "hidden", position: "relative", background: "#0d0d0d", flexShrink: 0 }}>
+      {/* ── Game Banner ── */}
+      <div style={{ height: 140, overflow: "hidden", position: "relative", background: "#0d0d0d" }}>
         {loading ? (
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(245,158,11,0.06),rgba(0,0,0,0))", animation: "gpBannerSkel 1.6s ease-in-out infinite" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(139,92,246,0.06),rgba(0,0,0,0))", animation: "gpBankSkel 1.6s ease-in-out infinite" }} />
         ) : game?.image ? (
           <>
-            <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.5)" }} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,10,10,0.15) 20%, #0a0a0a 100%)" }} />
+            <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,10,10,0.1) 20%, #0a0a0a 100%)" }} />
           </>
         ) : (
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(245,158,11,0.07),rgba(0,0,0,0))" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0))" }} />
         )}
-
-        {/* Floating back button — always visible */}
         <button
           onClick={() => setLocation("/")}
-          style={{
-            position: "absolute", top: 14, left: 14, zIndex: 10,
-            background: "rgba(10,10,10,0.72)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(245,158,11,0.35)",
-            borderRadius: 999, padding: "7px 14px 7px 10px",
-            color: "rgba(255,255,255,0.9)", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-            fontSize: 12, fontWeight: 700,
-            boxShadow: "0 0 12px rgba(245,158,11,0.18), 0 2px 10px rgba(0,0,0,0.55)",
-            WebkitTapHighlightColor: "transparent",
-            transition: "border-color 0.15s, box-shadow 0.15s",
-          }}
-          onTouchStart={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(245,158,11,0.7)"; }}
-          onTouchEnd={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(245,158,11,0.35)"; }}
+          style={{ position: "absolute", top: 14, left: 14, zIndex: 10, background: "rgba(10,10,10,0.72)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(139,92,246,0.35)", borderRadius: 999, padding: "7px 14px 7px 10px", color: "rgba(255,255,255,0.9)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, boxShadow: "0 2px 10px rgba(0,0,0,0.55)", WebkitTapHighlightColor: "transparent" }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           Back
         </button>
-
-        {/* Game name inside banner */}
         {game && (
           <div style={{ position: "absolute", bottom: 12, left: 16, right: 16 }}>
             <div style={{ color: "#fff", fontSize: 17, fontWeight: 800, textShadow: "0 2px 10px rgba(0,0,0,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
@@ -195,10 +209,13 @@ export default function GameProductsPage() {
 
       <div style={{ padding: "16px 14px 0", display: "flex", flexDirection: "column", gap: 14 }}>
 
-        {/* ── ID Input Card ── */}
-        <div style={{ background: "linear-gradient(135deg,#111,#0f0d00)", border: "1.5px solid rgba(245,158,11,0.22)", borderRadius: 18, padding: "16px", animation: "gpFadeIn 0.3s ease" }}>
-          <div style={{ color: "#f59e0b", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
-            {isMLBB ? "Enter Your MLBB Account" : `Enter Your ${game?.name ?? "Game"} ID`}
+        {/* ── Step 1: Enter ID ── */}
+        <div style={{ background: "linear-gradient(135deg,#111,#0c0a14)", border: "1.5px solid rgba(139,92,246,0.22)", borderRadius: 18, padding: "16px", animation: "gpFadeIn 0.3s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#fff", flexShrink: 0 }}>1</div>
+            <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              {isMLBB ? "Enter Your MLBB Account" : `Enter Your ${game?.name ?? "Game"} ID`}
+            </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
@@ -206,13 +223,11 @@ export default function GameProductsPage() {
                 {isMLBB ? "User ID" : "Player ID"}
               </div>
               <input
-                type="number"
-                inputMode="numeric"
-                value={userId}
+                type="number" inputMode="numeric" value={userId}
                 onChange={e => { setUserId(e.target.value); setIdError(""); }}
                 placeholder={isMLBB ? "e.g. 123456789" : "e.g. 987654321"}
-                style={{ width: "100%", background: "#1a1a1a", border: `1.5px solid ${idError ? "rgba(239,68,68,0.55)" : userId ? "rgba(245,158,11,0.55)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
-                onFocus={e => !idError && (e.target.style.borderColor = "rgba(245,158,11,0.65)")}
+                style={{ width: "100%", background: "#1a1a1a", border: `1.5px solid ${idError ? "rgba(239,68,68,0.55)" : userId ? "rgba(139,92,246,0.55)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
+                onFocus={e => !idError && (e.target.style.borderColor = "rgba(139,92,246,0.65)")}
                 onBlur={e => { if (!idError && !userId) e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
               />
             </div>
@@ -220,13 +235,11 @@ export default function GameProductsPage() {
               <div>
                 <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Zone ID (Server)</div>
                 <input
-                  type="number"
-                  inputMode="numeric"
-                  value={serverId}
+                  type="number" inputMode="numeric" value={serverId}
                   onChange={e => setServerId(e.target.value)}
                   placeholder="e.g. 2345"
-                  style={{ width: "100%", background: "#1a1a1a", border: `1.5px solid ${serverId ? "rgba(245,158,11,0.45)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
-                  onFocus={e => (e.target.style.borderColor = "rgba(245,158,11,0.65)")}
+                  style={{ width: "100%", background: "#1a1a1a", border: `1.5px solid ${serverId ? "rgba(139,92,246,0.45)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
+                  onFocus={e => (e.target.style.borderColor = "rgba(139,92,246,0.65)")}
                   onBlur={e => { if (!serverId) e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
                 />
               </div>
@@ -241,27 +254,16 @@ export default function GameProductsPage() {
           {userId && !idError && (
             <div style={{ marginTop: 8, color: "rgba(34,197,94,0.8)", fontSize: 11, display: "flex", alignItems: "center", gap: 5 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              ID entered — select a package below to purchase
+              ID entered — select a pack below
             </div>
           )}
         </div>
 
-        {/* ── Packages Grid ── */}
+        {/* ── Step 2: Select Pack ── */}
         {loading ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {[0,1,2,3,4,5].map(i => (
-              <div key={i} style={{ borderRadius: 16, background: "linear-gradient(145deg,#111,#0d0d0d)", border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden", animation: `gpPulse 1.6s ease-in-out ${i * 0.09}s infinite` }}>
-                {/* Icon placeholder */}
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(245,158,11,0.07)", margin: "14px 12px 0", border: "1px solid rgba(245,158,11,0.1)" }} />
-                {/* Name */}
-                <div style={{ margin: "10px 12px 0", height: 13, width: "72%", background: "rgba(255,255,255,0.07)", borderRadius: 5 }} />
-                {/* Currency */}
-                <div style={{ margin: "7px 12px 0", height: 10, width: "55%", background: "rgba(255,255,255,0.04)", borderRadius: 4 }} />
-                {/* Price */}
-                <div style={{ margin: "8px 12px 0", height: 17, width: "40%", background: "rgba(245,158,11,0.1)", borderRadius: 5 }} />
-                {/* Buy button */}
-                <div style={{ margin: "10px 12px 12px", height: 34, borderRadius: 10, background: "rgba(245,158,11,0.07)" }} />
-              </div>
+            {[0,1,2,3].map(i => (
+              <div key={i} style={{ borderRadius: 16, background: "linear-gradient(145deg,#111,#0d0d0d)", border: "1px solid rgba(255,255,255,0.07)", minHeight: 140, animation: `gpPulse 1.6s ease-in-out ${i * 0.09}s infinite` }} />
             ))}
           </div>
         ) : packages.length === 0 ? (
@@ -271,95 +273,148 @@ export default function GameProductsPage() {
             <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Packages for {game?.name ?? "this game"} are being set up.</div>
           </div>
         ) : (
-          <>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.09em", textTransform: "uppercase" }}>
-              {packages.length} pack{packages.length !== 1 ? "s" : ""} available
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#fff", flexShrink: 0 }}>2</div>
+              <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Select Pack</span>
+              <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, marginLeft: "auto" }}>{packages.length} available</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {packages.map((pkg, idx) => {
                 const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
                 const hasOldPrice = pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price);
-                const isPopular = pkg.is_popular || pkg.label === "MOST POPULAR";
+                const isSelected = selectedPkgId === pkg.id;
+                const isFav = favorites.includes(pkg.id);
+                const showBadge = pkg.is_popular || (pkg.label && pkg.label !== "");
                 return (
                   <div
                     key={pkg.id}
+                    onClick={() => setSelectedPkgId(pkg.id)}
                     style={{
-                      background: "linear-gradient(145deg,#111,#0d0d0d)",
-                      border: isPopular ? "1.5px solid rgba(245,158,11,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                      background: isSelected ? "linear-gradient(145deg,#130d20,#0d0a0a)" : "linear-gradient(145deg,#111,#0d0d0d)",
+                      border: isSelected ? "2px solid #8b5cf6" : "1px solid rgba(255,255,255,0.08)",
                       borderRadius: 16,
-                      padding: "14px 12px 12px",
+                      padding: "12px 11px 10px",
                       display: "flex",
                       flexDirection: "column",
-                      gap: 9,
+                      gap: 8,
                       animation: `gpCardIn 0.3s ease ${idx * 0.04}s both`,
                       position: "relative",
                       overflow: "hidden",
+                      cursor: "pointer",
+                      boxShadow: isSelected ? "0 0 0 2px rgba(139,92,246,0.2), 0 4px 20px rgba(139,92,246,0.12)" : "0 2px 8px rgba(0,0,0,0.3)",
+                      transition: "border-color 0.18s, box-shadow 0.18s, background 0.18s",
+                      WebkitTapHighlightColor: "transparent",
                     }}
                   >
-                    {/* Badge */}
-                    {isPopular && (
-                      <div style={{ position: "absolute", top: 0, right: 0, background: "linear-gradient(135deg,#fbbf24,#f59e0b)", color: "#000", fontSize: 8, fontWeight: 800, padding: "3px 9px", borderRadius: "0 16px 0 8px", letterSpacing: "0.06em" }}>POPULAR</div>
-                    )}
-                    {pkg.label && pkg.label !== "MOST POPULAR" && (
-                      <div style={{ position: "absolute", top: 0, right: 0, background: pkg.label.toLowerCase().includes("2x") || pkg.label.toLowerCase().includes("first") ? "linear-gradient(135deg,#ef4444,#dc2626)" : "rgba(99,102,241,0.85)", color: "#fff", fontSize: 8, fontWeight: 800, padding: "3px 9px", borderRadius: "0 16px 0 8px", letterSpacing: "0.04em" }}>{pkg.label}</div>
+                    {showBadge && (
+                      <div style={{ position: "absolute", top: 0, left: 0, background: pkg.is_popular ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "rgba(139,92,246,0.75)", color: "#fff", fontSize: 8, fontWeight: 800, padding: "3px 8px", borderRadius: "16px 0 8px 0", letterSpacing: "0.04em", zIndex: 1 }}>
+                        {pkg.is_popular ? "POPULAR" : pkg.label}
+                      </div>
                     )}
 
-                    {/* Icon */}
-                    <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(245,158,11,0.07)", border: pkg.image ? "none" : "1px solid rgba(245,158,11,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {pkg.image ? (
-                        <img src={pkg.image} alt={pkg.name || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <DiamondSVG size={28} />
-                      )}
+                    {/* Top: icon + price */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={26} />}
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        {hasOldPrice && <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
+                        <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
+                      </div>
                     </div>
 
                     {/* Name + currency */}
                     <div>
-                      <div style={{ color: "#fff", fontWeight: 700, fontSize: 13, lineHeight: 1.3, marginBottom: 3 }}>
+                      <div style={{ color: isSelected ? "#fff" : "rgba(255,255,255,0.87)", fontWeight: 700, fontSize: 12, lineHeight: 1.3, marginBottom: 2 }}>
                         {pkg.name || `${total.toLocaleString()} ${currencyLabel}`}
                       </div>
-                      <div style={{ color: "rgba(255,255,255,0.32)", fontSize: 11 }}>
+                      <div style={{ color: "rgba(255,255,255,0.32)", fontSize: 10 }}>
                         {total.toLocaleString()} {currencyLabel}
                         {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()}</span>}
                       </div>
                     </div>
 
-                    {/* Price */}
-                    <div>
-                      {hasOldPrice && (
-                        <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, textDecoration: "line-through" }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>
-                      )}
-                      <div style={{ color: "#f59e0b", fontWeight: 800, fontSize: 17, lineHeight: 1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
+                    {/* Heart */}
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleFav(pkg.id); }}
+                        style={{ background: isFav ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.05)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.09)", borderRadius: 8, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
+                        title={isFav ? "Remove from favourites" : "Add to favourites"}
+                      >
+                        <HeartIcon filled={isFav} />
+                      </button>
                     </div>
-
-                    {/* Buy Now */}
-                    <button
-                      onClick={() => isStarlight ? handleStarlightBuy(pkg) : handleBuyNow(pkg)}
-                      style={{
-                        width: "100%",
-                        padding: "9px 0",
-                        borderRadius: 10,
-                        background: userId.trim()
-                          ? (isStarlight ? "linear-gradient(135deg,#22c55e,#16a34a)" : "linear-gradient(135deg,#fcd34d,#f59e0b)")
-                          : (isStarlight ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.1)"),
-                        color: userId.trim()
-                          ? (isStarlight ? "#fff" : "#000")
-                          : (isStarlight ? "rgba(34,197,94,0.5)" : "rgba(245,158,11,0.6)"),
-                        border: userId.trim() ? "none" : `1px solid ${isStarlight ? "rgba(34,197,94,0.22)" : "rgba(245,158,11,0.22)"}`,
-                        fontWeight: 800,
-                        fontSize: 12,
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        WebkitTapHighlightColor: "transparent",
-                      }}
-                    >
-                      {userId.trim() ? (isStarlight ? "Order via WhatsApp →" : "Buy Now →") : "Enter ID first"}
-                    </button>
                   </div>
                 );
               })}
             </div>
-          </>
+          </div>
+        )}
+
+        {/* ── Step 3: Secure Checkout ── */}
+        {selectedPkg && (
+          <div style={{ background: "linear-gradient(135deg,#111,#0c0a14)", border: "1.5px solid rgba(139,92,246,0.28)", borderRadius: 18, padding: "16px", animation: "gpCoIn 0.28s ease both" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#fff", flexShrink: 0 }}>3</div>
+              <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Secure Checkout</span>
+            </div>
+
+            {/* Pack Snapshot */}
+            <div style={{ background: "rgba(139,92,246,0.07)", borderRadius: 12, border: "1px solid rgba(139,92,246,0.15)", padding: "12px 14px", marginBottom: 14 }}>
+              <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Pack Snapshot</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: selectedPkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: selectedPkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {selectedPkg.image ? <img src={selectedPkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={22} />}
+                  </div>
+                  <div style={{ overflow: "hidden" }}>
+                    <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {selectedPkg.name || `${(selectedPkg.diamonds + selectedPkg.bonus_diamonds).toLocaleString()} ${currencyLabel}`}
+                    </div>
+                    <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>
+                      {(selectedPkg.diamonds + selectedPkg.bonus_diamonds).toLocaleString()} {currencyLabel}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  {selectedPkg.old_price && parseFloat(selectedPkg.old_price) > parseFloat(selectedPkg.price) && (
+                    <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, textDecoration: "line-through" }}>₹{parseFloat(selectedPkg.old_price).toFixed(0)}</div>
+                  )}
+                  <div style={{ color: "#a78bfa", fontWeight: 800, fontSize: 16 }}>₹{parseFloat(selectedPkg.price).toFixed(0)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Method */}
+            {!isStarlight && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Payment Method</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(["upi", "wallet"] as const).map(method => (
+                    <button
+                      key={method}
+                      onClick={() => setPaymentMethod(method)}
+                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: paymentMethod === method ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.04)", border: paymentMethod === method ? "2px solid rgba(139,92,246,0.65)" : "1px solid rgba(255,255,255,0.1)", color: paymentMethod === method ? "#a78bfa" : "rgba(255,255,255,0.45)", fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "all 0.15s", WebkitTapHighlightColor: "transparent" }}
+                    >
+                      {method === "upi" ? "💳 UPI" : "💰 Wallet"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Buy Button */}
+            <button
+              onClick={() => isStarlight ? handleStarlightBuy() : handleBuy()}
+              disabled={!userId.trim()}
+              style={{ width: "100%", padding: "14px 0", borderRadius: 12, background: userId.trim() ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "rgba(139,92,246,0.12)", color: userId.trim() ? "#fff" : "rgba(139,92,246,0.45)", border: userId.trim() ? "none" : "1px solid rgba(139,92,246,0.18)", fontWeight: 800, fontSize: 15, cursor: userId.trim() ? "pointer" : "not-allowed", transition: "all 0.2s", boxShadow: userId.trim() ? "0 4px 20px rgba(139,92,246,0.3)" : "none", WebkitTapHighlightColor: "transparent" }}
+            >
+              {userId.trim()
+                ? (isStarlight ? "Order via WhatsApp →" : "Buy Now →")
+                : "Enter your ID first (Step 1)"}
+            </button>
+          </div>
         )}
       </div>
     </div>

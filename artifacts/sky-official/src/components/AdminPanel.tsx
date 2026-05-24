@@ -102,6 +102,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [promoBanners, setPromoBanners] = useState<PromoBannerAdmin[]>([]);
   const [promoBannersSaving, setPromoBannersSaving] = useState(false);
   const [newBannerLink, setNewBannerLink] = useState("");
+  const [bannerLinkType, setBannerLinkType] = useState<"url"|"game"|"packages">("url");
+  const [bannerLinkGameId, setBannerLinkGameId] = useState<string>("");
   const promoBannerImgRef = useRef<HTMLInputElement>(null);
 
   interface Game { id: number; name: string; image: string | null; sort_order: number; region?: string | null; }
@@ -112,6 +114,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const gameImgRef = useRef<HTMLInputElement>(null);
   const [updatingGameId, setUpdatingGameId] = useState<number | null>(null);
   const gameUpdateImgRef = useRef<HTMLInputElement>(null);
+  const [editingGameMeta, setEditingGameMeta] = useState<{id: number; name: string; region: string} | null>(null);
 
   const fetchGames = async () => {
     setGamesLoading(true);
@@ -172,6 +175,25 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     }
   };
 
+  const saveGameMeta = async (id: number, name: string, region: string) => {
+    setGamesSaving(true);
+    try {
+      const g = games.find(x => x.id === id);
+      if (!g) return;
+      const fd = new FormData();
+      fd.append("name", name.trim() || g.name);
+      fd.append("sort_order", String(g.sort_order || 0));
+      fd.append("region", region.trim());
+      const res = await fetch(`${API}/admin/games/${id}`, { method: "PUT", headers: { Authorization: headers.Authorization }, body: fd });
+      if (res.ok) {
+        const updated = await res.json();
+        setGames(prev => prev.map(x => x.id === id ? updated : x));
+        setEditingGameMeta(null);
+        window.dispatchEvent(new Event("skyAdminUpdate"));
+      }
+    } finally { setGamesSaving(false); }
+  };
+
   const fetchPromoBanners = async () => {
     try {
       const res = await fetch(`${API}/admin/settings/promo_banners`, { headers });
@@ -191,9 +213,15 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (promoBanners.length >= 5) return;
     const file = promoBannerImgRef.current.files[0];
     const image = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(file); });
-    const banner: PromoBannerAdmin = { id: Date.now().toString(), image, link: newBannerLink.trim(), active: true };
+    let link = "";
+    if (bannerLinkType === "url") link = newBannerLink.trim();
+    else if (bannerLinkType === "game" && bannerLinkGameId) link = `/game/${bannerLinkGameId}`;
+    else if (bannerLinkType === "packages") link = "/packages";
+    const banner: PromoBannerAdmin = { id: Date.now().toString(), image, link, active: true };
     await savePromoBanners([...promoBanners, banner]);
     setNewBannerLink("");
+    setBannerLinkType("url");
+    setBannerLinkGameId("");
     if (promoBannerImgRef.current) promoBannerImgRef.current.value = "";
   };
 
@@ -1039,24 +1067,30 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     ) : (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         {games.map((g) => (
-                          <div key={g.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px", border: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div key={g.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px", border: editingGameMeta?.id === g.id ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: 8 }}>
                             <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 8, background: g.image ? "transparent" : "rgba(255,255,255,0.06)", border: g.image ? "none" : "1px dashed rgba(255,255,255,0.15)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {g.image ? (
-                                <img src={g.image} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              ) : (
-                                <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 11 }}>No image</span>
-                              )}
+                              {g.image ? <img src={g.image} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 11 }}>No image</span>}
                             </div>
-                            <div style={{ color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                            {g.region && <div style={{ color: "rgba(245,158,11,0.65)", fontSize: 10, textAlign: "center", marginTop: -4 }}>{g.region}</div>}
-                            <button
-                              onClick={() => { setUpdatingGameId(g.id); gameUpdateImgRef.current?.click(); }}
-                              disabled={gamesSaving}
-                              style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)", cursor: "pointer", width: "100%" }}
-                            >
-                              {gamesSaving && updatingGameId === g.id ? "Saving…" : "Upload Image"}
-                            </button>
-                            <button onClick={() => deleteGame(g.id)} style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer", width: "100%" }}>Delete</button>
+                            {editingGameMeta?.id === g.id ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <input value={editingGameMeta.name} onChange={e => setEditingGameMeta(m => m ? { ...m, name: e.target.value } : m)} placeholder="Game name" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.4)", borderRadius: 7, padding: "6px 8px", color: "#fff", fontSize: 12, outline: "none", width: "100%", boxSizing: "border-box" }} />
+                                <input value={editingGameMeta.region} onChange={e => setEditingGameMeta(m => m ? { ...m, region: e.target.value } : m)} placeholder="Region (e.g. Global)" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 7, padding: "6px 8px", color: "#fff", fontSize: 11, outline: "none", width: "100%", boxSizing: "border-box" }} />
+                                <div style={{ display: "flex", gap: 5 }}>
+                                  <button onClick={() => saveGameMeta(g.id, editingGameMeta.name, editingGameMeta.region)} disabled={gamesSaving} style={{ flex: 1, fontSize: 11, padding: "5px 0", borderRadius: 7, background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)", cursor: "pointer" }}>{gamesSaving ? "Saving…" : "Save"}</button>
+                                  <button onClick={() => setEditingGameMeta(null)} style={{ flex: 1, fontSize: 11, padding: "5px 0", borderRadius: 7, background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div style={{ color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                                {g.region && <div style={{ color: "rgba(245,158,11,0.65)", fontSize: 10, textAlign: "center", marginTop: -4 }}>{g.region}</div>}
+                                <button onClick={() => setEditingGameMeta({ id: g.id, name: g.name, region: g.region ?? "" })} style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", width: "100%" }}>Edit Name / Region</button>
+                                <button onClick={() => { setUpdatingGameId(g.id); gameUpdateImgRef.current?.click(); }} disabled={gamesSaving} style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)", cursor: "pointer", width: "100%" }}>
+                                  {gamesSaving && updatingGameId === g.id ? "Saving…" : "Upload Image"}
+                                </button>
+                                <button onClick={() => deleteGame(g.id)} style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer", width: "100%" }}>Delete</button>
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1325,7 +1359,12 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       ) : (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(56,189,248,0.12)" }}><img src="/diamond.png" alt="♦" style={{ width: 22, height: 22, objectFit: "contain" }} /></div>
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden" style={{ background: pkg.image ? "rgba(255,255,255,0.05)" : "rgba(56,189,248,0.12)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                              {pkg.image
+                                ? <img src={pkg.image} alt="icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                : <img src="/diamond.png" alt="♦" style={{ width: 22, height: 22, objectFit: "contain" }} />
+                              }
+                            </div>
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-white font-bold text-sm">{pkg.name || `${pkg.diamonds.toLocaleString()} Diamonds`}</span>
@@ -1360,7 +1399,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       {[
                         { label: "Total Orders", value: stats.total_orders, icon: "📦" },
                         { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
-                        { label: "Diamonds Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: <img src="/diamond.png" alt="♦" style={{ width: 22, height: 22, objectFit: "contain", display: "inline-block" }} /> },
+                        { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
                       ].map((s) => (
                         <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
                           <div className="text-xl mb-1">{s.icon}</div>
@@ -2142,8 +2181,24 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                           <input ref={promoBannerImgRef} type="file" accept="image/*" style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }} />
                         </div>
                         <div>
-                          <div className="text-gray-400 text-xs mb-1.5">Link when tapped (optional, e.g. /packages)</div>
-                          <input value={newBannerLink} onChange={e => setNewBannerLink(e.target.value)} placeholder="e.g. /packages" className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                          <div className="text-gray-400 text-xs mb-1.5">Link when tapped (optional)</div>
+                          <select value={bannerLinkType} onChange={e => setBannerLinkType(e.target.value as "url"|"game"|"packages")} className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full mb-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+                            <option value="url">Custom URL</option>
+                            <option value="game">Specific Game Page</option>
+                            <option value="packages">Browse Packages Page</option>
+                          </select>
+                          {bannerLinkType === "url" && (
+                            <input value={newBannerLink} onChange={e => setNewBannerLink(e.target.value)} placeholder="e.g. /packages or https://..." className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                          )}
+                          {bannerLinkType === "game" && (
+                            <select value={bannerLinkGameId} onChange={e => setBannerLinkGameId(e.target.value)} className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+                              <option value="">Select a game…</option>
+                              {games.map(g => <option key={g.id} value={String(g.id)}>{g.name}</option>)}
+                            </select>
+                          )}
+                          {bannerLinkType === "packages" && (
+                            <div className="text-gray-500 text-xs py-1">Banner will link to the Packages page.</div>
+                          )}
                         </div>
                         <button onClick={addPromoBanner} disabled={promoBannersSaving} className="py-2.5 rounded-xl text-sm font-bold text-black" style={{ background: promoBannersSaving ? "rgba(245,158,11,0.5)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>
                           {promoBannersSaving ? "Saving…" : "Upload & Add Banner"}

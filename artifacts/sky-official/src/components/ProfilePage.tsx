@@ -43,6 +43,8 @@ export default function ProfilePage() {
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [transactions, setTransactions] = useState<WalletTx[]>([]);
   const [loading, setLoading] = useState(true);
+  const [favPkgIds, setFavPkgIds] = useState<number[]>([]);
+  const [favPackages, setFavPackages] = useState<{id:number;name:string|null;diamonds:number;bonus_diamonds:number;price:string;image:string|null;category:string|null}[]>([]);
   const [showTopup, setShowTopup] = useState(false);
   const [topupAmount, setTopupAmount] = useState("");
   const [topupMsg, setTopupMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -146,6 +148,18 @@ export default function ProfilePage() {
   useEffect(() => {
     if (isLoaded && !user) setLocation("/sign-in");
   }, [isLoaded, user]);
+
+  useEffect(() => {
+    try {
+      const ids: number[] = JSON.parse(localStorage.getItem("skyFavoritePkgs") || "[]");
+      setFavPkgIds(ids);
+      if (ids.length > 0) {
+        fetch(`${API}/packages`).then(r => r.ok ? r.json() : []).then(pkgs => {
+          if (Array.isArray(pkgs)) setFavPackages(pkgs.filter((p: {id:number}) => ids.includes(p.id)));
+        }).catch(() => {});
+      }
+    } catch {}
+  }, []);
 
 
   if (!isLoaded || !user) return (
@@ -482,6 +496,50 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Favourites */}
+        {favPkgIds.length > 0 && (
+          <div style={{ background: "#111", borderRadius: 18, border: "1px solid rgba(255,255,255,0.07)", padding: "16px 14px", marginBottom: 16, animation: "profIn 0.5s ease 0.26s both" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#ef4444"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                Favourites
+              </div>
+              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>{favPkgIds.length} saved</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {favPkgIds.map(id => {
+                const pkg = favPackages.find(p => p.id === id);
+                return (
+                  <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(239,68,68,0.04)", borderRadius: 10, border: "1px solid rgba(239,68,68,0.1)", padding: "10px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: pkg?.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg?.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {pkg?.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <svg width="18" height="18" viewBox="0 0 40 40" fill="none"><polygon points="20,4 36,14 36,26 20,36 4,26 4,14" stroke="rgba(139,92,246,0.55)" strokeWidth="1.5" fill="rgba(139,92,246,0.1)" /><polygon points="20,4 36,14 20,22 4,14" fill="rgba(139,92,246,0.18)" /></svg>}
+                      </div>
+                      <div style={{ overflow: "hidden" }}>
+                        <div style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {pkg ? (pkg.name || `${(pkg.diamonds + pkg.bonus_diamonds).toLocaleString()} Credits`) : `Pack #${id}`}
+                        </div>
+                        {pkg && <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const next = favPkgIds.filter(x => x !== id);
+                        localStorage.setItem("skyFavoritePkgs", JSON.stringify(next));
+                        setFavPkgIds(next);
+                        setFavPackages(prev => prev.filter(p => p.id !== id));
+                      }}
+                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 7, padding: "4px 8px", color: "#ef4444", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
