@@ -48,7 +48,7 @@ interface WalletRequest {
   created_at: string;
 }
 
-type Tab = "games" | "packages" | "orders" | "wallet" | "featured" | "events" | "staff" | "settings" | "banners";
+type Tab = "games" | "packages" | "orders" | "wallet" | "events" | "staff" | "settings" | "banners";
 type NotifState = "unknown" | "loading" | "subscribed" | "denied" | "unsupported";
 
 async function registerSW(): Promise<ServiceWorkerRegistration | null> {
@@ -104,10 +104,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [newBannerLink, setNewBannerLink] = useState("");
   const promoBannerImgRef = useRef<HTMLInputElement>(null);
 
-  interface Game { id: number; name: string; image: string | null; sort_order: number; }
+  interface Game { id: number; name: string; image: string | null; sort_order: number; region?: string | null; }
   const [games, setGames] = useState<Game[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
-  const [newGame, setNewGame] = useState({ name: "", sort_order: "0" });
+  const [newGame, setNewGame] = useState({ name: "", sort_order: "0", region: "" });
   const [gamesSaving, setGamesSaving] = useState(false);
   const gameImgRef = useRef<HTMLInputElement>(null);
   const [updatingGameId, setUpdatingGameId] = useState<number | null>(null);
@@ -128,12 +128,13 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const fd = new FormData();
       fd.append("name", newGame.name.trim());
       fd.append("sort_order", newGame.sort_order);
+      fd.append("region", newGame.region.trim());
       if (gameImgRef.current?.files?.[0]) fd.append("image", gameImgRef.current.files[0]);
       const res = await fetch(`${API}/admin/games`, { method: "POST", headers: { Authorization: headers.Authorization }, body: fd });
       if (res.ok) {
         const g = await res.json();
         setGames(prev => [...prev, g]);
-        setNewGame({ name: "", sort_order: "0" });
+        setNewGame({ name: "", sort_order: "0", region: "" });
         if (gameImgRef.current) gameImgRef.current.value = "";
         window.dispatchEvent(new Event("skyAdminUpdate"));
       }
@@ -156,6 +157,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const fd = new FormData();
       fd.append("name", game.name);
       fd.append("sort_order", String(game.sort_order || 0));
+      fd.append("region", game.region?.trim() || "");
       fd.append("image", file);
       const res = await fetch(`${API}/admin/games/${gameId}`, { method: "PUT", headers: { Authorization: headers.Authorization }, body: fd });
       if (res.ok) {
@@ -279,15 +281,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       alert("Upload failed: network error. Please try again.");
     }
   };
-
-  const CATEGORY_META = [
-    { id: "small",     title: "Small Pack",       color: "#38bdf8" },
-    { id: "normal",    title: "Normal Pack",       color: "#f59e0b" },
-    { id: "double",    title: "Double Diamond",    color: "#00e5ff" },
-    { id: "passes",    title: "Passes & Bundles",  color: "#a855f7" },
-    { id: "starlight", title: "Starlight Cards",   color: "#f5c842" },
-    { id: "rank",      title: "Rank Boosting",     color: "#ec4899" },
-  ];
 
   // Test email
   const [emailTestState, setEmailTestState] = useState<"idle" | "sending" | "ok" | "error">("idle");
@@ -987,7 +980,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
-              {(["games", "packages", "orders", "wallet", "events", "staff", "featured", "banners", "settings"] as Tab[]).map((t) => {
+              {(["games", "packages", "orders", "wallet", "events", "staff", "banners", "settings"] as Tab[]).map((t) => {
                 const pendingCount = t === "wallet" ? walletRequests.filter(r => r.status === "pending").length : 0;
                 return (
                   <button
@@ -1055,6 +1048,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                               )}
                             </div>
                             <div style={{ color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                            {g.region && <div style={{ color: "rgba(245,158,11,0.65)", fontSize: 10, textAlign: "center", marginTop: -4 }}>{g.region}</div>}
                             <button
                               onClick={() => { setUpdatingGameId(g.id); gameUpdateImgRef.current?.click(); }}
                               disabled={gamesSaving}
@@ -1082,6 +1076,13 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         <div className="text-gray-400 text-xs mb-1.5">Game image (square ratio recommended)</div>
                         <input ref={gameImgRef} type="file" accept="image/*" style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }} />
                       </div>
+                      <input
+                        placeholder="Region (e.g. Global, SEA, India — optional)"
+                        value={newGame.region}
+                        onChange={e => setNewGame(g => ({ ...g, region: e.target.value }))}
+                        className="px-3 py-2 rounded-lg text-white text-sm outline-none"
+                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                      />
                       <input
                         placeholder="Sort order (0 = first)"
                         type="number"
@@ -1162,14 +1163,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             </div>
                           )}
                           <div className="grid grid-cols-2 gap-2">
-                            <select value={newPkg.category} onChange={(e) => setNewPkg(p => ({ ...p, category: e.target.value }))} className="col-span-2 px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.35)" }}>
-                              <option value="small">Small Pack</option>
-                              <option value="normal">Normal Pack</option>
-                              <option value="double">Double {pkgCurrLabel}</option>
-                              <option value="passes">Passes &amp; Bundles</option>
-                              <option value="starlight">Starlight Cards</option>
-                              <option value="rank">Rank Boosting</option>
-                            </select>
                             <input placeholder='Name (e.g. "Starter Pack")' value={newPkg.name} onChange={(e) => setNewPkg(p => ({ ...p, name: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none col-span-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
                             <input placeholder={pkgCurrLabel} type="number" value={newPkg.diamonds} onChange={(e) => setNewPkg(p => ({ ...p, diamonds: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
                             <input placeholder={"Bonus " + pkgCurrLabel} type="number" value={newPkg.bonus_diamonds} onChange={(e) => setNewPkg(p => ({ ...p, bonus_diamonds: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
@@ -1446,65 +1439,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               )}
 
               {/* ── FEATURED TAB ── */}
-              {tab === "featured" && (
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <div className="text-white font-bold text-sm mb-1">Popular Now — Panel Badges</div>
-                    <div className="text-gray-400 text-xs">Toggle which category panels show a "Popular Now" badge on the store front. Changes save instantly.</div>
-                  </div>
-
-                  {[
-                    { id: "small",     label: "Small Pack",       icon: <img src="/diamond.png" alt="♦" style={{ width: 18, height: 18, objectFit: "contain" }} />,  color: "#38bdf8" },
-                    { id: "normal",    label: "Normal Pack",       icon: <span style={{ display:"flex", gap: 2 }}><img src="/diamond.png" alt="♦" style={{ width: 14, height: 14, objectFit: "contain" }} /><img src="/diamond.png" alt="♦" style={{ width: 14, height: 14, objectFit: "contain" }} /></span>, color: "#f59e0b" },
-                    { id: "double",    label: "Double Diamond",    icon: "×2", color: "#00e5ff" },
-                    { id: "passes",    label: "Passes & Bundles",  icon: "🎫", color: "#a855f7" },
-                    { id: "starlight", label: "Starlight Cards",   icon: "★",  color: "#f5c842" },
-                    { id: "rank",      label: "Rank Boosting",     icon: "🛡", color: "#ec4899" },
-                  ].map(cat => {
-                    const isOn = !!categoryPopular[cat.id];
-                    return (
-                      <div key={cat.id} className="rounded-xl p-4 flex items-center justify-between gap-4"
-                        style={{ background: "#1a1a1a", border: `1px solid ${isOn ? cat.color + "40" : "rgba(255,255,255,0.07)"}` }}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
-                            style={{ background: cat.color + "18", color: cat.color, border: `1px solid ${cat.color}30` }}>
-                            {cat.icon}
-                          </div>
-                          <div>
-                            <div className="text-white font-semibold text-sm">{cat.label}</div>
-                            {isOn && (
-                              <div className="text-xs font-bold mt-0.5" style={{ color: cat.color }}>Popular Now badge showing</div>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          disabled={featuredSaving}
-                          onClick={() => saveCategoryPopular({ ...categoryPopular, [cat.id]: !isOn })}
-                          className="relative flex-shrink-0 transition-all"
-                          style={{ width: 44, height: 24, borderRadius: 999,
-                            background: isOn ? cat.color : "rgba(255,255,255,0.1)",
-                            border: `1px solid ${isOn ? cat.color : "rgba(255,255,255,0.15)"}`,
-                            cursor: featuredSaving ? "not-allowed" : "pointer",
-                            opacity: featuredSaving ? 0.6 : 1,
-                          }}
-                        >
-                          <span style={{
-                            position: "absolute", top: 2, left: isOn ? 22 : 2,
-                            width: 18, height: 18, borderRadius: "50%",
-                            background: "#fff",
-                            transition: "left 0.18s ease",
-                            display: "block",
-                          }} />
-                        </button>
-                      </div>
-                    );
-                  })}
-
-                  {featuredSaving && (
-                    <div className="text-center text-xs text-amber-400 py-1">Saving…</div>
-                  )}
-                </div>
-              )}
 
               {/* ── SETTINGS TAB ── */}
               {tab === "settings" && (
@@ -1729,19 +1663,28 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     <div className="text-gray-400 text-xs">Switch each storefront panel between Available and Coming Soon. Changes apply instantly to all visitors.</div>
                   </div>
                   <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    {CATEGORY_META.map(cat => {
-                      const status = categoryAvailability[cat.id] ?? "available";
+                    {games.length === 0 ? (
+                      <div className="text-gray-500 text-xs text-center py-2">No games yet — add games in the Games tab first.</div>
+                    ) : games.map((game, gi) => {
+                      const GAME_COLORS = ["#38bdf8","#f59e0b","#a855f7","#22c55e","#ec4899","#f5c842","#6366f1","#14b8a6"];
+                      const color = GAME_COLORS[gi % GAME_COLORS.length];
+                      const key = String(game.id);
+                      const status = categoryAvailability[key] ?? "available";
                       const isAvail = status === "available";
                       return (
-                        <div key={cat.id} className="flex items-center justify-between gap-3">
+                        <div key={key} className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
-                            <div style={{ width: 10, height: 10, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />
-                            <span className="text-white text-sm font-medium">{cat.title}</span>
+                            {game.image ? (
+                              <img src={game.image} alt={game.name} style={{ width: 22, height: 22, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                            )}
+                            <span className="text-white text-sm font-medium">{game.name}</span>
                           </div>
                           <button
                             disabled={catAvailSaving}
                             onClick={async () => {
-                              const updated = { ...categoryAvailability, [cat.id]: isAvail ? "out_of_stock" : "available" };
+                              const updated = { ...categoryAvailability, [key]: isAvail ? "out_of_stock" : "available" };
                               setCategoryAvailability(updated);
                               await saveCategoryAvailability(updated);
                             }}
@@ -1910,246 +1853,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     )}
                   </div>
 
-                  {/* Pack Images */}
-                  <div>
-                    <div className="text-white font-bold text-sm mb-1">Pack Images</div>
-                    <div className="text-gray-400 text-xs">Set the image URL shown on each diamond pack card. Paste any public URL or a path like /pack1.png for built-in images.</div>
-                  </div>
-                  <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(56,189,248,0.2)" }}>
-                    <div className="text-sky-400 text-xs font-bold uppercase tracking-wider">Diamond Pack Images</div>
-                    {packImages.map((tier, i) => (
-                      <div key={i} className="flex flex-col gap-1">
-                        <div className="text-gray-400 text-xs">{tier.label}</div>
-                        <div className="flex gap-2 items-center">
-                          <input
-                            value={tier.url}
-                            onChange={e => {
-                              const updated = [...packImages];
-                              updated[i] = { ...updated[i], url: e.target.value };
-                              setPackImages(updated);
-                            }}
-                            placeholder="/pack1.png or https://..."
-                            className="flex-1 px-3 py-2 rounded-lg text-white text-xs outline-none font-mono"
-                            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                          />
-                          {tier.url && (
-                            <img src={tier.url} alt="" style={{ width: 40, height: 32, objectFit: "contain", borderRadius: 6, background: "#0d0d14", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                          )}
-                        </div>
-                      </div>
-                    ))}
 
-                    <div className="text-amber-400 text-xs font-bold uppercase tracking-wider mt-2">Pass &amp; Bundle Images</div>
-                    {Object.entries(passImages).map(([name, url]) => (
-                      <div key={name} className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                          <div className="text-gray-400 text-xs">{name}</div>
-                          <button
-                            onClick={() => setPassImages(p => { const n = { ...p }; delete n[name]; return n; })}
-                            style={{ color: "rgba(239,68,68,0.7)", fontSize: 11, background: "none", border: "none", cursor: "pointer", padding: "0 2px" }}
-                            title="Remove this entry"
-                          >✕</button>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <input
-                            value={url}
-                            onChange={e => setPassImages(p => ({ ...p, [name]: e.target.value }))}
-                            placeholder="/pass1.png or https://..."
-                            className="flex-1 px-3 py-2 rounded-lg text-white text-xs outline-none font-mono"
-                            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                          />
-                          {/* Gallery upload button */}
-                          <label style={{ flexShrink: 0, cursor: "pointer" }} title="Upload from gallery">
-                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
-                              const file = e.target.files?.[0]; if (!file) return;
-                              setUploadingKey(name);
-                              await uploadImage(file, u => setPassImages(p => ({ ...p, [name]: u })));
-                              setUploadingKey(null);
-                              e.target.value = "";
-                            }} />
-                            <div style={{ width: 36, height: 32, borderRadius: 6, background: uploadingKey === name ? "rgba(245,158,11,0.3)" : "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {uploadingKey === name
-                                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#f59e0b" strokeWidth="2" strokeDasharray="56" strokeDashoffset="14"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></circle></svg>
-                                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#f59e0b" strokeWidth="2"/></svg>
-                              }
-                            </div>
-                          </label>
-                          {url && (
-                            <img src={url} alt="" style={{ width: 40, height: 32, objectFit: "contain", borderRadius: 6, background: "#0d0d14", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Add new image entry */}
-                    <div className="flex flex-col gap-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                      <div className="text-gray-500 text-xs font-bold uppercase tracking-wider">Add New Entry</div>
-                      <input
-                        value={newPassName}
-                        onChange={e => setNewPassName(e.target.value)}
-                        placeholder='Pack name (e.g. "Starlight Membership")'
-                        className="w-full px-3 py-2 rounded-lg text-white text-xs outline-none"
-                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                      />
-                      <div className="flex gap-2 items-center">
-                        <input
-                          value={newPassUrl}
-                          onChange={e => setNewPassUrl(e.target.value)}
-                          placeholder="/myimage.png or https://..."
-                          className="flex-1 px-3 py-2 rounded-lg text-white text-xs outline-none font-mono"
-                          style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                        />
-                        {/* Gallery upload for new entry */}
-                        <label style={{ flexShrink: 0, cursor: "pointer" }} title="Upload from gallery">
-                          <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
-                            const file = e.target.files?.[0]; if (!file) return;
-                            setUploadingKey("__new__");
-                            await uploadImage(file, u => setNewPassUrl(u));
-                            setUploadingKey(null);
-                            e.target.value = "";
-                          }} />
-                          <div style={{ width: 36, height: 32, borderRadius: 6, background: uploadingKey === "__new__" ? "rgba(245,158,11,0.3)" : "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {uploadingKey === "__new__"
-                              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#f59e0b" strokeWidth="2" strokeDasharray="56" strokeDashoffset="14"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></circle></svg>
-                              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#f59e0b" strokeWidth="2"/></svg>
-                            }
-                          </div>
-                        </label>
-                        {newPassUrl && (
-                          <img src={newPassUrl} alt="" style={{ width: 40, height: 32, objectFit: "contain", borderRadius: 6, background: "#0d0d14", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                        )}
-                      </div>
-                      <button
-                        onClick={() => {
-                          const name = newPassName.trim();
-                          const url = newPassUrl.trim();
-                          if (!name || !url) return;
-                          setPassImages(p => ({ ...p, [name]: url }));
-                          setNewPassName("");
-                          setNewPassUrl("");
-                        }}
-                        disabled={!newPassName.trim() || !newPassUrl.trim()}
-                        className="w-full py-2 rounded-xl text-xs font-bold"
-                        style={{
-                          background: newPassName.trim() && newPassUrl.trim() ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)",
-                          border: `1px dashed ${newPassName.trim() && newPassUrl.trim() ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.1)"}`,
-                          color: newPassName.trim() && newPassUrl.trim() ? "#f59e0b" : "rgba(255,255,255,0.3)",
-                          cursor: newPassName.trim() && newPassUrl.trim() ? "pointer" : "default",
-                        }}
-                      >
-                        + Add Entry
-                      </button>
-                    </div>
-
-                    <div className="text-yellow-300 text-xs font-bold uppercase tracking-wider mt-2" style={{ color: "#f5c842" }}>★ Starlight Card Images</div>
-                    {Object.entries(starlightImages).map(([name, url]) => (
-                      <div key={name} className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                          <div className="text-gray-400 text-xs">{name}</div>
-                          <button
-                            onClick={() => setStarlightImages(p => { const n = { ...p }; delete n[name]; return n; })}
-                            style={{ color: "rgba(239,68,68,0.7)", fontSize: 11, background: "none", border: "none", cursor: "pointer", padding: "0 2px" }}
-                            title="Remove this entry"
-                          >✕</button>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <input
-                            value={url}
-                            onChange={e => setStarlightImages(p => ({ ...p, [name]: e.target.value }))}
-                            placeholder="/starlight.png or https://..."
-                            className="flex-1 px-3 py-2 rounded-lg text-white text-xs outline-none font-mono"
-                            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                          />
-                          <label style={{ flexShrink: 0, cursor: "pointer" }} title="Upload from gallery">
-                            <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
-                              const file = e.target.files?.[0]; if (!file) return;
-                              setUploadingKey("sl_" + name);
-                              await uploadImage(file, u => setStarlightImages(p => ({ ...p, [name]: u })));
-                              setUploadingKey(null);
-                              e.target.value = "";
-                            }} />
-                            <div style={{ width: 36, height: 32, borderRadius: 6, background: uploadingKey === "sl_" + name ? "rgba(245,200,66,0.3)" : "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {uploadingKey === "sl_" + name
-                                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#f5c842" strokeWidth="2" strokeDasharray="56" strokeDashoffset="14"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></circle></svg>
-                                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#f5c842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#f5c842" strokeWidth="2"/></svg>
-                              }
-                            </div>
-                          </label>
-                          {url && (
-                            <img src={url} alt="" style={{ width: 40, height: 32, objectFit: "contain", borderRadius: 6, background: "#0d0d14", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Add new Starlight entry */}
-                    <div className="flex flex-col gap-2 pt-2" style={{ borderTop: "1px solid rgba(245,200,66,0.1)" }}>
-                      <div className="text-gray-500 text-xs font-bold uppercase tracking-wider">Add Starlight Card</div>
-                      <input
-                        value={newStarlightName}
-                        onChange={e => setNewStarlightName(e.target.value)}
-                        placeholder='Card name (e.g. "Starlight Membership")'
-                        className="w-full px-3 py-2 rounded-lg text-white text-xs outline-none"
-                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                      />
-                      <div className="flex gap-2 items-center">
-                        <input
-                          value={newStarlightUrl}
-                          onChange={e => setNewStarlightUrl(e.target.value)}
-                          placeholder="/starlight.png or https://..."
-                          className="flex-1 px-3 py-2 rounded-lg text-white text-xs outline-none font-mono"
-                          style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                        />
-                        <label style={{ flexShrink: 0, cursor: "pointer" }} title="Upload from gallery">
-                          <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
-                            const file = e.target.files?.[0]; if (!file) return;
-                            setUploadingKey("__sl_new__");
-                            await uploadImage(file, u => setNewStarlightUrl(u));
-                            setUploadingKey(null);
-                            e.target.value = "";
-                          }} />
-                          <div style={{ width: 36, height: 32, borderRadius: 6, background: uploadingKey === "__sl_new__" ? "rgba(245,200,66,0.3)" : "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {uploadingKey === "__sl_new__"
-                              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#f5c842" strokeWidth="2" strokeDasharray="56" strokeDashoffset="14"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/></circle></svg>
-                              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#f5c842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#f5c842" strokeWidth="2"/></svg>
-                            }
-                          </div>
-                        </label>
-                        {newStarlightUrl && (
-                          <img src={newStarlightUrl} alt="" style={{ width: 40, height: 32, objectFit: "contain", borderRadius: 6, background: "#0d0d14", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                        )}
-                      </div>
-                      <button
-                        onClick={() => {
-                          const name = newStarlightName.trim();
-                          const url = newStarlightUrl.trim();
-                          if (!name || !url) return;
-                          setStarlightImages(p => ({ ...p, [name]: url }));
-                          setNewStarlightName("");
-                          setNewStarlightUrl("");
-                        }}
-                        disabled={!newStarlightName.trim() || !newStarlightUrl.trim()}
-                        className="w-full py-2 rounded-xl text-xs font-bold"
-                        style={{
-                          background: newStarlightName.trim() && newStarlightUrl.trim() ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.04)",
-                          border: `1px dashed ${newStarlightName.trim() && newStarlightUrl.trim() ? "rgba(245,200,66,0.45)" : "rgba(255,255,255,0.1)"}`,
-                          color: newStarlightName.trim() && newStarlightUrl.trim() ? "#f5c842" : "rgba(255,255,255,0.3)",
-                          cursor: newStarlightName.trim() && newStarlightUrl.trim() ? "pointer" : "default",
-                        }}
-                      >
-                        + Add Starlight Card
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={savePackImages}
-                      disabled={imagesSaving}
-                      className="w-full py-2.5 rounded-xl text-sm font-bold text-black mt-1"
-                      style={{ background: imagesSaving ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
-                    >
-                      {imagesSaving ? "Saving…" : imagesSaved ? "✓ Saved!" : "Save Image Settings"}
-                    </button>
-                  </div>
                 </div>
               )}
 

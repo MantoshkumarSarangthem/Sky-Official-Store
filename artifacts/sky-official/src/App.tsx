@@ -11,6 +11,7 @@ import type { SelectedPackage } from "./components/PaymentPage";
 import SupportPage from "./components/SupportPage";
 import StaffPortal from "./components/StaffPortal";
 import GameProductsPage from "./components/GameProductsPage";
+import RankBoostPage from "./components/RankBoostPage";
 import { CartProvider, useCart } from "./context/CartContext";
 import {
   ClerkProvider,
@@ -533,7 +534,7 @@ function PromoBannerSlider() {
   return (
     <div style={{ background: "transparent", padding: "6px 14px 12px" }}>
       <div
-        style={{ position: "relative", width: "100%", aspectRatio: "21/9", overflow: "hidden", cursor: banner.link ? "pointer" : "default", borderRadius: 18, boxShadow: "0 0 0 1px rgba(245,158,11,0.35), 0 8px 32px rgba(245,158,11,0.18), 0 4px 24px rgba(0,0,0,0.6)" }}
+        style={{ position: "relative", width: "100%", aspectRatio: "21/9", overflow: "hidden", cursor: banner.link ? "pointer" : "default", borderRadius: 18, boxShadow: "0 8px 32px rgba(245,158,11,0.15), 0 4px 24px rgba(0,0,0,0.6)" }}
         onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
         onTouchEnd={e => { const dx = e.changedTouches[0].clientX - touchStartX.current; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); }}
         onClick={() => { if (banner.link) { if (banner.link.startsWith("/")) setLocation(banner.link); else window.open(banner.link, "_blank", "noopener,noreferrer"); } }}
@@ -554,7 +555,7 @@ function PromoBannerSlider() {
 }
 
 // ── Game Select Section ─────────────────────────────────────────────────────
-interface GameItem { id: number; name: string; image: string | null; }
+interface GameItem { id: number; name: string; image: string | null; region?: string | null; }
 
 const GAME_SKELETON_COUNT = 6;
 
@@ -626,21 +627,27 @@ function GameSelectSection() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>Select Game</span>
       </div>
+      <style>{`@keyframes nameMarquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         {games.map((game, idx) => {
           const c = PANEL_GLOWS[idx % PANEL_GLOWS.length];
+          const isRankBoost = game.name.toLowerCase().includes("rank") || game.name.toLowerCase().includes("boost");
+          const needsMarquee = game.name.length > 13;
           return (
             <button
               key={game.id}
               onClick={() => {
-                navigateTo(`/game/${game.id}`, "forward");
+                if (isRankBoost) {
+                  navigateTo("/rank-boost", "forward");
+                } else {
+                  navigateTo(`/game/${game.id}`, "forward");
+                }
               }}
               style={{
                 background: "rgba(13,13,13,0.72)",
                 backdropFilter: "blur(14px)",
                 WebkitBackdropFilter: "blur(14px)",
                 borderRadius: 16,
-                border: `1px solid ${c.border}`,
                 cursor: "pointer",
                 padding: 0,
                 overflow: "hidden",
@@ -661,8 +668,17 @@ function GameSelectSection() {
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
                 )}
               </div>
-              <div style={{ padding: "6px 8px 12px", textAlign: "center" }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.35, wordBreak: "break-word" }}>{game.name}</span>
+              <div style={{ padding: "5px 7px 8px", height: game.region ? 42 : 30, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                {needsMarquee ? (
+                  <div style={{ overflow: "hidden", width: "100%" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-block", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(4, game.name.length * 0.28)}s linear infinite`, paddingRight: "1.5em" }}>
+                      {game.name}&emsp;{game.name}
+                    </span>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.3, textAlign: "left" }}>{game.name}</span>
+                )}
+                {game.region && <span style={{ fontSize: 8.5, color: "rgba(245,158,11,0.65)", fontWeight: 600, display: "block", textAlign: "left", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.region}</span>}
               </div>
             </button>
           );
@@ -695,7 +711,7 @@ function HeroSection({ animate = false }: { animate?: boolean }) {
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 55% 38% at 50% 50%, rgba(251,191,36,0.03) 0%, transparent 70%)", zIndex: 2 }} />
       <div className="relative z-10 flex flex-col gap-2.5 px-5 pt-5 pb-9 max-w-lg mx-auto w-full">
         <div className="flex justify-center" style={el(0, 0)}>
-          <span className="px-3 py-0.5 rounded-full font-bold uppercase" style={{ border: "1.5px solid rgba(245,158,11,0.55)", color: "#f59e0b", background: "rgba(245,158,11,0.07)", letterSpacing: "0.14em", fontSize: 8 }}>MLBB Diamond Top Up</span>
+          <span className="px-3 py-0.5 rounded-full font-bold uppercase" style={{ border: "1.5px solid rgba(245,158,11,0.55)", color: "#f59e0b", background: "rgba(245,158,11,0.07)", letterSpacing: "0.14em", fontSize: 8 }}>Game Top Up Store</span>
         </div>
         <div className="text-center">
           <h1 className="font-extrabold leading-tight" style={{ fontSize: "clamp(1.15rem,5.5vw,1.65rem)" }}>
@@ -904,14 +920,14 @@ function Footer() {
   };
 
   return (
-    <footer className="py-7 px-5 text-center" style={{ background: "#fff", borderTop: "1px solid #eee" }}>
+    <footer className="py-7 px-5 text-center" style={{ background: "#0a0a0f", borderTop: "1px solid rgba(255,255,255,0.08)", position: "relative", zIndex: 1 }}>
       <div className="flex flex-col items-center gap-2.5 max-w-sm mx-auto">
         <div className="w-10 h-10 rounded-full overflow-hidden" style={{ background: "#000", border: "1.5px solid #f59e0b", boxShadow: "0 0 8px 1.5px rgba(245,158,11,0.4)" }}>
           <img src="/logo.webp" alt="Sky Official" className="w-full h-full object-cover" />
         </div>
         <div>
-          <div className="font-bold text-gray-900 text-sm">Sky Official</div>
-          <p className="text-gray-400 mt-0.5 leading-relaxed max-w-xs" style={{ fontSize: 10 }}>The most trusted top up shop for mobile game products and services.</p>
+          <div className="font-bold text-sm" style={{ color: "#fff" }}>Sky Official</div>
+          <p className="mt-0.5 leading-relaxed max-w-xs" style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>The most trusted top up shop for mobile game products and services.</p>
         </div>
         <div className="flex items-center gap-4 mt-1">
           {["Packages", "Contact"].map((link) => (
@@ -945,7 +961,7 @@ function Footer() {
           <span style={{ color: "#9ca3af", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Accepted Payment Methods</span>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
             {["UPI", "GPay", "PhonePe", "Paytm", "BHIM"].map(method => (
-              <span key={method} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, fontWeight: 700, color: "#374151" }}>{method}</span>
+              <span key={method} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{method}</span>
             ))}
           </div>
         </div>
@@ -973,12 +989,12 @@ function WhatsAppFAB() {
 // ── Announcement Ticker Bar ────────────────────────────────────────────────
 function AnnouncementBar() {
   const items = [
-    "⚡ Instant diamond delivery — credited within minutes!",
+    "⚡ Instant delivery — credited within minutes!",
     "🔒 100% secure UPI payments — your data is safe",
     "💬 24/7 WhatsApp support — real humans, not bots",
-    "🏆 Trusted by mlbb players across India",
+    "🏆 Trusted by gamers across India",
     "💎 Best prices guaranteed — we beat any deal!",
-    "🎮 5 categories — small packs, double diamond, passes & more",
+    "🎮 Multiple games — top up any game, any time",
   ];
   const doubled = [...items, ...items];
   return (
@@ -1593,7 +1609,7 @@ function RefundPage() {
 // ── Persistent Navbar (outside page transitions so it never moves) ───────────
 function PersistentNavbar() {
   const [location] = useLocation();
-  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff")) return null;
+  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/profile") || location.startsWith("/support") || location === "/pay") return null;
   return <Navbar />;
 }
 
@@ -1629,7 +1645,6 @@ function AppRoutes() {
         <Switch>
           <Route path="/" component={MainSite} />
           <Route path="/admin" component={AdminPage} />
-          <Route path="/packages" component={PackagesPage} />
           <Route path="/mlbb-target" component={MLBBTargetPage} />
           <Route path="/cart" component={CartPage} />
           <Route path="/pay" component={PaymentPage} />
@@ -1644,6 +1659,7 @@ function AppRoutes() {
           <Route path="/support" component={SupportPage} />
           <Route path="/staff" component={StaffPortal} />
           <Route path="/game/:gameId" component={GameProductsPage} />
+          <Route path="/rank-boost" component={RankBoostPage} />
           <Route component={MainSite} />
         </Switch>
       </TransitionProvider>

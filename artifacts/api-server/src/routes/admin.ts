@@ -766,19 +766,19 @@ router.post("/test-email", requireAdmin, async (_req, res) => {
 // ── Games CRUD ────────────────────────────────────────────────────────────────
 router.get("/games", requireAdmin, async (_req, res): Promise<void> => {
   try {
-    const { rows } = await pool.query("SELECT id, name, image, sort_order FROM games ORDER BY sort_order ASC, id ASC");
+    const { rows } = await pool.query("SELECT id, name, image, sort_order, region FROM games ORDER BY sort_order ASC, id ASC");
     res.json(rows);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
 router.post("/games", requireAdmin, upload.single("image"), async (req, res): Promise<void> => {
   try {
-    const { name, sort_order } = req.body;
+    const { name, sort_order, region } = req.body;
     if (!name?.trim()) { res.status(400).json({ error: "Name is required" }); return; }
     const image = req.file ? fileToDataUrl(req.file) : null;
     const { rows } = await pool.query(
-      "INSERT INTO games (name, image, sort_order) VALUES ($1, $2, $3) RETURNING *",
-      [name.trim(), image, parseInt(sort_order) || 0]
+      "INSERT INTO games (name, image, sort_order, region) VALUES ($1, $2, $3, $4) RETURNING id, name, image, sort_order, region",
+      [name.trim(), image, parseInt(sort_order) || 0, region?.trim() || null]
     );
     res.json(rows[0]);
   } catch { res.status(500).json({ error: "DB error" }); }
@@ -786,16 +786,16 @@ router.post("/games", requireAdmin, upload.single("image"), async (req, res): Pr
 
 router.put("/games/:id", requireAdmin, upload.single("image"), async (req, res): Promise<void> => {
   try {
-    const { name, sort_order } = req.body;
+    const { name, sort_order, region } = req.body;
     const id = parseInt(req.params.id);
     if (!name?.trim()) { res.status(400).json({ error: "Name is required" }); return; }
     if (req.file) {
       const image = fileToDataUrl(req.file);
-      await pool.query("UPDATE games SET name=$1, image=$2, sort_order=$3 WHERE id=$4", [name.trim(), image, parseInt(sort_order) || 0, id]);
+      await pool.query("UPDATE games SET name=$1, image=$2, sort_order=$3, region=$4 WHERE id=$5", [name.trim(), image, parseInt(sort_order) || 0, region?.trim() || null, id]);
     } else {
-      await pool.query("UPDATE games SET name=$1, sort_order=$2 WHERE id=$3", [name.trim(), parseInt(sort_order) || 0, id]);
+      await pool.query("UPDATE games SET name=$1, sort_order=$2, region=$3 WHERE id=$4", [name.trim(), parseInt(sort_order) || 0, region?.trim() || null, id]);
     }
-    const { rows } = await pool.query("SELECT * FROM games WHERE id=$1", [id]);
+    const { rows } = await pool.query("SELECT id, name, image, sort_order, region FROM games WHERE id=$1", [id]);
     res.json(rows[0]);
   } catch { res.status(500).json({ error: "DB error" }); }
 });

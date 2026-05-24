@@ -43,6 +43,12 @@ function isMlbbGame(name: string): boolean {
   return n.includes("mobile legends") || n.includes("mlbb") || n.includes("bang bang");
 }
 
+function isStarlightGame(name: string): boolean {
+  return name.toLowerCase().includes("starlight");
+}
+
+const WA_SUPPORT = "919362003788";
+
 function DiamondSVG({ size = 30 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
@@ -85,6 +91,25 @@ export default function GameProductsPage() {
 
   const currencyLabel = game ? getCurrencyLabel(game.name) : "Currency";
   const isMLBB = game ? isMlbbGame(game.name) : false;
+  const isStarlight = game ? isStarlightGame(game.name) : false;
+
+  const handleStarlightBuy = useCallback((pkg: GamePackage) => {
+    if (!userId.trim()) {
+      setIdError("Please enter your User ID first.");
+      return;
+    }
+    setIdError("");
+    const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
+    const pkgName = pkg.name || `${total.toLocaleString()} ${currencyLabel}`;
+    const msg = encodeURIComponent(
+      `Hello! I'd like to order:\n` +
+      `*${pkgName}*\n` +
+      `Price: ₹${parseFloat(pkg.price).toFixed(0)}\n` +
+      `User ID: ${userId.trim()}\n` +
+      `Game: ${game?.name ?? "Starlight"}`
+    );
+    window.open(`https://wa.me/${WA_SUPPORT}?text=${msg}`, "_blank", "noopener,noreferrer");
+  }, [userId, game, currencyLabel]);
 
   const handleBuyNow = useCallback((pkg: GamePackage) => {
     if (!userId.trim()) {
@@ -309,14 +334,18 @@ export default function GameProductsPage() {
 
                     {/* Buy Now */}
                     <button
-                      onClick={() => handleBuyNow(pkg)}
+                      onClick={() => isStarlight ? handleStarlightBuy(pkg) : handleBuyNow(pkg)}
                       style={{
                         width: "100%",
                         padding: "9px 0",
                         borderRadius: 10,
-                        background: userId.trim() ? "linear-gradient(135deg,#fcd34d,#f59e0b)" : "rgba(245,158,11,0.1)",
-                        color: userId.trim() ? "#000" : "rgba(245,158,11,0.6)",
-                        border: userId.trim() ? "none" : "1px solid rgba(245,158,11,0.22)",
+                        background: userId.trim()
+                          ? (isStarlight ? "linear-gradient(135deg,#22c55e,#16a34a)" : "linear-gradient(135deg,#fcd34d,#f59e0b)")
+                          : (isStarlight ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.1)"),
+                        color: userId.trim()
+                          ? (isStarlight ? "#fff" : "#000")
+                          : (isStarlight ? "rgba(34,197,94,0.5)" : "rgba(245,158,11,0.6)"),
+                        border: userId.trim() ? "none" : `1px solid ${isStarlight ? "rgba(34,197,94,0.22)" : "rgba(245,158,11,0.22)"}`,
                         fontWeight: 800,
                         fontSize: 12,
                         cursor: "pointer",
@@ -324,7 +353,7 @@ export default function GameProductsPage() {
                         WebkitTapHighlightColor: "transparent",
                       }}
                     >
-                      {userId.trim() ? "Buy Now →" : "Enter ID first"}
+                      {userId.trim() ? (isStarlight ? "Order via WhatsApp →" : "Buy Now →") : "Enter ID first"}
                     </button>
                   </div>
                 );
