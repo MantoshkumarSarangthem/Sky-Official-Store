@@ -171,7 +171,7 @@ export default function GameProductsPage() {
   }, [selectedPkg, userId, serverId, isMLBB, game, currencyLabel, paymentMethod, setLocation]);
 
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingTop: 88, paddingBottom: 80 }}>
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingBottom: 80 }}>
       <style>{`
         @keyframes gpFadeIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes gpPulse   { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
@@ -180,29 +180,30 @@ export default function GameProductsPage() {
         @keyframes gpCoIn    { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
       `}</style>
 
-      {/* ── Game Banner ── */}
-      <div style={{ height: 140, overflow: "hidden", position: "relative", background: "#0d0d0d" }}>
+      {/* ── Game Banner — starts at top-0, sits behind the global navbar ── */}
+      <div style={{ height: 210, overflow: "hidden", position: "relative", background: "#0d0d0d" }}>
         {loading ? (
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(139,92,246,0.06),rgba(0,0,0,0))", animation: "gpBankSkel 1.6s ease-in-out infinite" }} />
         ) : game?.image ? (
           <>
-            <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)" }} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,10,10,0.1) 20%, #0a0a0a 100%)" }} />
+            <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.42)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,10,10,0.05) 30%, #0a0a0a 100%)" }} />
           </>
         ) : (
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0))" }} />
         )}
+        {/* Back button positioned below the global navbar (~68px from top) */}
         <button
           onClick={() => setLocation("/")}
-          style={{ position: "absolute", top: 14, left: 14, zIndex: 10, background: "rgba(10,10,10,0.72)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(139,92,246,0.35)", borderRadius: 999, padding: "7px 14px 7px 10px", color: "rgba(255,255,255,0.9)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, boxShadow: "0 2px 10px rgba(0,0,0,0.55)", WebkitTapHighlightColor: "transparent" }}
+          style={{ position: "absolute", top: 72, left: 14, zIndex: 10, background: "rgba(10,10,10,0.72)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(139,92,246,0.35)", borderRadius: 999, padding: "7px 14px 7px 10px", color: "rgba(255,255,255,0.9)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, boxShadow: "0 2px 10px rgba(0,0,0,0.55)", WebkitTapHighlightColor: "transparent" }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           Back
         </button>
         {game && (
-          <div style={{ position: "absolute", bottom: 12, left: 16, right: 16 }}>
-            <div style={{ color: "#fff", fontSize: 17, fontWeight: 800, textShadow: "0 2px 10px rgba(0,0,0,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 2 }}>Instant {currencyLabel} top-up · Best rates</div>
+          <div style={{ position: "absolute", bottom: 14, left: 16, right: 16 }}>
+            <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, textShadow: "0 2px 10px rgba(0,0,0,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 3 }}>Instant {currencyLabel} top-up · Best rates</div>
           </div>
         )}
       </div>

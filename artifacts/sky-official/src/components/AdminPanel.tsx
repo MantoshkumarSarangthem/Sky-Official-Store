@@ -1371,7 +1371,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                                 {pkg.category && <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(255,255,255,0.08)", color: "#9ca3af" }}>{pkg.category}</span>}
                               </div>
                               <div className="text-amber-400 text-xs font-semibold mt-0.5 flex items-center gap-1">
-                                <img src="/diamond.png" alt="♦" style={{ width: 12, height: 12, objectFit: "contain", flexShrink: 0 }} /> {pkg.diamonds.toLocaleString()}{pkg.bonus_diamonds > 0 ? <span className="text-green-400"> +{pkg.bonus_diamonds.toLocaleString()} bonus</span> : null}
+                                {pkg.image ? <img src={pkg.image} alt="icon" style={{ width: 12, height: 12, objectFit: "cover", flexShrink: 0, borderRadius: 3 }} /> : <img src="/diamond.png" alt="♦" style={{ width: 12, height: 12, objectFit: "contain", flexShrink: 0 }} />} {pkg.diamonds.toLocaleString()}{pkg.bonus_diamonds > 0 ? <span className="text-green-400"> +{pkg.bonus_diamonds.toLocaleString()} bonus</span> : null}
                                 <span className="text-gray-500 mx-1">·</span>₹{parseFloat(pkg.price).toFixed(0)}
                                 {pkg.label ? <span className="text-gray-400 font-normal"> · {pkg.label}</span> : null}
                               </div>
@@ -1402,7 +1402,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
                       ].map((s) => (
                         <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <div className="text-xl mb-1">{s.icon}</div>
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", fontSize: 22, lineHeight: 1, marginBottom: 4, height: 26 }}>{s.icon}</div>
                           <div className="text-white font-bold text-lg leading-tight">{s.value}</div>
                           <div className="text-gray-400 text-xs mt-0.5">{s.label}</div>
                         </div>

@@ -134,7 +134,7 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: "#0a0a0a" }}>
-      <div style={{ position: "absolute", width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle, rgba(245,158,11,0.07) 0%, transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, rgba(245,158,11,0.025) 0%, transparent 60%)", pointerEvents: "none" }} />
       <div className="relative flex flex-col items-center z-10" style={{ gap: 28 }}>
         <div style={{ position: "relative", width: 74, height: 74 }}>
           <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(245,158,11,0.15)" }} />
@@ -634,12 +634,12 @@ function GameSelectSection() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>Select Game</span>
       </div>
-      <style>{`@keyframes nameMarquee{0%,12%{transform:translateX(0)}88%,100%{transform:translateX(-50%)}}`}</style>
+      <style>{`@keyframes nameMarquee{0%,10%{transform:translateX(0)}90%,100%{transform:translateX(-50%)}}`}</style>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         {games.map((game, idx) => {
           const c = PANEL_GLOWS[idx % PANEL_GLOWS.length];
           const isRankBoost = game.name.toLowerCase().includes("rank") || game.name.toLowerCase().includes("boost");
-          const needsMarquee = game.name.length > 13;
+          const needsMarquee = game.name.length > 12;
           return (
             <button
               key={game.id}
@@ -675,17 +675,22 @@ function GameSelectSection() {
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
                 )}
               </div>
-              <div style={{ padding: "5px 7px 9px", minHeight: game.region ? 44 : 32, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                {needsMarquee ? (
-                  <div style={{ overflow: "hidden", width: "100%" }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-block", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(14, game.name.length * 0.65)}s linear infinite`, paddingRight: "2em" }}>
-                      {game.name}&emsp;{game.name}
+              <div style={{ padding: "5px 8px 7px", height: 46, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+                {/* Name — fixed-height row so all panels align uniformly */}
+                <div style={{ height: 14, overflow: "hidden", width: "100%" }}>
+                  {needsMarquee ? (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(16, game.name.length * 0.7)}s linear infinite` }}>
+                      <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
+                      <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
                     </span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: 1.3, textAlign: "left" }}>{game.name}</span>
-                )}
-                {game.region && <span style={{ fontSize: 8.5, color: "rgba(245,158,11,0.65)", fontWeight: 600, display: "block", textAlign: "left", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.region}</span>}
+                  ) : (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
+                  )}
+                </div>
+                {/* Region — always rendered so non-region panels keep same height */}
+                <div style={{ height: 12, marginTop: 4, overflow: "hidden" }}>
+                  <span style={{ fontSize: 8.5, color: "rgba(245,158,11,0.65)", fontWeight: 600, display: "block", lineHeight: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{game.region || ""}</span>
+                </div>
               </div>
             </button>
           );
@@ -1265,6 +1270,7 @@ function MainSite() {
         <div style={{ flex: 1 }}>
           <AnimatedPage>
             <PromoBannerSlider />
+            <div style={{ height: 20 }} />
             <GameSelectSection />
             <AnnouncementBar />
             <PromoCarousel />
