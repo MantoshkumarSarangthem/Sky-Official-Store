@@ -175,14 +175,14 @@ router.get("/settings/promo_banners", async (_req, res) => {
 // ── Games (public) ────────────────────────────────────────────────────────────
 router.get("/games", async (_req, res) => {
   try {
-    const { rows } = await pool.query("SELECT id, name, image, sort_order FROM games ORDER BY sort_order ASC, id ASC");
+    const { rows } = await pool.query("SELECT id, name, image, sort_order, region FROM games ORDER BY sort_order ASC, id ASC");
     res.json(rows);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
 router.get("/games/:id", async (req, res) => {
   try {
-    const { rows } = await pool.query("SELECT id, name, image, sort_order FROM games WHERE id = $1", [req.params.id]);
+    const { rows } = await pool.query("SELECT id, name, image, sort_order, region FROM games WHERE id = $1", [req.params.id]);
     if (rows.length === 0) { res.status(404).json({ error: "Game not found" }); return; }
     res.json(rows[0]);
   } catch { res.status(500).json({ error: "DB error" }); }

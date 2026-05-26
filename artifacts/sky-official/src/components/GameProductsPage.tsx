@@ -195,7 +195,7 @@ export default function GameProductsPage() {
         {/* Back button positioned below the global navbar (~68px from top) */}
         <button
           onClick={() => setLocation("/")}
-          style={{ position: "absolute", top: 72, left: 14, zIndex: 10, background: "rgba(10,10,10,0.72)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(139,92,246,0.35)", borderRadius: 999, padding: "7px 14px 7px 10px", color: "rgba(255,255,255,0.9)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, boxShadow: "0 2px 10px rgba(0,0,0,0.55)", WebkitTapHighlightColor: "transparent" }}
+          style={{ position: "absolute", top: 72, left: 14, zIndex: 10, background: "rgba(4,4,8,0.94)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(139,92,246,0.55)", borderRadius: 999, padding: "7px 14px 7px 10px", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, boxShadow: "0 0 0 3px rgba(0,0,0,0.7), 0 4px 18px rgba(0,0,0,0.85)", WebkitTapHighlightColor: "transparent" }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           Back
@@ -295,10 +295,10 @@ export default function GameProductsPage() {
                       background: isSelected ? "linear-gradient(145deg,#130d20,#0d0a0a)" : "linear-gradient(145deg,#111,#0d0d0d)",
                       border: isSelected ? "2px solid #8b5cf6" : "1px solid rgba(255,255,255,0.08)",
                       borderRadius: 16,
-                      padding: "12px 11px 10px",
+                      padding: "10px 10px 8px",
                       display: "flex",
                       flexDirection: "column",
-                      gap: 8,
+                      gap: 6,
                       animation: `gpCardIn 0.3s ease ${idx * 0.04}s both`,
                       position: "relative",
                       overflow: "hidden",
@@ -314,14 +314,23 @@ export default function GameProductsPage() {
                       </div>
                     )}
 
-                    {/* Top: icon + price */}
+                    {/* Top: icon + price + heart */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={26} />}
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        {hasOldPrice && <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
-                        <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                        <div style={{ textAlign: "right" }}>
+                          {hasOldPrice && <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
+                          <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
+                        </div>
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleFav(pkg.id); }}
+                          style={{ background: isFav ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.05)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.09)", borderRadius: 7, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
+                          title={isFav ? "Remove from favourites" : "Add to favourites"}
+                        >
+                          <HeartIcon filled={isFav} />
+                        </button>
                       </div>
                     </div>
 
@@ -334,17 +343,6 @@ export default function GameProductsPage() {
                         {total.toLocaleString()} {currencyLabel}
                         {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()}</span>}
                       </div>
-                    </div>
-
-                    {/* Heart */}
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <button
-                        onClick={e => { e.stopPropagation(); toggleFav(pkg.id); }}
-                        style={{ background: isFav ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.05)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.09)", borderRadius: 8, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
-                        title={isFav ? "Remove from favourites" : "Add to favourites"}
-                      >
-                        <HeartIcon filled={isFav} />
-                      </button>
                     </div>
                   </div>
                 );

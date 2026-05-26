@@ -145,7 +145,7 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
         </div>
         <div className="flex flex-col items-center" style={{ gap: 6 }}>
           <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.3em" }}>SKY OFFICIAL</span>
-          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.38em", background: "linear-gradient(90deg, transparent, #f59e0b, #fcd34d, #f59e0b, transparent)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "skyShimmer 2s ease-in-out infinite" }}>INSTANT DELIVERY</span>
+          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.38em", background: "linear-gradient(90deg, transparent, #f59e0b, #fcd34d, #f59e0b, transparent)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "skyShimmer 2s ease-in-out infinite" }}>SHOP SMART | PLAY HARD</span>
         </div>
         <div style={{ width: 100, height: 1, background: "rgba(255,255,255,0.07)", borderRadius: 999, overflow: "hidden" }}>
           <div style={{ height: "100%", background: "linear-gradient(90deg,#f59e0b,#fcd34d)", borderRadius: 999, animation: "skyBar 2s ease-out forwards" }} />
@@ -239,7 +239,7 @@ function Navbar() {
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         borderRadius: 20,
-        boxShadow: "0 0 28px 8px rgba(245,158,11,0.18), 0 6px 36px rgba(0,0,0,0.55)",
+        boxShadow: "0 0 28px 8px rgba(245,158,11,0.135), 0 6px 36px rgba(0,0,0,0.55)",
         animation: "navSlideDown 0.38s cubic-bezier(0.22,1,0.36,1) both",
       }}
     >
@@ -620,12 +620,12 @@ function GameSelectSection() {
   }
 
   const PANEL_GLOWS = [
-    { glow: "rgba(245,158,11,0.28)", border: "rgba(245,158,11,0.55)", icon: "rgba(245,158,11,0.5)" },
-    { glow: "rgba(99,102,241,0.28)",  border: "rgba(99,102,241,0.55)",  icon: "rgba(99,102,241,0.5)" },
-    { glow: "rgba(239,68,68,0.28)",   border: "rgba(239,68,68,0.55)",   icon: "rgba(239,68,68,0.5)" },
-    { glow: "rgba(34,197,94,0.28)",   border: "rgba(34,197,94,0.55)",   icon: "rgba(34,197,94,0.5)" },
-    { glow: "rgba(168,85,247,0.28)",  border: "rgba(168,85,247,0.55)",  icon: "rgba(168,85,247,0.5)" },
-    { glow: "rgba(6,182,212,0.28)",   border: "rgba(6,182,212,0.55)",   icon: "rgba(6,182,212,0.5)" },
+    { glow: "rgba(245,158,11,0.21)", border: "rgba(245,158,11,0.41)", icon: "rgba(245,158,11,0.38)" },
+    { glow: "rgba(99,102,241,0.21)",  border: "rgba(99,102,241,0.41)",  icon: "rgba(99,102,241,0.38)" },
+    { glow: "rgba(239,68,68,0.21)",   border: "rgba(239,68,68,0.41)",   icon: "rgba(239,68,68,0.38)" },
+    { glow: "rgba(34,197,94,0.21)",   border: "rgba(34,197,94,0.41)",   icon: "rgba(34,197,94,0.38)" },
+    { glow: "rgba(168,85,247,0.21)",  border: "rgba(168,85,247,0.41)",  icon: "rgba(168,85,247,0.38)" },
+    { glow: "rgba(6,182,212,0.21)",   border: "rgba(6,182,212,0.41)",   icon: "rgba(6,182,212,0.38)" },
   ];
 
   return (
@@ -679,9 +679,9 @@ function GameSelectSection() {
                 {/* Name — fixed-height row so all panels align uniformly */}
                 <div style={{ height: 14, overflow: "hidden", width: "100%" }}>
                   {needsMarquee ? (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(16, game.name.length * 0.7)}s linear infinite` }}>
-                      <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
-                      <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", height: "14px", alignItems: "center", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(16, game.name.length * 0.7)}s linear infinite` }}>
+                      <span style={{ paddingRight: "2.5em", lineHeight: "14px" }}>{game.name}</span>
+                      <span style={{ paddingRight: "2.5em", lineHeight: "14px" }}>{game.name}</span>
                     </span>
                   ) : (
                     <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
@@ -1010,10 +1010,10 @@ function AnnouncementBar() {
   ];
   const doubled = [...items, ...items];
   return (
-    <div style={{ background: "linear-gradient(90deg,#78350f,#92400e)", overflow: "hidden", height: 30, display: "flex", alignItems: "center", borderTop: "1px solid rgba(245,158,11,0.2)", borderBottom: "1px solid rgba(245,158,11,0.2)" }}>
+    <div style={{ background: "linear-gradient(90deg,#15803d,#16a34a)", overflow: "hidden", height: 30, display: "flex", alignItems: "center", borderTop: "1px solid rgba(74,222,128,0.3)", borderBottom: "1px solid rgba(74,222,128,0.3)", boxShadow: "0 0 18px rgba(74,222,128,0.3)" }}>
       <div className="flex items-center" style={{ whiteSpace: "nowrap", animation: "scrollTicker 38s linear infinite", willChange: "transform" }}>
         {doubled.map((item, i) => (
-          <span key={i} style={{ display: "inline-block", color: "#fcd34d", fontSize: 11, fontWeight: 700, padding: "0 28px", flexShrink: 0 }}>
+          <span key={i} style={{ display: "inline-block", color: "#fff", fontSize: 11, fontWeight: 700, padding: "0 28px", flexShrink: 0 }}>
             {item}
           </span>
         ))}
@@ -1045,8 +1045,12 @@ function LatestNewsPopup() {
   const handleShopNow = () => {
     setOpen(false);
     const cat = eventData.targetCategory;
-    if (cat) sessionStorage.setItem("pendingOpenCategory", cat);
-    setLocation("/packages");
+    if (cat?.startsWith("game:")) {
+      setLocation(`/game/${cat.replace("game:", "")}`);
+    } else {
+      if (cat) sessionStorage.setItem("pendingOpenCategory", cat);
+      setLocation("/packages");
+    }
   };
 
   return (

@@ -1553,12 +1553,9 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
                       >
                         <option value="">Packages Home</option>
-                        <option value="small">Small Pack</option>
-                        <option value="normal">Normal Pack</option>
-                        <option value="double">Double Diamond</option>
-                        <option value="passes">Passes &amp; Bundles</option>
-                        <option value="starlight">Starlight Cards</option>
-                        <option value="rank">Rank Boosting</option>
+                        {games.map(g => (
+                          <option key={g.id} value={`game:${g.id}`}>{g.name}</option>
+                        ))}
                       </select>
                     </div>
 
