@@ -145,7 +145,7 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
         </div>
         <div className="flex flex-col items-center" style={{ gap: 6 }}>
           <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.3em" }}>SKY OFFICIAL</span>
-          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.38em", background: "linear-gradient(90deg, transparent, #f59e0b, #fcd34d, #f59e0b, transparent)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "skyShimmer 2s ease-in-out infinite" }}>SHOP SMART | PLAY HARD</span>
+          <span style={{ fontSize: 7, fontWeight: 600, letterSpacing: "0.32em", background: "linear-gradient(90deg, transparent, #f59e0b, #fcd34d, #f59e0b, transparent)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "skyShimmer 2s ease-in-out infinite" }}>SHOP SMART | PLAY HARD</span>
         </div>
         <div style={{ width: 100, height: 1, background: "rgba(255,255,255,0.07)", borderRadius: 999, overflow: "hidden" }}>
           <div style={{ height: "100%", background: "linear-gradient(90deg,#f59e0b,#fcd34d)", borderRadius: 999, animation: "skyBar 2s ease-out forwards" }} />
@@ -677,14 +677,14 @@ function GameSelectSection() {
               </div>
               <div style={{ padding: "4px 8px 6px", height: 50, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
                 {/* Name — fixed-height row so all panels align uniformly */}
-                <div style={{ height: 18, overflow: "hidden", width: "100%", display: "flex", alignItems: "center" }}>
+                <div style={{ height: 18, overflow: "hidden", width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {needsMarquee ? (
                     <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(16, game.name.length * 0.7)}s linear infinite` }}>
                       <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
                       <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
                     </span>
                   ) : (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>{game.name}</span>
                   )}
                 </div>
                 {/* Region — always rendered so non-region panels keep same height */}
