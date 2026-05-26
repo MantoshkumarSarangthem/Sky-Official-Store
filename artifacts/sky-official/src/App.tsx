@@ -1269,9 +1269,13 @@ function MainSite() {
       <div style={{ pointerEvents: introDone ? "auto" : "none", overflowX: "hidden", paddingTop: "88px", display: "flex", flexDirection: "column", minHeight: "100vh", boxSizing: "border-box" }}>
         <div style={{ flex: 1 }}>
           <AnimatedPage>
-            <PromoBannerSlider />
+            <div style={{ minHeight: "220px" }}>
+              <PromoBannerSlider />
+            </div>
             <div style={{ height: 20 }} />
-            <GameSelectSection />
+            <div style={{ minHeight: "500px" }}>
+              <GameSelectSection />
+            </div>
             <AnnouncementBar />
             <PromoCarousel />
             <StatsSection />
