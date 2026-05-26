@@ -639,7 +639,7 @@ function GameSelectSection() {
         {games.map((game, idx) => {
           const c = PANEL_GLOWS[idx % PANEL_GLOWS.length];
           const isRankBoost = game.name.toLowerCase().includes("rank") || game.name.toLowerCase().includes("boost");
-          const needsMarquee = game.name.length > 12;
+          const needsMarquee = game.name.length > 16;
           return (
             <button
               key={game.id}
