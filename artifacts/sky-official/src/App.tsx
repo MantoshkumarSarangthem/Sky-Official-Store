@@ -677,7 +677,7 @@ function GameSelectSection() {
               </div>
               <div style={{ padding: "4px 8px 6px", height: 50, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
                 {/* Name — fixed-height row so all panels align uniformly */}
-                <div style={{ height: 18, overflow: "hidden", width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ height: 18, overflow: "hidden", width: "100%", display: "flex", alignItems: "center" }}>
                   {needsMarquee ? (
                     <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(16, game.name.length * 0.7)}s linear infinite` }}>
                       <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
