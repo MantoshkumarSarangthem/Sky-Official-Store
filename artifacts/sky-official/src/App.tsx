@@ -675,16 +675,16 @@ function GameSelectSection() {
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
                 )}
               </div>
-              <div style={{ padding: "5px 8px 7px", height: 46, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+              <div style={{ padding: "4px 8px 6px", height: 50, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
                 {/* Name — fixed-height row so all panels align uniformly */}
-                <div style={{ height: 14, overflow: "hidden", width: "100%" }}>
+                <div style={{ height: 18, overflow: "visible", width: "100%", display: "flex", alignItems: "center" }}>
                   {needsMarquee ? (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", height: "14px", alignItems: "center", whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(16, game.name.length * 0.7)}s linear infinite` }}>
-                      <span style={{ paddingRight: "2.5em", lineHeight: "14px" }}>{game.name}</span>
-                      <span style={{ paddingRight: "2.5em", lineHeight: "14px" }}>{game.name}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", height: "18px", alignItems: "center", whiteSpace: "nowrap", overflow: "hidden", animation: `nameMarquee ${Math.max(16, game.name.length * 0.7)}s linear infinite` }}>
+                      <span style={{ paddingRight: "2.5em", lineHeight: "normal" }}>{game.name}</span>
+                      <span style={{ paddingRight: "2.5em", lineHeight: "normal" }}>{game.name}</span>
                     </span>
                   ) : (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", lineHeight: "18px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
                   )}
                 </div>
                 {/* Region — always rendered so non-region panels keep same height */}
