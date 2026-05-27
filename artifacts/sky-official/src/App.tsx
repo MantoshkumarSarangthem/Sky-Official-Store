@@ -405,56 +405,140 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
-// ── Animated CSS Mesh Background ─────────────────────────────────────────────
+// ── Premium Animated Ambient Background ──────────────────────────────────────
 function AnimatedBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    const onResize = () => {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+    };
+    window.addEventListener("resize", onResize, { passive: true });
+
+    const onMouse = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX / W, y: e.clientY / H };
+    };
+    window.addEventListener("mousemove", onMouse, { passive: true });
+
+    const isMobile = W < 768;
+    const COUNT = isMobile ? 18 : 34;
+
+    type P = { x: number; y: number; vx: number; vy: number; r: number; baseA: number; phase: number };
+    const pts: P[] = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.055,
+      vy: -(Math.random() * 0.065 + 0.018),
+      r: Math.random() * 0.75 + 0.28,
+      baseA: Math.random() * 0.065 + 0.018,
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    let t = 0;
+    const tick = () => {
+      t++;
+      ctx.clearRect(0, 0, W, H);
+      const mx = isMobile ? 0 : (mouseRef.current.x - 0.5) * 0.07;
+      for (const p of pts) {
+        p.x += p.vx + mx;
+        p.y += p.vy;
+        if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W; }
+        if (p.x < -4) p.x = W + 4;
+        if (p.x > W + 4) p.x = -4;
+        const a = p.baseA * (0.38 + 0.62 * Math.sin(t * 0.011 + p.phase));
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(175,148,255,${a.toFixed(3)})`;
+        ctx.fill();
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    tick();
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("mousemove", onMouse);
+    };
+  }, []);
+
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh",
       zIndex: 0, overflow: "hidden", pointerEvents: "none",
     }}>
       <style>{`
-        @keyframes bgBlob1 {
+        @keyframes aurora1 {
           0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
-          33%      { transform: translateZ(0) translate(6vw,8vh) scale(1.08); }
-          66%      { transform: translateZ(0) translate(-4vw,4vh) scale(0.94); }
+          20%      { transform: translateZ(0) translate(3vw,5vh) scale(1.04); }
+          50%      { transform: translateZ(0) translate(-4vw,9vh) scale(0.97); }
+          80%      { transform: translateZ(0) translate(2vw,-3vh) scale(1.02); }
         }
-        @keyframes bgBlob2 {
+        @keyframes aurora2 {
           0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
-          40%      { transform: translateZ(0) translate(-7vw,-6vh) scale(1.12); }
-          70%      { transform: translateZ(0) translate(5vw,-3vh) scale(0.91); }
+          30%      { transform: translateZ(0) translate(-5vw,-4vh) scale(1.06); }
+          65%      { transform: translateZ(0) translate(4vw,-7vh) scale(0.94); }
         }
-        @keyframes bgBlob3 {
+        @keyframes aurora3 {
           0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
-          50%      { transform: translateZ(0) translate(9vw,-10vh) scale(1.14); }
+          50%      { transform: translateZ(0) translate(6vw,-7vh) scale(1.09); }
         }
       `}</style>
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(145deg,#0a0a0a 0%,#0d0f1c 45%,#090d18 75%,#0a0a0a 100%)" }} />
+
+      {/* Base */}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg,#050505 0%,#080808 50%,#060608 80%,#050505 100%)" }} />
+
+      {/* Aurora 1 — deep purple, top-left */}
+      <div style={{
+        position: "absolute", width: "145vw", height: "145vw",
+        top: "-65vw", left: "-45vw", borderRadius: "50%",
+        background: "radial-gradient(ellipse at center,rgba(36,18,58,0.62) 0%,rgba(27,16,41,0.22) 42%,transparent 72%)",
+        animation: "aurora1 72s ease-in-out infinite",
+        willChange: "transform", transform: "translateZ(0)",
+      }} />
+
+      {/* Aurora 2 — dark indigo-blue, bottom-right */}
       <div style={{
         position: "absolute", width: "130vw", height: "130vw",
-        top: "-50vw", left: "-35vw", borderRadius: "50%",
-        background: "radial-gradient(ellipse at center,rgba(76,29,149,0.22) 0%,transparent 60%)",
-        animation: "bgBlob1 20s ease-in-out infinite",
+        bottom: "-55vw", right: "-35vw", borderRadius: "50%",
+        background: "radial-gradient(ellipse at center,rgba(20,10,31,0.65) 0%,rgba(13,27,42,0.16) 45%,transparent 72%)",
+        animation: "aurora2 95s ease-in-out infinite",
         willChange: "transform", transform: "translateZ(0)",
       }} />
+
+      {/* Aurora 3 — dark violet, center drift */}
       <div style={{
-        position: "absolute", width: "110vw", height: "110vw",
-        bottom: "-40vw", right: "-25vw", borderRadius: "50%",
-        background: "radial-gradient(ellipse at center,rgba(120,70,0,0.14) 0%,transparent 60%)",
-        animation: "bgBlob2 25s ease-in-out infinite",
+        position: "absolute", width: "108vw", height: "108vw",
+        top: "22vh", left: "18vw", borderRadius: "50%",
+        background: "radial-gradient(ellipse at center,rgba(28,11,46,0.42) 0%,transparent 68%)",
+        animation: "aurora3 115s ease-in-out infinite",
         willChange: "transform", transform: "translateZ(0)",
       }} />
-      <div style={{
-        position: "absolute", width: "90vw", height: "90vw",
-        top: "25vh", left: "20vw", borderRadius: "50%",
-        background: "radial-gradient(ellipse at center,rgba(30,10,60,0.28) 0%,transparent 65%)",
-        animation: "bgBlob3 30s ease-in-out infinite",
-        willChange: "transform", transform: "translateZ(0)",
-      }} />
+
+      {/* Grain overlay — 2.5% opacity */}
       <div style={{
         position: "absolute", inset: 0,
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
-        opacity: 0.03,
+        opacity: 0.025,
       }} />
+
+      {/* Particle canvas */}
+      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
     </div>
   );
 }
@@ -623,6 +707,7 @@ function GameSelectSection() {
                 background: "rgba(10,10,10,0.82)",
                 backdropFilter: "blur(8px)",
                 WebkitBackdropFilter: "blur(8px)",
+                border: "1px solid rgba(168,85,247,0.18)",
                 borderRadius: 16,
                 cursor: "pointer",
                 padding: 0,
@@ -1632,6 +1717,7 @@ function AppRoutes() {
       <TransitionProvider>
         <PersistentNavbar />
         <AnimatedBackground />
+        <div style={{ position: "relative", zIndex: 1 }}>
         <Switch>
           <Route path="/" component={MainSite} />
           <Route path="/admin" component={AdminPage} />
@@ -1652,6 +1738,7 @@ function AppRoutes() {
           <Route path="/rank-boost" component={RankBoostPage} />
           <Route component={MainSite} />
         </Switch>
+        </div>
       </TransitionProvider>
     </ClerkProvider>
   );
@@ -1666,7 +1753,7 @@ export default function App() {
   return (
     <WouterRouter base={basePath}>
       <CartProvider>
-        <div style={{ background: "#0a0a0a", minHeight: "100vh", overflowX: "hidden" }}>
+        <div style={{ background: "#050505", minHeight: "100vh", overflowX: "hidden" }}>
           <AppRoutes />
         </div>
       </CartProvider>
