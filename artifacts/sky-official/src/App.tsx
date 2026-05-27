@@ -405,237 +405,24 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
-// ── Premium Animated Ambient Background ──────────────────────────────────────
+// ── Ambient Background ────────────────────────────────────────────────────────
 function AnimatedBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const scrollYRef = useRef(0);
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    const onScroll = () => { scrollYRef.current = window.scrollY; };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let W = window.innerWidth;
-    let H = window.innerHeight;
-    canvas.width = W;
-    canvas.height = H;
-
-    const onResize = () => {
-      W = window.innerWidth;
-      H = window.innerHeight;
-      canvas.width = W;
-      canvas.height = H;
-    };
-    window.addEventListener("resize", onResize, { passive: true });
-
-    const isMobile = W < 768;
-
-    // Weighted spawn — heavy bias toward corners and side bands
-    function spawnX(): number {
-      const r = Math.random();
-      if (r < 0.22) return Math.random() * W * 0.16;
-      if (r < 0.44) return W - Math.random() * W * 0.16;
-      if (r < 0.54) return Math.random() * W * 0.07;
-      if (r < 0.64) return W - Math.random() * W * 0.07;
-      return Math.random() * W;
-    }
-    function spawnY(): number {
-      const r = Math.random();
-      if (r < 0.20) return Math.random() * H * 0.22;
-      if (r < 0.40) return H - Math.random() * H * 0.22;
-      return Math.random() * H;
-    }
-
-    // Draw a 4-point star (classic sparkle shape)
-    function drawStar(c: CanvasRenderingContext2D, x: number, y: number, outer: number, inner: number, alpha: number, color: [number,number,number]) {
-      c.save();
-      c.globalAlpha = alpha;
-      c.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
-      c.beginPath();
-      for (let i = 0; i < 8; i++) {
-        const angle = (i * Math.PI) / 4;
-        const dist = i % 2 === 0 ? outer : inner;
-        if (i === 0) c.moveTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
-        else c.lineTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
-      }
-      c.closePath();
-      c.fill();
-      c.restore();
-    }
-
-    // Draw a soft radial glow around a point
-    function drawGlow(c: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha: number, color: [number,number,number]) {
-      const grad = c.createRadialGradient(x, y, 0, x, y, radius);
-      grad.addColorStop(0, `rgba(${color[0]},${color[1]},${color[2]},${alpha.toFixed(3)})`);
-      grad.addColorStop(1, `rgba(${color[0]},${color[1]},${color[2]},0)`);
-      c.fillStyle = grad;
-      c.fillRect(x - radius, y - radius, radius * 2, radius * 2);
-    }
-
-    // Two types: glowing grain (tiny dot + big halo) and sparkle (pinpoint + huge halo + rays)
-    type PType = "grain" | "sparkle";
-    type P = {
-      x: number; y: number;
-      vx: number; vy: number;        // base drift velocity
-      wobbleAmp: number;             // horizontal sine wobble amplitude
-      wobbleFreq: number;            // wobble frequency
-      wobbleOff: number;             // wobble phase offset
-      dotR: number;                  // physical dot radius (tiny)
-      glowR: number;                 // glow halo radius (big)
-      baseA: number;                 // peak alpha of the glow
-      twinklePhase: number;
-      twinkleFreq: number;
-      burstPhase: number;
-      burstFreq: number;
-      type: PType;
-      color: [number, number, number];
-    };
-
-    // Fewer particles — quality over quantity
-    const COUNT = isMobile ? 55 : 90;
-
-    const pts: P[] = Array.from({ length: COUNT }, () => {
-      const isSpark = Math.random() < 0.35;
-      const warm = Math.random() < 0.75;
-      const color: [number, number, number] = warm
-        ? [255, Math.round(238 + Math.random() * 17), Math.round(190 + Math.random() * 50)]
-        : [215, 228, 255];
-      return {
-        x: spawnX(),
-        y: spawnY(),
-        // Clearly visible upward drift — 5-15x faster than before
-        vx: (Math.random() - 0.5) * 0.12,
-        vy: -(Math.random() * 0.18 + 0.06),
-        // Gentle left-right sine wander so path curves naturally
-        wobbleAmp: Math.random() * 0.4 + 0.1,
-        wobbleFreq: Math.random() * 0.018 + 0.006,
-        wobbleOff: Math.random() * Math.PI * 2,
-        // Dot is always tiny (0.5–1.2 px) — the glow does the heavy lifting
-        dotR: isSpark ? Math.random() * 0.5 + 0.5 : Math.random() * 0.6 + 0.3,
-        // Glow radius is large relative to dot (8–22 px)
-        glowR: isSpark ? Math.random() * 10 + 14 : Math.random() * 8 + 8,
-        // High peak brightness so glow is actually visible
-        baseA: isSpark ? Math.random() * 0.32 + 0.22 : Math.random() * 0.20 + 0.12,
-        twinklePhase: Math.random() * Math.PI * 2,
-        twinkleFreq: Math.random() * 0.022 + 0.010,
-        burstPhase: Math.random() * Math.PI * 2,
-        burstFreq: Math.random() * 0.025 + 0.008,
-        type: isSpark ? "sparkle" : "grain",
-        color,
-      };
-    });
-
-    let t = 0;
-    let prevScroll = 0;
-    const tick = () => {
-      t++;
-      const scroll = scrollYRef.current;
-      const scrollDelta = scroll - prevScroll;
-      prevScroll = scroll;
-
-      ctx.clearRect(0, 0, W, H);
-
-      for (const p of pts) {
-        // Apply wobble to horizontal drift
-        const wobble = Math.sin(t * p.wobbleFreq + p.wobbleOff) * p.wobbleAmp;
-        p.x += p.vx + wobble;
-        p.y += p.vy + scrollDelta * 0.06;
-
-        // Wrap around edges — re-spawn at a weighted edge when leaving
-        if (p.y < -20) { p.y = H + 20; p.x = spawnX(); }
-        if (p.y > H + 20) { p.y = -20; p.x = spawnX(); }
-        if (p.x < -20) { p.x = W + 20; p.y = spawnY(); }
-        if (p.x > W + 20) { p.x = -20; p.y = spawnY(); }
-
-        // Twinkle: smooth sine breathing
-        const tw = 0.25 + 0.75 * ((Math.sin(t * p.twinkleFreq + p.twinklePhase) + 1) / 2);
-        let a = p.baseA * tw;
-
-        // Sparkles get periodic sharp flares
-        if (p.type === "sparkle") {
-          const burst = Math.sin(t * p.burstFreq + p.burstPhase);
-          if (burst > 0.80) {
-            const intensity = ((burst - 0.80) / 0.20) ** 1.8;
-            a = Math.min(0.95, a + intensity * 0.50);
-          }
-        }
-
-        if (a < 0.008) continue;
-
-        // --- Large radial glow (the "shine") ---
-        drawGlow(ctx, p.x, p.y, p.glowR, a, p.color);
-
-        // --- Tiny bright dot at the centre ---
-        ctx.globalAlpha = Math.min(1, a * 2.2);
-        ctx.fillStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.dotR, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-
-        // --- Sparkle: thin cross-hair rays when bright enough ---
-        if (p.type === "sparkle" && a > 0.18) {
-          const rayLen = p.glowR * 0.9;
-          ctx.save();
-          ctx.globalAlpha = (a - 0.18) * 1.1;
-          ctx.strokeStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
-          ctx.lineWidth = 0.55;
-          ctx.beginPath();
-          ctx.moveTo(p.x - rayLen, p.y); ctx.lineTo(p.x + rayLen, p.y);
-          ctx.moveTo(p.x, p.y - rayLen); ctx.lineTo(p.x, p.y + rayLen);
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    tick();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
-
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh",
       zIndex: 0, overflow: "hidden", pointerEvents: "none",
     }}>
-      {/* Background image */}
       <div style={{
         position: "absolute", inset: 0,
         backgroundImage: "url('/bg.webp')",
         backgroundSize: "cover",
         backgroundPosition: "center center",
         transform: "scale(1.08)",
-        willChange: "transform",
       }} />
-
-      {/* Subtle dark vignette to deepen edges */}
       <div style={{
         position: "absolute", inset: 0,
         background: "radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.42) 100%)",
       }} />
-
-      {/* Fine grain texture overlay */}
-      <div style={{
-        position: "absolute", inset: 0,
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
-        opacity: 0.05,
-        mixBlendMode: "overlay",
-      }} />
-
-      {/* Star particle canvas */}
-      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
     </div>
   );
 }
