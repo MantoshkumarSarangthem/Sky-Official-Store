@@ -437,22 +437,46 @@ function AnimatedBackground() {
     window.addEventListener("resize", onResize, { passive: true });
 
     const isMobile = W < 768;
-    const COUNT = isMobile ? 55 : 110;
+
+    // Weighted spawn: corners + sides get ~70% of grains
+    function spawnX(): number {
+      const r = Math.random();
+      if (r < 0.20) return Math.random() * W * 0.18;           // left band
+      if (r < 0.40) return W - Math.random() * W * 0.18;       // right band
+      if (r < 0.50) return Math.random() * W * 0.10;           // far-left
+      if (r < 0.60) return W - Math.random() * W * 0.10;       // far-right
+      return Math.random() * W;                                  // rest
+    }
+    function spawnY(): number {
+      const r = Math.random();
+      if (r < 0.18) return Math.random() * H * 0.20;           // top band
+      if (r < 0.36) return H - Math.random() * H * 0.20;       // bottom band
+      return Math.random() * H;
+    }
+
+    const COUNT = isMobile ? 160 : 280;
 
     type P = {
       x: number; y: number; vx: number; vy: number;
       r: number; baseA: number; phase: number; speed: number;
+      sparkPhase: number; sparkFreq: number; isSparkler: boolean;
     };
-    const pts: P[] = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.04,
-      vy: -(Math.random() * 0.04 + 0.008),
-      r: Math.random() * 1.1 + 0.2,
-      baseA: Math.random() * 0.09 + 0.025,
-      phase: Math.random() * Math.PI * 2,
-      speed: Math.random() * 0.5 + 0.5,
-    }));
+    const pts: P[] = Array.from({ length: COUNT }, () => {
+      const isSparkler = Math.random() < 0.22;
+      return {
+        x: spawnX(),
+        y: spawnY(),
+        vx: (Math.random() - 0.5) * 0.025,
+        vy: -(Math.random() * 0.022 + 0.004),
+        r: isSparkler ? Math.random() * 0.7 + 0.5 : Math.random() * 0.55 + 0.15,
+        baseA: isSparkler ? Math.random() * 0.13 + 0.06 : Math.random() * 0.07 + 0.015,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.6 + 0.3,
+        sparkPhase: Math.random() * Math.PI * 2,
+        sparkFreq: Math.random() * 0.04 + 0.012,
+        isSparkler,
+      };
+    });
 
     let t = 0;
     let prevScroll = 0;
@@ -463,18 +487,52 @@ function AnimatedBackground() {
       prevScroll = scroll;
 
       ctx.clearRect(0, 0, W, H);
+
       for (const p of pts) {
         p.x += p.vx;
-        p.y += p.vy + scrollDelta * p.speed * 0.012;
-        if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W; }
-        if (p.y > H + 4) { p.y = -4; p.x = Math.random() * W; }
-        if (p.x < -4) p.x = W + 4;
-        if (p.x > W + 4) p.x = -4;
-        const a = p.baseA * (0.4 + 0.6 * Math.sin(t * 0.009 + p.phase));
+        p.y += p.vy + scrollDelta * p.speed * 0.008;
+        if (p.y < -4) { p.y = H + 4; p.x = spawnX(); }
+        if (p.y > H + 4) { p.y = -4; p.x = spawnX(); }
+        if (p.x < -4) { p.x = W + 4; p.y = spawnY(); }
+        if (p.x > W + 4) { p.x = -4; p.y = spawnY(); }
+
+        // Base twinkle
+        let a = p.baseA * (0.35 + 0.65 * Math.sin(t * 0.008 + p.phase));
+
+        // Sparkler burst — periodic sharp flash
+        if (p.isSparkler) {
+          const spark = Math.sin(t * p.sparkFreq + p.sparkPhase);
+          if (spark > 0.88) {
+            const intensity = (spark - 0.88) / 0.12;
+            a = Math.min(1, a + intensity * 0.55);
+          }
+        }
+
+        const r = p.r;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(210,200,190,${a.toFixed(3)})`;
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+
+        // Warm champagne-white colour; sparklers get a gold-white tint
+        if (p.isSparkler && a > p.baseA * 0.9) {
+          ctx.fillStyle = `rgba(255,245,220,${a.toFixed(3)})`;
+        } else {
+          ctx.fillStyle = `rgba(220,212,200,${a.toFixed(3)})`;
+        }
         ctx.fill();
+
+        // Cross-hair glint on very bright sparklers
+        if (p.isSparkler && a > 0.28) {
+          const gl = (a - 0.28) * 0.6;
+          ctx.strokeStyle = `rgba(255,248,230,${(gl * 0.7).toFixed(3)})`;
+          ctx.lineWidth = 0.4;
+          const sz = r * 3.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x - sz, p.y);
+          ctx.lineTo(p.x + sz, p.y);
+          ctx.moveTo(p.x, p.y - sz);
+          ctx.lineTo(p.x, p.y + sz);
+          ctx.stroke();
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -713,17 +771,17 @@ function GameSelectSection() {
                 }
               }}
               style={{
-                background: "rgba(10,10,10,0.82)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
-                border: "1px solid rgba(168,85,247,0.18)",
+                background: "rgba(13,13,13,0.92)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                border: "1px solid rgba(255,255,255,0.07)",
                 borderRadius: 16,
                 cursor: "pointer",
                 padding: 0,
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
-                boxShadow: `0 4px 16px rgba(0,0,0,0.65)`,
+                boxShadow: "0 6px 28px rgba(0,0,0,0.7)",
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
                 transition: "transform 0.15s ease, box-shadow 0.2s ease",
