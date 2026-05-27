@@ -787,7 +787,7 @@ router.post("/games", requireAdmin, upload.single("image"), async (req, res): Pr
 router.put("/games/:id", requireAdmin, upload.single("image"), async (req, res): Promise<void> => {
   try {
     const { name, sort_order, region } = req.body;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     if (!name?.trim()) { res.status(400).json({ error: "Name is required" }); return; }
     if (req.file) {
       const image = fileToDataUrl(req.file);

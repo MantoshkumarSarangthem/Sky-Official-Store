@@ -307,7 +307,7 @@ export default function ProfilePage() {
                         if (!signIn) { setSettingsMsg({ ok: false, text: "Password reset unavailable right now. Sign out and use 'Forgot password?' on the sign-in page instead." }); return; }
                         setFpLoading(true);
                         try {
-                          await signIn.create({ strategy: "reset_password_email_code", identifier: email });
+                          await (signIn as any).create({ strategy: "reset_password_email_code", identifier: email });
                           setFpStep(1); setSettingsMsg(null);
                         } catch (e: any) {
                           setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Could not send reset code." });
@@ -328,7 +328,7 @@ export default function ProfilePage() {
                           if (!signIn || !fpCode || fpNewPw.length < 8) { setSettingsMsg({ ok: false, text: "Enter the code and a password of at least 8 characters." }); return; }
                           setFpLoading(true);
                           try {
-                            await signIn.attemptFirstFactor({ strategy: "reset_password_email_code", code: fpCode });
+                            await (signIn as any).attemptFirstFactor({ strategy: "reset_password_email_code", code: fpCode });
                             await (signIn as any).resetPassword({ password: fpNewPw });
                             setSettingsMsg({ ok: true, text: "Password reset! You can now sign in with your new password." });
                             setFpStep(0); setFpCode(""); setFpNewPw("");

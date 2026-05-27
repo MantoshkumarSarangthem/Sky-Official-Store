@@ -455,29 +455,29 @@ function AnimatedBackground() {
     }
 
     // Draw a 4-point star (classic sparkle shape)
-    function drawStar(x: number, y: number, outer: number, inner: number, alpha: number, color: [number,number,number]) {
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
-      ctx.beginPath();
+    function drawStar(c: CanvasRenderingContext2D, x: number, y: number, outer: number, inner: number, alpha: number, color: [number,number,number]) {
+      c.save();
+      c.globalAlpha = alpha;
+      c.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+      c.beginPath();
       for (let i = 0; i < 8; i++) {
         const angle = (i * Math.PI) / 4;
         const dist = i % 2 === 0 ? outer : inner;
-        if (i === 0) ctx.moveTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
-        else ctx.lineTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
+        if (i === 0) c.moveTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
+        else c.lineTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
       }
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      c.closePath();
+      c.fill();
+      c.restore();
     }
 
     // Draw a soft radial glow around a point
-    function drawGlow(x: number, y: number, radius: number, alpha: number, color: [number,number,number]) {
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    function drawGlow(c: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha: number, color: [number,number,number]) {
+      const grad = c.createRadialGradient(x, y, 0, x, y, radius);
       grad.addColorStop(0, `rgba(${color[0]},${color[1]},${color[2]},${alpha.toFixed(3)})`);
       grad.addColorStop(1, `rgba(${color[0]},${color[1]},${color[2]},0)`);
-      ctx.fillStyle = grad;
-      ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+      c.fillStyle = grad;
+      c.fillRect(x - radius, y - radius, radius * 2, radius * 2);
     }
 
     type StarType = "dust" | "grain" | "sparkle" | "star";
@@ -489,35 +489,35 @@ function AnimatedBackground() {
       color: [number, number, number];
     };
 
-    const COUNT = isMobile ? 180 : 320;
+    const COUNT = isMobile ? 220 : 400;
 
     const pts: P[] = Array.from({ length: COUNT }, () => {
-      // 50% dust, 28% grain, 16% sparkle, 6% full star
+      // 45% plain dust, 30% glowing grain, 18% bright sparkle, 7% full star
       const rng = Math.random();
-      const type: StarType = rng < 0.50 ? "dust" : rng < 0.78 ? "grain" : rng < 0.94 ? "sparkle" : "star";
-      // Slight warm-to-cool variation: mostly warm white, some cool white
-      const warm = Math.random() < 0.7;
+      const type: StarType = rng < 0.45 ? "dust" : rng < 0.75 ? "grain" : rng < 0.93 ? "sparkle" : "star";
+      const warm = Math.random() < 0.72;
       const color: [number,number,number] = warm
-        ? [255, Math.round(242 + Math.random() * 13), Math.round(200 + Math.random() * 30)]
-        : [220, 228, 255];
+        ? [255, Math.round(240 + Math.random() * 15), Math.round(195 + Math.random() * 40)]
+        : [210, 222, 255];
       return {
         x: spawnX(), y: spawnY(),
-        vx: (Math.random() - 0.5) * 0.018,
-        vy: -(Math.random() * 0.016 + 0.003),
-        size: type === "dust" ? Math.random() * 0.45 + 0.12
-            : type === "grain" ? Math.random() * 0.8 + 0.35
-            : type === "sparkle" ? Math.random() * 1.1 + 0.7
-            : Math.random() * 1.8 + 1.2,
-        baseA: type === "dust"    ? Math.random() * 0.055 + 0.01
-             : type === "grain"   ? Math.random() * 0.10 + 0.025
-             : type === "sparkle" ? Math.random() * 0.18 + 0.08
-             : Math.random() * 0.28 + 0.14,
+        vx: (Math.random() - 0.5) * 0.016,
+        vy: -(Math.random() * 0.014 + 0.003),
+        // ALL physically tiny — max dot is 0.55px
+        size: type === "dust"    ? Math.random() * 0.28 + 0.08
+            : type === "grain"   ? Math.random() * 0.35 + 0.18
+            : type === "sparkle" ? Math.random() * 0.40 + 0.22
+            : Math.random() * 0.55 + 0.28,
+        baseA: type === "dust"    ? Math.random() * 0.06  + 0.012
+             : type === "grain"   ? Math.random() * 0.12  + 0.035
+             : type === "sparkle" ? Math.random() * 0.22  + 0.10
+             : Math.random() * 0.35  + 0.18,
         phase: Math.random() * Math.PI * 2,
-        phaseSpeed: Math.random() * 0.007 + 0.003,
+        phaseSpeed: Math.random() * 0.008 + 0.003,
         speed: Math.random() * 0.7 + 0.3,
         type,
         burstPhase: Math.random() * Math.PI * 2,
-        burstFreq: Math.random() * 0.03 + 0.008,
+        burstFreq: Math.random() * 0.028 + 0.007,
         color,
       };
     });
@@ -571,12 +571,12 @@ function AnimatedBackground() {
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalAlpha = 1;
-          if (a > 0.06) drawGlow(p.x, p.y, p.size * 3.5, a * 0.22, p.color);
+          if (a > 0.06) drawGlow(ctx, p.x, p.y, p.size * 3.5, a * 0.22, p.color);
 
         } else if (p.type === "sparkle") {
           // Glow halo + 4-point star
-          drawGlow(p.x, p.y, p.size * 5, a * 0.28, p.color);
-          drawStar(p.x, p.y, p.size, p.size * 0.28, a, p.color);
+          drawGlow(ctx, p.x, p.y, p.size * 5, a * 0.28, p.color);
+          drawStar(ctx, p.x, p.y, p.size, p.size * 0.28, a, p.color);
           // Fine cross-hair rays
           if (a > 0.10) {
             ctx.save();
@@ -593,9 +593,9 @@ function AnimatedBackground() {
 
         } else {
           // Full star — bright glow + large star shape + long rays
-          drawGlow(p.x, p.y, p.size * 9, a * 0.35, p.color);
-          drawGlow(p.x, p.y, p.size * 4, a * 0.55, p.color);
-          drawStar(p.x, p.y, p.size, p.size * 0.22, a, p.color);
+          drawGlow(ctx, p.x, p.y, p.size * 9, a * 0.35, p.color);
+          drawGlow(ctx, p.x, p.y, p.size * 4, a * 0.55, p.color);
+          drawStar(ctx, p.x, p.y, p.size, p.size * 0.22, a, p.color);
           // Long thin cross rays
           ctx.save();
           ctx.globalAlpha = a * 0.45;
@@ -1853,7 +1853,7 @@ function AppRoutes() {
           <Route path="/support" component={SupportPage} />
           <Route path="/staff" component={StaffPortal} />
           <Route path="/game/:gameId" component={GameProductsPage} />
-          <Route path="/rank-boost" component={RankBoostPage} />
+          <Route path="/rank-boost" component={() => <RankBoostPage />} />
           <Route component={MainSite} />
         </Switch>
         </div>
