@@ -480,44 +480,55 @@ function AnimatedBackground() {
       c.fillRect(x - radius, y - radius, radius * 2, radius * 2);
     }
 
-    type StarType = "dust" | "grain" | "sparkle" | "star";
+    // Two types: glowing grain (tiny dot + big halo) and sparkle (pinpoint + huge halo + rays)
+    type PType = "grain" | "sparkle";
     type P = {
-      x: number; y: number; vx: number; vy: number;
-      size: number; baseA: number; phase: number; phaseSpeed: number;
-      speed: number; type: StarType;
-      burstPhase: number; burstFreq: number;
+      x: number; y: number;
+      vx: number; vy: number;        // base drift velocity
+      wobbleAmp: number;             // horizontal sine wobble amplitude
+      wobbleFreq: number;            // wobble frequency
+      wobbleOff: number;             // wobble phase offset
+      dotR: number;                  // physical dot radius (tiny)
+      glowR: number;                 // glow halo radius (big)
+      baseA: number;                 // peak alpha of the glow
+      twinklePhase: number;
+      twinkleFreq: number;
+      burstPhase: number;
+      burstFreq: number;
+      type: PType;
       color: [number, number, number];
     };
 
-    const COUNT = isMobile ? 220 : 400;
+    // Fewer particles — quality over quantity
+    const COUNT = isMobile ? 55 : 90;
 
     const pts: P[] = Array.from({ length: COUNT }, () => {
-      // 45% plain dust, 30% glowing grain, 18% bright sparkle, 7% full star
-      const rng = Math.random();
-      const type: StarType = rng < 0.45 ? "dust" : rng < 0.75 ? "grain" : rng < 0.93 ? "sparkle" : "star";
-      const warm = Math.random() < 0.72;
-      const color: [number,number,number] = warm
-        ? [255, Math.round(240 + Math.random() * 15), Math.round(195 + Math.random() * 40)]
-        : [210, 222, 255];
+      const isSpark = Math.random() < 0.35;
+      const warm = Math.random() < 0.75;
+      const color: [number, number, number] = warm
+        ? [255, Math.round(238 + Math.random() * 17), Math.round(190 + Math.random() * 50)]
+        : [215, 228, 255];
       return {
-        x: spawnX(), y: spawnY(),
-        vx: (Math.random() - 0.5) * 0.016,
-        vy: -(Math.random() * 0.014 + 0.003),
-        // ALL physically tiny — max dot is 0.55px
-        size: type === "dust"    ? Math.random() * 0.28 + 0.08
-            : type === "grain"   ? Math.random() * 0.35 + 0.18
-            : type === "sparkle" ? Math.random() * 0.40 + 0.22
-            : Math.random() * 0.55 + 0.28,
-        baseA: type === "dust"    ? Math.random() * 0.06  + 0.012
-             : type === "grain"   ? Math.random() * 0.12  + 0.035
-             : type === "sparkle" ? Math.random() * 0.22  + 0.10
-             : Math.random() * 0.35  + 0.18,
-        phase: Math.random() * Math.PI * 2,
-        phaseSpeed: Math.random() * 0.008 + 0.003,
-        speed: Math.random() * 0.7 + 0.3,
-        type,
+        x: spawnX(),
+        y: spawnY(),
+        // Clearly visible upward drift — 5-15x faster than before
+        vx: (Math.random() - 0.5) * 0.12,
+        vy: -(Math.random() * 0.18 + 0.06),
+        // Gentle left-right sine wander so path curves naturally
+        wobbleAmp: Math.random() * 0.4 + 0.1,
+        wobbleFreq: Math.random() * 0.018 + 0.006,
+        wobbleOff: Math.random() * Math.PI * 2,
+        // Dot is always tiny (0.5–1.2 px) — the glow does the heavy lifting
+        dotR: isSpark ? Math.random() * 0.5 + 0.5 : Math.random() * 0.6 + 0.3,
+        // Glow radius is large relative to dot (8–22 px)
+        glowR: isSpark ? Math.random() * 10 + 14 : Math.random() * 8 + 8,
+        // High peak brightness so glow is actually visible
+        baseA: isSpark ? Math.random() * 0.32 + 0.22 : Math.random() * 0.20 + 0.12,
+        twinklePhase: Math.random() * Math.PI * 2,
+        twinkleFreq: Math.random() * 0.022 + 0.010,
         burstPhase: Math.random() * Math.PI * 2,
-        burstFreq: Math.random() * 0.028 + 0.007,
+        burstFreq: Math.random() * 0.025 + 0.008,
+        type: isSpark ? "sparkle" : "grain",
         color,
       };
     });
@@ -533,85 +544,53 @@ function AnimatedBackground() {
       ctx.clearRect(0, 0, W, H);
 
       for (const p of pts) {
-        p.x += p.vx;
-        p.y += p.vy + scrollDelta * p.speed * 0.007;
-        if (p.y < -6) { p.y = H + 6; p.x = spawnX(); }
-        if (p.y > H + 6) { p.y = -6; p.x = spawnX(); }
-        if (p.x < -6) { p.x = W + 6; p.y = spawnY(); }
-        if (p.x > W + 6) { p.x = -6; p.y = spawnY(); }
+        // Apply wobble to horizontal drift
+        const wobble = Math.sin(t * p.wobbleFreq + p.wobbleOff) * p.wobbleAmp;
+        p.x += p.vx + wobble;
+        p.y += p.vy + scrollDelta * 0.06;
 
-        // Smooth slow twinkle base
-        let a = p.baseA * (0.3 + 0.7 * Math.sin(t * p.phaseSpeed + p.phase));
+        // Wrap around edges — re-spawn at a weighted edge when leaving
+        if (p.y < -20) { p.y = H + 20; p.x = spawnX(); }
+        if (p.y > H + 20) { p.y = -20; p.x = spawnX(); }
+        if (p.x < -20) { p.x = W + 20; p.y = spawnY(); }
+        if (p.x > W + 20) { p.x = -20; p.y = spawnY(); }
 
-        // Burst flash for sparkles and stars
-        if (p.type === "sparkle" || p.type === "star") {
+        // Twinkle: smooth sine breathing
+        const tw = 0.25 + 0.75 * ((Math.sin(t * p.twinkleFreq + p.twinklePhase) + 1) / 2);
+        let a = p.baseA * tw;
+
+        // Sparkles get periodic sharp flares
+        if (p.type === "sparkle") {
           const burst = Math.sin(t * p.burstFreq + p.burstPhase);
-          if (burst > 0.82) {
-            const intensity = ((burst - 0.82) / 0.18) ** 2;
-            a = Math.min(1, a + intensity * (p.type === "star" ? 0.72 : 0.45));
+          if (burst > 0.80) {
+            const intensity = ((burst - 0.80) / 0.20) ** 1.8;
+            a = Math.min(0.95, a + intensity * 0.50);
           }
         }
 
-        if (a < 0.004) continue;
+        if (a < 0.008) continue;
 
-        if (p.type === "dust") {
-          // Tiny dot
-          ctx.globalAlpha = a;
-          ctx.fillStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 1;
+        // --- Large radial glow (the "shine") ---
+        drawGlow(ctx, p.x, p.y, p.glowR, a, p.color);
 
-        } else if (p.type === "grain") {
-          // Slightly larger dot with a tiny glow
-          ctx.globalAlpha = a;
-          ctx.fillStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          if (a > 0.06) drawGlow(ctx, p.x, p.y, p.size * 3.5, a * 0.22, p.color);
+        // --- Tiny bright dot at the centre ---
+        ctx.globalAlpha = Math.min(1, a * 2.2);
+        ctx.fillStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.dotR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
 
-        } else if (p.type === "sparkle") {
-          // Glow halo + 4-point star
-          drawGlow(ctx, p.x, p.y, p.size * 5, a * 0.28, p.color);
-          drawStar(ctx, p.x, p.y, p.size, p.size * 0.28, a, p.color);
-          // Fine cross-hair rays
-          if (a > 0.10) {
-            ctx.save();
-            ctx.globalAlpha = a * 0.55;
-            ctx.strokeStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
-            ctx.lineWidth = 0.5;
-            const ray = p.size * 5;
-            ctx.beginPath();
-            ctx.moveTo(p.x - ray, p.y); ctx.lineTo(p.x + ray, p.y);
-            ctx.moveTo(p.x, p.y - ray); ctx.lineTo(p.x, p.y + ray);
-            ctx.stroke();
-            ctx.restore();
-          }
-
-        } else {
-          // Full star — bright glow + large star shape + long rays
-          drawGlow(ctx, p.x, p.y, p.size * 9, a * 0.35, p.color);
-          drawGlow(ctx, p.x, p.y, p.size * 4, a * 0.55, p.color);
-          drawStar(ctx, p.x, p.y, p.size, p.size * 0.22, a, p.color);
-          // Long thin cross rays
+        // --- Sparkle: thin cross-hair rays when bright enough ---
+        if (p.type === "sparkle" && a > 0.18) {
+          const rayLen = p.glowR * 0.9;
           ctx.save();
-          ctx.globalAlpha = a * 0.45;
+          ctx.globalAlpha = (a - 0.18) * 1.1;
           ctx.strokeStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
-          ctx.lineWidth = 0.6;
-          const ray = p.size * 11;
-          const rayD = p.size * 5.5;
+          ctx.lineWidth = 0.55;
           ctx.beginPath();
-          ctx.moveTo(p.x - ray, p.y); ctx.lineTo(p.x + ray, p.y);
-          ctx.moveTo(p.x, p.y - ray); ctx.lineTo(p.x, p.y + ray);
-          ctx.stroke();
-          // 45° diagonal rays (shorter)
-          ctx.globalAlpha = a * 0.22;
-          ctx.beginPath();
-          ctx.moveTo(p.x - rayD, p.y - rayD); ctx.lineTo(p.x + rayD, p.y + rayD);
-          ctx.moveTo(p.x + rayD, p.y - rayD); ctx.lineTo(p.x - rayD, p.y + rayD);
+          ctx.moveTo(p.x - rayLen, p.y); ctx.lineTo(p.x + rayLen, p.y);
+          ctx.moveTo(p.x, p.y - rayLen); ctx.lineTo(p.x, p.y + rayLen);
           ctx.stroke();
           ctx.restore();
         }
