@@ -466,7 +466,7 @@ function CategoryCard({ cat, onClick, index, isPopularNow, isExiting }: { cat: C
         border: `1px solid ${cat.available ? cat.color + "45" : "rgba(255,255,255,0.07)"}`,
         overflow: "hidden", display: "flex", flexDirection: "column",
         cursor: cat.available ? "pointer" : "default",
-        boxShadow: cat.available ? `0 0 20px ${cat.glow}` : "none",
+        boxShadow: "none",
         opacity: cat.available ? 1 : 0.55,
         backdropFilter: "blur(6px)",
         animation: anim,
@@ -480,12 +480,12 @@ function CategoryCard({ cat, onClick, index, isPopularNow, isExiting }: { cat: C
         if (!cat.available) return;
         const el = e.currentTarget as HTMLDivElement;
         el.style.transform = "translateY(-3px) scale(1.02)";
-        el.style.boxShadow = `0 8px 36px ${cat.glow}`;
+        el.style.boxShadow = `0 8px 24px rgba(0,0,0,0.6)`;
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLDivElement;
         el.style.transform = "";
-        el.style.boxShadow = cat.available ? `0 0 20px ${cat.glow}` : "none";
+        el.style.boxShadow = "none";
       }}
     >
       {/* Popular Now badge from admin setting */}
@@ -552,11 +552,8 @@ function PackCard({ pack, isDouble, index, onSelect, isSelected, isExiting, pack
   const hasBonus = pack.bonus_diamonds > 0;
   const base = pack.diamonds - pack.bonus_diamonds;
   const isUnavailable = pack.status === "out_of_stock" || pack.status === "coming_soon";
-  const glowBg = pack.is_popular ? "rgba(245,158,11,0.55)" : isDouble ? "rgba(0,229,255,0.5)" : "rgba(56,189,248,0.38)";
   return (
     <div style={{ position: "relative" }}>
-      {/* Backlight — blurred glow sits BEHIND the card */}
-      <div style={{ position: "absolute", inset: "-3px", borderRadius: 22, background: glowBg, filter: "blur(12px)", animation: `packGlow 2.8s ease-in-out ${index * 0.13 + 0.5}s infinite`, zIndex: 0, pointerEvents: "none" }} />
       <div
       onClick={() => { if (!isUnavailable) onSelect?.(pack); }}
       style={{
@@ -725,8 +722,6 @@ function PassCard({ pack, index, onSelect, isSelected, isExiting, passImagesCfg 
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Backlight — blurred glow sits BEHIND the card */}
-      <div style={{ position: "absolute", inset: "-3px", borderRadius: 22, background: "rgba(168,85,247,0.5)", filter: "blur(12px)", animation: `packGlow 2.8s ease-in-out ${index * 0.13 + 0.5}s infinite`, zIndex: 0, pointerEvents: "none" }} />
       <div
       onClick={() => { if (!isUnavailable) onSelect?.(pack); }}
       style={{

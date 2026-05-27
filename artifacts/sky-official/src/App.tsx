@@ -408,8 +408,14 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
 // ── Premium Animated Ambient Background ──────────────────────────────────────
 function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  const scrollYRef = useRef(0);
   const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const onScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -430,40 +436,44 @@ function AnimatedBackground() {
     };
     window.addEventListener("resize", onResize, { passive: true });
 
-    const onMouse = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX / W, y: e.clientY / H };
-    };
-    window.addEventListener("mousemove", onMouse, { passive: true });
-
     const isMobile = W < 768;
-    const COUNT = isMobile ? 18 : 34;
+    const COUNT = isMobile ? 55 : 110;
 
-    type P = { x: number; y: number; vx: number; vy: number; r: number; baseA: number; phase: number };
+    type P = {
+      x: number; y: number; vx: number; vy: number;
+      r: number; baseA: number; phase: number; speed: number;
+    };
     const pts: P[] = Array.from({ length: COUNT }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.055,
-      vy: -(Math.random() * 0.065 + 0.018),
-      r: Math.random() * 0.75 + 0.28,
-      baseA: Math.random() * 0.065 + 0.018,
+      vx: (Math.random() - 0.5) * 0.04,
+      vy: -(Math.random() * 0.04 + 0.008),
+      r: Math.random() * 1.1 + 0.2,
+      baseA: Math.random() * 0.09 + 0.025,
       phase: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.5 + 0.5,
     }));
 
     let t = 0;
+    let prevScroll = 0;
     const tick = () => {
       t++;
+      const scroll = scrollYRef.current;
+      const scrollDelta = scroll - prevScroll;
+      prevScroll = scroll;
+
       ctx.clearRect(0, 0, W, H);
-      const mx = isMobile ? 0 : (mouseRef.current.x - 0.5) * 0.07;
       for (const p of pts) {
-        p.x += p.vx + mx;
-        p.y += p.vy;
+        p.x += p.vx;
+        p.y += p.vy + scrollDelta * p.speed * 0.012;
         if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W; }
+        if (p.y > H + 4) { p.y = -4; p.x = Math.random() * W; }
         if (p.x < -4) p.x = W + 4;
         if (p.x > W + 4) p.x = -4;
-        const a = p.baseA * (0.38 + 0.62 * Math.sin(t * 0.011 + p.phase));
+        const a = p.baseA * (0.4 + 0.6 * Math.sin(t * 0.009 + p.phase));
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(175,148,255,${a.toFixed(3)})`;
+        ctx.fillStyle = `rgba(210,200,190,${a.toFixed(3)})`;
         ctx.fill();
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -473,7 +483,6 @@ function AnimatedBackground() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("mousemove", onMouse);
     };
   }, []);
 
@@ -483,61 +492,61 @@ function AnimatedBackground() {
       zIndex: 0, overflow: "hidden", pointerEvents: "none",
     }}>
       <style>{`
-        @keyframes aurora1 {
-          0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
-          20%      { transform: translateZ(0) translate(3vw,5vh) scale(1.04); }
-          50%      { transform: translateZ(0) translate(-4vw,9vh) scale(0.97); }
-          80%      { transform: translateZ(0) translate(2vw,-3vh) scale(1.02); }
+        @keyframes bgParallax {
+          0%   { transform: translateY(0px) scale(1.08); }
+          100% { transform: translateY(-4px) scale(1.08); }
         }
-        @keyframes aurora2 {
-          0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
-          30%      { transform: translateZ(0) translate(-5vw,-4vh) scale(1.06); }
-          65%      { transform: translateZ(0) translate(4vw,-7vh) scale(0.94); }
+        @keyframes sheen1 {
+          0%,100% { opacity: 0; transform: translateX(-60%) rotate(-18deg); }
+          40%,60% { opacity: 1; transform: translateX(160%) rotate(-18deg); }
         }
-        @keyframes aurora3 {
-          0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
-          50%      { transform: translateZ(0) translate(6vw,-7vh) scale(1.09); }
+        @keyframes sheen2 {
+          0%,100% { opacity: 0; transform: translateX(-60%) rotate(-18deg); }
+          40%,60% { opacity: 1; transform: translateX(160%) rotate(-18deg); }
         }
       `}</style>
 
-      {/* Base */}
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg,#050505 0%,#080808 50%,#060608 80%,#050505 100%)" }} />
-
-      {/* Aurora 1 — deep purple, top-left */}
-      <div style={{
-        position: "absolute", width: "145vw", height: "145vw",
-        top: "-65vw", left: "-45vw", borderRadius: "50%",
-        background: "radial-gradient(ellipse at center,rgba(36,18,58,0.62) 0%,rgba(27,16,41,0.22) 42%,transparent 72%)",
-        animation: "aurora1 72s ease-in-out infinite",
-        willChange: "transform", transform: "translateZ(0)",
-      }} />
-
-      {/* Aurora 2 — dark indigo-blue, bottom-right */}
-      <div style={{
-        position: "absolute", width: "130vw", height: "130vw",
-        bottom: "-55vw", right: "-35vw", borderRadius: "50%",
-        background: "radial-gradient(ellipse at center,rgba(20,10,31,0.65) 0%,rgba(13,27,42,0.16) 45%,transparent 72%)",
-        animation: "aurora2 95s ease-in-out infinite",
-        willChange: "transform", transform: "translateZ(0)",
-      }} />
-
-      {/* Aurora 3 — dark violet, center drift */}
-      <div style={{
-        position: "absolute", width: "108vw", height: "108vw",
-        top: "22vh", left: "18vw", borderRadius: "50%",
-        background: "radial-gradient(ellipse at center,rgba(28,11,46,0.42) 0%,transparent 68%)",
-        animation: "aurora3 115s ease-in-out infinite",
-        willChange: "transform", transform: "translateZ(0)",
-      }} />
-
-      {/* Grain overlay — 2.5% opacity */}
+      {/* Background image */}
       <div style={{
         position: "absolute", inset: 0,
-        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
-        opacity: 0.025,
+        backgroundImage: "url('/bg.webp')",
+        backgroundSize: "cover",
+        backgroundPosition: "center center",
+        transform: "scale(1.08)",
+        willChange: "transform",
       }} />
 
-      {/* Particle canvas */}
+      {/* Subtle dark vignette to deepen edges */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.45) 100%)",
+      }} />
+
+      {/* Diagonal light sheen 1 — slow scroll reveal */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, width: "35%", height: "100%",
+        background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.025) 50%, transparent 100%)",
+        animation: "sheen1 18s ease-in-out 2s infinite",
+        willChange: "transform, opacity",
+      }} />
+
+      {/* Diagonal light sheen 2 — offset */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, width: "20%", height: "100%",
+        background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.015) 50%, transparent 100%)",
+        animation: "sheen2 18s ease-in-out 10s infinite",
+        willChange: "transform, opacity",
+      }} />
+
+      {/* Fine grain texture overlay */}
+      <div style={{
+        position: "absolute", inset: 0,
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
+        opacity: 0.055,
+        mixBlendMode: "overlay",
+      }} />
+
+      {/* Floating sandy particle canvas */}
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
     </div>
   );
@@ -585,7 +594,7 @@ function PromoBannerSlider() {
   return (
     <div style={{ background: "transparent", padding: "6px 14px 12px" }}>
       <div
-        style={{ position: "relative", width: "100%", aspectRatio: "21/9", overflow: "hidden", cursor: banner.link ? "pointer" : "default", borderRadius: 18, boxShadow: "0 8px 32px rgba(245,158,11,0.15), 0 4px 24px rgba(0,0,0,0.6)" }}
+        style={{ position: "relative", width: "100%", aspectRatio: "21/9", overflow: "hidden", cursor: banner.link ? "pointer" : "default", borderRadius: 18, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }}
         onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
         onTouchEnd={e => { const dx = e.changedTouches[0].clientX - touchStartX.current; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); }}
         onClick={() => {
@@ -714,7 +723,7 @@ function GameSelectSection() {
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
-                boxShadow: `0 0 16px 4px ${c.glow}, 0 4px 16px rgba(0,0,0,0.65)`,
+                boxShadow: `0 4px 16px rgba(0,0,0,0.65)`,
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
                 transition: "transform 0.15s ease, box-shadow 0.2s ease",
@@ -1348,7 +1357,7 @@ function MainSite() {
       </div>
       {/* Intro overlays on top and fades out — content plays underneath */}
       {introMounted && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, opacity: introDone ? 0 : 1, transition: "opacity 0.68s ease", pointerEvents: introDone ? "none" : "auto" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, opacity: introDone ? 0 : 1, transition: "opacity 0.68s ease", pointerEvents: introDone ? "none" : "auto" }}>
           <LoadingScreen onDone={handleIntroDone} />
         </div>
       )}
@@ -1717,7 +1726,7 @@ function AppRoutes() {
       <TransitionProvider>
         <PersistentNavbar />
         <AnimatedBackground />
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ position: "relative" }}>
         <Switch>
           <Route path="/" component={MainSite} />
           <Route path="/admin" component={AdminPage} />
@@ -1753,7 +1762,7 @@ export default function App() {
   return (
     <WouterRouter base={basePath}>
       <CartProvider>
-        <div style={{ background: "#050505", minHeight: "100vh", overflowX: "hidden" }}>
+        <div style={{ background: "#0d0d0d", minHeight: "100vh", overflowX: "hidden" }}>
           <AppRoutes />
         </div>
       </CartProvider>
