@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 const WA_NUMBER_FALLBACK = "919362003788";
@@ -138,7 +139,9 @@ function StepHead({ n, title, sub }: { n: number; title: string; sub: string }) 
   );
 }
 
-export default function RankBoostPage({ onBack: _onBack }: { onBack?: () => void }) {
+export default function RankBoostPage({ onBack }: { onBack?: () => void }) {
+  const [, setLocation] = useLocation();
+  const goBack = () => { if (onBack) onBack(); else setLocation("/"); };
   const [service, setService] = useState<"urgent" | "not-urgent">("not-urgent");
   const [curRank, setCurRank] = useState("");
   const [curSub,  setCurSub]  = useState("0");
@@ -212,7 +215,7 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
   };
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", paddingBottom: 60 }}>
+    <div style={{ background: "transparent", minHeight: "100vh", paddingBottom: 80 }}>
       <style>{`
         @keyframes rbCardIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
         .rb-card { animation: rbCardIn 0.35s cubic-bezier(0.22,1,0.36,1) both; }
@@ -223,6 +226,18 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
         select option { background:#111316; color:#fff; }
       `}</style>
 
+      {/* Back button */}
+      <div style={{ padding: "82px 16px 0" }}>
+        <button
+          onClick={goBack}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 999, padding: "7px 14px 7px 10px", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 12, fontWeight: 700, WebkitTapHighlightColor: "transparent" }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          Back
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 560, margin: "16px auto 0", padding: "0 16px" }}>
       {/* ── Step 1: Urgency ─────────────────────────────────────────── */}
       <div className="rb-card" style={CARD}>
         <StepHead n={1} title="Choose Urgency" sub="Urgent: completed ASAP (+20%) · Not Urgent: standard delivery" />
@@ -427,6 +442,7 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
       <p style={{ textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.25)", marginTop: 16, lineHeight: 1.6 }}>
         Your order goes directly to our WhatsApp.<br />We confirm within 1 hour. ✅
       </p>
+      </div>
     </div>
   );
 }

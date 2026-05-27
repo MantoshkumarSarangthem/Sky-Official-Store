@@ -104,6 +104,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [newBannerLink, setNewBannerLink] = useState("");
   const [bannerLinkType, setBannerLinkType] = useState<"url"|"game"|"packages">("url");
   const [bannerLinkGameId, setBannerLinkGameId] = useState<string>("");
+  const [bannerMediaType, setBannerMediaType] = useState<"file" | "url">("file");
+  const [bannerMediaUrl, setBannerMediaUrl] = useState("");
   const promoBannerImgRef = useRef<HTMLInputElement>(null);
 
   interface Game { id: number; name: string; image: string | null; sort_order: number; region?: string | null; }
@@ -209,10 +211,16 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     } finally { setPromoBannersSaving(false); }
   };
   const addPromoBanner = async () => {
-    if (!promoBannerImgRef.current?.files?.[0]) return;
     if (promoBanners.length >= 5) return;
-    const file = promoBannerImgRef.current.files[0];
-    const image = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(file); });
+    let image = "";
+    if (bannerMediaType === "url") {
+      if (!bannerMediaUrl.trim()) return;
+      image = bannerMediaUrl.trim();
+    } else {
+      if (!promoBannerImgRef.current?.files?.[0]) return;
+      const file = promoBannerImgRef.current.files[0];
+      image = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(file); });
+    }
     let link = "";
     if (bannerLinkType === "url") link = newBannerLink.trim();
     else if (bannerLinkType === "game" && bannerLinkGameId) link = `/game/${bannerLinkGameId}`;
@@ -222,6 +230,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setNewBannerLink("");
     setBannerLinkType("url");
     setBannerLinkGameId("");
+    setBannerMediaUrl("");
+    setBannerMediaType("file");
     if (promoBannerImgRef.current) promoBannerImgRef.current.value = "";
   };
 
@@ -2156,7 +2166,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {promoBanners.map((b, i) => (
                           <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
-                            <img src={b.image} alt="" style={{ width: 80, height: Math.round(80 / 21 * 9), objectFit: "cover", borderRadius: 8, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
+                            {/\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) ? (
+                              <video src={b.image} muted style={{ width: 80, height: Math.round(80 / 21 * 9), objectFit: "cover", borderRadius: 8, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
+                            ) : (
+                              <img src={b.image} alt="" style={{ width: 80, height: Math.round(80 / 21 * 9), objectFit: "cover", borderRadius: 8, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
+                            )}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div className="text-gray-400 text-xs truncate">{b.link || "(no link)"}</div>
                               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
@@ -2174,8 +2188,25 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       <div className="text-amber-400 text-sm font-bold mb-4">Add New Banner ({promoBanners.length}/5)</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div>
-                          <div className="text-gray-400 text-xs mb-1.5">Image file (21:9 ratio recommended)</div>
-                          <input ref={promoBannerImgRef} type="file" accept="image/*" style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }} />
+                          <div className="text-gray-400 text-xs mb-1.5">Media type</div>
+                          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                            {(["file", "url"] as const).map(t => (
+                              <button key={t} onClick={() => setBannerMediaType(t)} style={{ flex: 1, padding: "7px 0", borderRadius: 8, background: bannerMediaType === t ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)", border: bannerMediaType === t ? "1px solid rgba(245,158,11,0.4)" : "1px solid rgba(255,255,255,0.1)", color: bannerMediaType === t ? "#f59e0b" : "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                {t === "file" ? "Upload Image" : "Video / Image URL"}
+                              </button>
+                            ))}
+                          </div>
+                          {bannerMediaType === "file" ? (
+                            <>
+                              <div className="text-gray-400 text-xs mb-1.5">Image file (21:9 ratio recommended)</div>
+                              <input ref={promoBannerImgRef} type="file" accept="image/*" style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }} />
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-gray-400 text-xs mb-1.5">Paste a direct image or video URL (.jpg, .png, .mp4, .webm…)</div>
+                              <input value={bannerMediaUrl} onChange={e => setBannerMediaUrl(e.target.value)} placeholder="https://cdn.example.com/banner.mp4" className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                            </>
+                          )}
                         </div>
                         <div>
                           <div className="text-gray-400 text-xs mb-1.5">Link when tapped (optional)</div>

@@ -239,7 +239,6 @@ function Navbar() {
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         borderRadius: 20,
-        border: "1px solid rgba(245,158,11,0.1)",
         boxShadow: "0 0 18px 4px rgba(245,158,11,0.1), 0 6px 32px rgba(0,0,0,0.65)",
         animation: "navSlideDown 0.38s cubic-bezier(0.22,1,0.36,1) both",
       }}
@@ -406,85 +405,55 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
-// ── Shared persistent video background (home + packages only) ────────────────
-function SharedVideoBg() {
-  const [location] = useLocation();
-  const active = location === "/" || location === "/packages";
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [fadeBlack, setFadeBlack] = useState(false);
-  const loopingRef = useRef(false);
-
-  // Start video only after the intro loading screen finishes
-  useEffect(() => {
-    const startVideo = () => {
-      const v = videoRef.current;
-      if (!v) return;
-      v.muted = true;
-      v.play().catch(() => {});
-    };
-
-    if (!introPlayedThisSession) {
-      window.addEventListener("skyIntroDone", startVideo, { once: true });
-      return () => window.removeEventListener("skyIntroDone", startVideo);
-    }
-    startVideo();
-    return undefined;
-  }, []);
-
-  const handleEnded = () => {
-    if (loopingRef.current) return;
-    loopingRef.current = true;
-
-    // Fade to black
-    setFadeBlack(true);
-
-    setTimeout(() => {
-      // Rewind and replay the same video
-      const v = videoRef.current;
-      if (v) {
-        v.currentTime = 0;
-        v.play().catch(() => {});
-      }
-      // Fade back in after a brief black hold
-      setTimeout(() => {
-        setFadeBlack(false);
-        loopingRef.current = false;
-      }, 120);
-    }, 720);
-  };
-
+// ── Animated CSS Mesh Background ─────────────────────────────────────────────
+function AnimatedBackground() {
   return (
     <div style={{
-      position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
-      width: "100vw",
-      height: "100dvh", zIndex: 0, overflow: "hidden", pointerEvents: "none",
-      opacity: active ? 1 : 0, transition: "opacity 0.38s ease",
+      position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh",
+      zIndex: 0, overflow: "hidden", pointerEvents: "none",
     }}>
-      <video
-        ref={videoRef}
-        src="/bg1.mp4"
-        muted playsInline preload="auto"
-        onEnded={handleEnded}
-        style={{
-          position: "absolute", inset: 0,
-          width: "100%", height: "100%", objectFit: "cover",
-          filter: "brightness(0.35) saturate(0.7) blur(3px)",
-          transform: "scale(1.05)",
-        }}
-      />
-      {/* Black crossfade overlay for loop transitions */}
+      <style>{`
+        @keyframes bgBlob1 {
+          0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
+          33%      { transform: translateZ(0) translate(6vw,8vh) scale(1.08); }
+          66%      { transform: translateZ(0) translate(-4vw,4vh) scale(0.94); }
+        }
+        @keyframes bgBlob2 {
+          0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
+          40%      { transform: translateZ(0) translate(-7vw,-6vh) scale(1.12); }
+          70%      { transform: translateZ(0) translate(5vw,-3vh) scale(0.91); }
+        }
+        @keyframes bgBlob3 {
+          0%,100% { transform: translateZ(0) translate(0px,0px) scale(1); }
+          50%      { transform: translateZ(0) translate(9vw,-10vh) scale(1.14); }
+        }
+      `}</style>
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(145deg,#0a0a0a 0%,#0d0f1c 45%,#090d18 75%,#0a0a0a 100%)" }} />
       <div style={{
-        position: "absolute", inset: 0,
-        background: "#000",
-        opacity: fadeBlack ? 1 : 0,
-        transition: "opacity 0.54s ease",
-        pointerEvents: "none",
+        position: "absolute", width: "130vw", height: "130vw",
+        top: "-50vw", left: "-35vw", borderRadius: "50%",
+        background: "radial-gradient(ellipse at center,rgba(76,29,149,0.22) 0%,transparent 60%)",
+        animation: "bgBlob1 20s ease-in-out infinite",
+        willChange: "transform", transform: "translateZ(0)",
+      }} />
+      <div style={{
+        position: "absolute", width: "110vw", height: "110vw",
+        bottom: "-40vw", right: "-25vw", borderRadius: "50%",
+        background: "radial-gradient(ellipse at center,rgba(120,70,0,0.14) 0%,transparent 60%)",
+        animation: "bgBlob2 25s ease-in-out infinite",
+        willChange: "transform", transform: "translateZ(0)",
+      }} />
+      <div style={{
+        position: "absolute", width: "90vw", height: "90vw",
+        top: "25vh", left: "20vw", borderRadius: "50%",
+        background: "radial-gradient(ellipse at center,rgba(30,10,60,0.28) 0%,transparent 65%)",
+        animation: "bgBlob3 30s ease-in-out infinite",
+        willChange: "transform", transform: "translateZ(0)",
       }} />
       <div style={{
         position: "absolute", inset: 0,
-        background: "linear-gradient(to bottom, rgba(0,0,0,0.82), rgba(0,0,0,0.72))",
-        pointerEvents: "none",
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
+        opacity: 0.03,
       }} />
     </div>
   );
@@ -548,9 +517,14 @@ function PromoBannerSlider() {
           }
         }}
       >
-        {banners.map((b, i) => (
-          <img key={b.id} src={b.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
-        ))}
+        {banners.map((b, i) => {
+          const isVid = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) || b.image.startsWith("data:video/");
+          return isVid ? (
+            <video key={b.id} src={b.image} autoPlay muted loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
+          ) : (
+            <img key={b.id} src={b.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
+          );
+        })}
         {banners.length > 1 && (
           <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5, zIndex: 5 }}>
             {banners.map((_, i) => (
@@ -597,7 +571,7 @@ function GameSelectSection() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {Array.from({ length: GAME_SKELETON_COUNT }).map((_, i) => (
-            <div key={i} style={{ borderRadius: 16, background: "rgba(10,10,10,0.82)", border: "1px solid rgba(168,85,247,0.12)", overflow: "hidden", animation: `gameSkel 1.6s ease-in-out ${i * 0.08}s infinite` }}>
+            <div key={i} style={{ borderRadius: 16, background: "rgba(10,10,10,0.82)", overflow: "hidden", animation: `gameSkel 1.6s ease-in-out ${i * 0.08}s infinite` }}>
               <div style={{ width: "100%", aspectRatio: "1/1", background: "rgba(255,255,255,0.04)" }} />
               <div style={{ padding: "6px 8px 10px", display: "flex", justifyContent: "center" }}>
                 <div style={{ width: "65%", height: 10, borderRadius: 4, background: "rgba(255,255,255,0.06)" }} />
@@ -624,7 +598,7 @@ function GameSelectSection() {
   const PANEL_GLOW = { glow: "rgba(139,92,246,0.12)", border: "rgba(168,85,247,0.18)", icon: "rgba(168,85,247,0.5)" };
 
   return (
-    <section style={{ background: "rgba(0,0,0,0.3)", padding: "28px 16px 28px" }}>
+    <section style={{ background: "transparent", padding: "28px 16px 28px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>Select Game</span>
@@ -649,7 +623,6 @@ function GameSelectSection() {
                 background: "rgba(10,10,10,0.82)",
                 backdropFilter: "blur(8px)",
                 WebkitBackdropFilter: "blur(8px)",
-                border: `1px solid ${c.border}`,
                 borderRadius: 16,
                 cursor: "pointer",
                 padding: 0,
@@ -1658,7 +1631,7 @@ function AppRoutes() {
     >
       <TransitionProvider>
         <PersistentNavbar />
-        <SharedVideoBg />
+        <AnimatedBackground />
         <Switch>
           <Route path="/" component={MainSite} />
           <Route path="/admin" component={AdminPage} />
