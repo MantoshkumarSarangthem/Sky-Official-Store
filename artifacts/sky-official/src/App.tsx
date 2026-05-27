@@ -438,43 +438,87 @@ function AnimatedBackground() {
 
     const isMobile = W < 768;
 
-    // Weighted spawn: corners + sides get ~70% of grains
+    // Weighted spawn — heavy bias toward corners and side bands
     function spawnX(): number {
       const r = Math.random();
-      if (r < 0.20) return Math.random() * W * 0.18;           // left band
-      if (r < 0.40) return W - Math.random() * W * 0.18;       // right band
-      if (r < 0.50) return Math.random() * W * 0.10;           // far-left
-      if (r < 0.60) return W - Math.random() * W * 0.10;       // far-right
-      return Math.random() * W;                                  // rest
+      if (r < 0.22) return Math.random() * W * 0.16;
+      if (r < 0.44) return W - Math.random() * W * 0.16;
+      if (r < 0.54) return Math.random() * W * 0.07;
+      if (r < 0.64) return W - Math.random() * W * 0.07;
+      return Math.random() * W;
     }
     function spawnY(): number {
       const r = Math.random();
-      if (r < 0.18) return Math.random() * H * 0.20;           // top band
-      if (r < 0.36) return H - Math.random() * H * 0.20;       // bottom band
+      if (r < 0.20) return Math.random() * H * 0.22;
+      if (r < 0.40) return H - Math.random() * H * 0.22;
       return Math.random() * H;
     }
 
-    const COUNT = isMobile ? 160 : 280;
+    // Draw a 4-point star (classic sparkle shape)
+    function drawStar(x: number, y: number, outer: number, inner: number, alpha: number, color: [number,number,number]) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI) / 4;
+        const dist = i % 2 === 0 ? outer : inner;
+        if (i === 0) ctx.moveTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
+        else ctx.lineTo(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
 
+    // Draw a soft radial glow around a point
+    function drawGlow(x: number, y: number, radius: number, alpha: number, color: [number,number,number]) {
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      grad.addColorStop(0, `rgba(${color[0]},${color[1]},${color[2]},${alpha.toFixed(3)})`);
+      grad.addColorStop(1, `rgba(${color[0]},${color[1]},${color[2]},0)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
+
+    type StarType = "dust" | "grain" | "sparkle" | "star";
     type P = {
       x: number; y: number; vx: number; vy: number;
-      r: number; baseA: number; phase: number; speed: number;
-      sparkPhase: number; sparkFreq: number; isSparkler: boolean;
+      size: number; baseA: number; phase: number; phaseSpeed: number;
+      speed: number; type: StarType;
+      burstPhase: number; burstFreq: number;
+      color: [number, number, number];
     };
+
+    const COUNT = isMobile ? 180 : 320;
+
     const pts: P[] = Array.from({ length: COUNT }, () => {
-      const isSparkler = Math.random() < 0.22;
+      // 50% dust, 28% grain, 16% sparkle, 6% full star
+      const rng = Math.random();
+      const type: StarType = rng < 0.50 ? "dust" : rng < 0.78 ? "grain" : rng < 0.94 ? "sparkle" : "star";
+      // Slight warm-to-cool variation: mostly warm white, some cool white
+      const warm = Math.random() < 0.7;
+      const color: [number,number,number] = warm
+        ? [255, Math.round(242 + Math.random() * 13), Math.round(200 + Math.random() * 30)]
+        : [220, 228, 255];
       return {
-        x: spawnX(),
-        y: spawnY(),
-        vx: (Math.random() - 0.5) * 0.025,
-        vy: -(Math.random() * 0.022 + 0.004),
-        r: isSparkler ? Math.random() * 0.7 + 0.5 : Math.random() * 0.55 + 0.15,
-        baseA: isSparkler ? Math.random() * 0.13 + 0.06 : Math.random() * 0.07 + 0.015,
+        x: spawnX(), y: spawnY(),
+        vx: (Math.random() - 0.5) * 0.018,
+        vy: -(Math.random() * 0.016 + 0.003),
+        size: type === "dust" ? Math.random() * 0.45 + 0.12
+            : type === "grain" ? Math.random() * 0.8 + 0.35
+            : type === "sparkle" ? Math.random() * 1.1 + 0.7
+            : Math.random() * 1.8 + 1.2,
+        baseA: type === "dust"    ? Math.random() * 0.055 + 0.01
+             : type === "grain"   ? Math.random() * 0.10 + 0.025
+             : type === "sparkle" ? Math.random() * 0.18 + 0.08
+             : Math.random() * 0.28 + 0.14,
         phase: Math.random() * Math.PI * 2,
-        speed: Math.random() * 0.6 + 0.3,
-        sparkPhase: Math.random() * Math.PI * 2,
-        sparkFreq: Math.random() * 0.04 + 0.012,
-        isSparkler,
+        phaseSpeed: Math.random() * 0.007 + 0.003,
+        speed: Math.random() * 0.7 + 0.3,
+        type,
+        burstPhase: Math.random() * Math.PI * 2,
+        burstFreq: Math.random() * 0.03 + 0.008,
+        color,
       };
     });
 
@@ -490,48 +534,86 @@ function AnimatedBackground() {
 
       for (const p of pts) {
         p.x += p.vx;
-        p.y += p.vy + scrollDelta * p.speed * 0.008;
-        if (p.y < -4) { p.y = H + 4; p.x = spawnX(); }
-        if (p.y > H + 4) { p.y = -4; p.x = spawnX(); }
-        if (p.x < -4) { p.x = W + 4; p.y = spawnY(); }
-        if (p.x > W + 4) { p.x = -4; p.y = spawnY(); }
+        p.y += p.vy + scrollDelta * p.speed * 0.007;
+        if (p.y < -6) { p.y = H + 6; p.x = spawnX(); }
+        if (p.y > H + 6) { p.y = -6; p.x = spawnX(); }
+        if (p.x < -6) { p.x = W + 6; p.y = spawnY(); }
+        if (p.x > W + 6) { p.x = -6; p.y = spawnY(); }
 
-        // Base twinkle
-        let a = p.baseA * (0.35 + 0.65 * Math.sin(t * 0.008 + p.phase));
+        // Smooth slow twinkle base
+        let a = p.baseA * (0.3 + 0.7 * Math.sin(t * p.phaseSpeed + p.phase));
 
-        // Sparkler burst — periodic sharp flash
-        if (p.isSparkler) {
-          const spark = Math.sin(t * p.sparkFreq + p.sparkPhase);
-          if (spark > 0.88) {
-            const intensity = (spark - 0.88) / 0.12;
-            a = Math.min(1, a + intensity * 0.55);
+        // Burst flash for sparkles and stars
+        if (p.type === "sparkle" || p.type === "star") {
+          const burst = Math.sin(t * p.burstFreq + p.burstPhase);
+          if (burst > 0.82) {
+            const intensity = ((burst - 0.82) / 0.18) ** 2;
+            a = Math.min(1, a + intensity * (p.type === "star" ? 0.72 : 0.45));
           }
         }
 
-        const r = p.r;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        if (a < 0.004) continue;
 
-        // Warm champagne-white colour; sparklers get a gold-white tint
-        if (p.isSparkler && a > p.baseA * 0.9) {
-          ctx.fillStyle = `rgba(255,245,220,${a.toFixed(3)})`;
-        } else {
-          ctx.fillStyle = `rgba(220,212,200,${a.toFixed(3)})`;
-        }
-        ctx.fill();
-
-        // Cross-hair glint on very bright sparklers
-        if (p.isSparkler && a > 0.28) {
-          const gl = (a - 0.28) * 0.6;
-          ctx.strokeStyle = `rgba(255,248,230,${(gl * 0.7).toFixed(3)})`;
-          ctx.lineWidth = 0.4;
-          const sz = r * 3.5;
+        if (p.type === "dust") {
+          // Tiny dot
+          ctx.globalAlpha = a;
+          ctx.fillStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
           ctx.beginPath();
-          ctx.moveTo(p.x - sz, p.y);
-          ctx.lineTo(p.x + sz, p.y);
-          ctx.moveTo(p.x, p.y - sz);
-          ctx.lineTo(p.x, p.y + sz);
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+
+        } else if (p.type === "grain") {
+          // Slightly larger dot with a tiny glow
+          ctx.globalAlpha = a;
+          ctx.fillStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          if (a > 0.06) drawGlow(p.x, p.y, p.size * 3.5, a * 0.22, p.color);
+
+        } else if (p.type === "sparkle") {
+          // Glow halo + 4-point star
+          drawGlow(p.x, p.y, p.size * 5, a * 0.28, p.color);
+          drawStar(p.x, p.y, p.size, p.size * 0.28, a, p.color);
+          // Fine cross-hair rays
+          if (a > 0.10) {
+            ctx.save();
+            ctx.globalAlpha = a * 0.55;
+            ctx.strokeStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
+            ctx.lineWidth = 0.5;
+            const ray = p.size * 5;
+            ctx.beginPath();
+            ctx.moveTo(p.x - ray, p.y); ctx.lineTo(p.x + ray, p.y);
+            ctx.moveTo(p.x, p.y - ray); ctx.lineTo(p.x, p.y + ray);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+        } else {
+          // Full star — bright glow + large star shape + long rays
+          drawGlow(p.x, p.y, p.size * 9, a * 0.35, p.color);
+          drawGlow(p.x, p.y, p.size * 4, a * 0.55, p.color);
+          drawStar(p.x, p.y, p.size, p.size * 0.22, a, p.color);
+          // Long thin cross rays
+          ctx.save();
+          ctx.globalAlpha = a * 0.45;
+          ctx.strokeStyle = `rgb(${p.color[0]},${p.color[1]},${p.color[2]})`;
+          ctx.lineWidth = 0.6;
+          const ray = p.size * 11;
+          const rayD = p.size * 5.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x - ray, p.y); ctx.lineTo(p.x + ray, p.y);
+          ctx.moveTo(p.x, p.y - ray); ctx.lineTo(p.x, p.y + ray);
           ctx.stroke();
+          // 45° diagonal rays (shorter)
+          ctx.globalAlpha = a * 0.22;
+          ctx.beginPath();
+          ctx.moveTo(p.x - rayD, p.y - rayD); ctx.lineTo(p.x + rayD, p.y + rayD);
+          ctx.moveTo(p.x + rayD, p.y - rayD); ctx.lineTo(p.x - rayD, p.y + rayD);
+          ctx.stroke();
+          ctx.restore();
         }
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -549,21 +631,6 @@ function AnimatedBackground() {
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh",
       zIndex: 0, overflow: "hidden", pointerEvents: "none",
     }}>
-      <style>{`
-        @keyframes bgParallax {
-          0%   { transform: translateY(0px) scale(1.08); }
-          100% { transform: translateY(-4px) scale(1.08); }
-        }
-        @keyframes sheen1 {
-          0%,100% { opacity: 0; transform: translateX(-60%) rotate(-18deg); }
-          40%,60% { opacity: 1; transform: translateX(160%) rotate(-18deg); }
-        }
-        @keyframes sheen2 {
-          0%,100% { opacity: 0; transform: translateX(-60%) rotate(-18deg); }
-          40%,60% { opacity: 1; transform: translateX(160%) rotate(-18deg); }
-        }
-      `}</style>
-
       {/* Background image */}
       <div style={{
         position: "absolute", inset: 0,
@@ -577,34 +644,18 @@ function AnimatedBackground() {
       {/* Subtle dark vignette to deepen edges */}
       <div style={{
         position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.45) 100%)",
-      }} />
-
-      {/* Diagonal light sheen 1 — slow scroll reveal */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, width: "35%", height: "100%",
-        background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.025) 50%, transparent 100%)",
-        animation: "sheen1 18s ease-in-out 2s infinite",
-        willChange: "transform, opacity",
-      }} />
-
-      {/* Diagonal light sheen 2 — offset */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, width: "20%", height: "100%",
-        background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.015) 50%, transparent 100%)",
-        animation: "sheen2 18s ease-in-out 10s infinite",
-        willChange: "transform, opacity",
+        background: "radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.42) 100%)",
       }} />
 
       {/* Fine grain texture overlay */}
       <div style={{
         position: "absolute", inset: 0,
         backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
-        opacity: 0.055,
+        opacity: 0.05,
         mixBlendMode: "overlay",
       }} />
 
-      {/* Floating sandy particle canvas */}
+      {/* Star particle canvas */}
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
     </div>
   );

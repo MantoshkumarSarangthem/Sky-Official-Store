@@ -106,6 +106,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [bannerLinkGameId, setBannerLinkGameId] = useState<string>("");
   const [bannerMediaType, setBannerMediaType] = useState<"file" | "url">("file");
   const [bannerMediaUrl, setBannerMediaUrl] = useState("");
+  const [bannerFileName, setBannerFileName] = useState("");
   const promoBannerImgRef = useRef<HTMLInputElement>(null);
 
   interface Game { id: number; name: string; image: string | null; sort_order: number; region?: string | null; }
@@ -232,6 +233,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setBannerLinkGameId("");
     setBannerMediaUrl("");
     setBannerMediaType("file");
+    setBannerFileName("");
     if (promoBannerImgRef.current) promoBannerImgRef.current.value = "";
   };
 
@@ -2192,14 +2194,26 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                             {(["file", "url"] as const).map(t => (
                               <button key={t} onClick={() => setBannerMediaType(t)} style={{ flex: 1, padding: "7px 0", borderRadius: 8, background: bannerMediaType === t ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)", border: bannerMediaType === t ? "1px solid rgba(245,158,11,0.4)" : "1px solid rgba(255,255,255,0.1)", color: bannerMediaType === t ? "#f59e0b" : "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                                {t === "file" ? "Upload Image" : "Video / Image URL"}
+                                {t === "file" ? "Upload File" : "Paste URL"}
                               </button>
                             ))}
                           </div>
                           {bannerMediaType === "file" ? (
                             <>
-                              <div className="text-gray-400 text-xs mb-1.5">Image file (21:9 ratio recommended)</div>
-                              <input ref={promoBannerImgRef} type="file" accept="image/*" style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }} />
+                              <div className="text-gray-400 text-xs mb-1.5">Image or video file (21:9 ratio recommended, e.g. 1280×549 px)</div>
+                              <label style={{ display: "block", cursor: "pointer" }}>
+                                <div style={{ background: "rgba(255,255,255,0.05)", border: "1.5px dashed rgba(255,255,255,0.18)", borderRadius: 10, padding: "14px 12px", textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+                                  <div style={{ fontSize: 22, marginBottom: 4 }}>📁</div>
+                                  <div style={{ fontWeight: 600, marginBottom: 2 }}>Tap to choose a file</div>
+                                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Images: JPG, PNG, WebP · Videos: MP4, WebM, MOV</div>
+                                  {bannerFileName && (
+                                    <div style={{ marginTop: 8, color: "#f59e0b", fontWeight: 600, fontSize: 12 }}>
+                                      ✓ {bannerFileName}
+                                    </div>
+                                  )}
+                                </div>
+                                <input ref={promoBannerImgRef} type="file" accept="image/*,video/*,.mp4,.webm,.mov,.ogg" style={{ display: "none" }} onChange={e => setBannerFileName(e.target.files?.[0]?.name ?? "")} />
+                              </label>
                             </>
                           ) : (
                             <>
