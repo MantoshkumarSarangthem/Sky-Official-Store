@@ -405,113 +405,8 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
-// ── Ambient Background with interactive particles ─────────────────────────────
+// ── Ambient Background ────────────────────────────────────────────────────────
 function AnimatedBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let W = canvas.width = window.innerWidth;
-    let H = canvas.height = window.innerHeight;
-
-    const mouse = { x: -9999, y: -9999 };
-
-    const onMouseMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-    const onMouseLeave = () => { mouse.x = -9999; mouse.y = -9999; };
-    const onResize = () => {
-      W = canvas.width = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener("mousemove", onMouseMove, { passive: true });
-    window.addEventListener("mouseleave", onMouseLeave);
-    window.addEventListener("resize", onResize, { passive: true });
-
-    const isMobile = W < 768;
-    const COUNT = isMobile ? 55 : 100;
-    const CONNECT_DIST = isMobile ? 90 : 130;
-    const MOUSE_RADIUS = 110;
-    const MOUSE_FORCE = 0.018;
-
-    type P = { x: number; y: number; vx: number; vy: number; r: number; a: number };
-    const pts: P[] = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.28,
-      vy: (Math.random() - 0.5) * 0.28,
-      r: Math.random() * 1.2 + 0.4,
-      a: Math.random() * 0.25 + 0.08,
-    }));
-
-    let raf = 0;
-    const tick = () => {
-      ctx.clearRect(0, 0, W, H);
-
-      for (const p of pts) {
-        // Mouse repulsion
-        const dx = p.x - mouse.x;
-        const dy = p.y - mouse.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < MOUSE_RADIUS && dist > 0) {
-          const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS * MOUSE_FORCE;
-          p.vx += (dx / dist) * force * 6;
-          p.vy += (dy / dist) * force * 6;
-        }
-
-        // Friction + drift
-        p.vx *= 0.985;
-        p.vy *= 0.985;
-
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Soft bounce off edges
-        if (p.x < 0) { p.x = 0; p.vx *= -1; }
-        if (p.x > W) { p.x = W; p.vx *= -1; }
-        if (p.y < 0) { p.y = 0; p.vy *= -1; }
-        if (p.y > H) { p.y = H; p.vy *= -1; }
-
-        // Draw dot
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200,200,210,${p.a.toFixed(2)})`;
-        ctx.fill();
-      }
-
-      // Draw connecting lines between nearby particles
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x;
-          const dy = pts[i].y - pts[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < CONNECT_DIST) {
-            const lineA = (1 - d / CONNECT_DIST) * 0.10;
-            ctx.beginPath();
-            ctx.moveTo(pts[i].x, pts[i].y);
-            ctx.lineTo(pts[j].x, pts[j].y);
-            ctx.strokeStyle = `rgba(180,180,200,${lineA.toFixed(3)})`;
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
-        }
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-    tick();
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseleave", onMouseLeave);
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
-
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh",
@@ -528,7 +423,6 @@ function AnimatedBackground() {
         position: "absolute", inset: 0,
         background: "radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.42) 100%)",
       }} />
-      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
     </div>
   );
 }
