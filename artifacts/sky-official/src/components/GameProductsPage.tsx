@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { setMLBBTarget } from "./MLBBTargetPage";
 import { setSelectedPackage } from "./PaymentPage";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "@clerk/react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
@@ -91,8 +93,17 @@ export default function GameProductsPage() {
   const [selectedPkgId, setSelectedPkgId] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "wallet">("upi");
   const [favorites, setFavorites] = useState<number[]>(loadFavs);
+  const [walletBuying, setWalletBuying] = useState(false);
+  const [walletResult, setWalletResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [cartAdded, setCartAdded] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState(1);
+
+  const { addToCart } = useCart();
+  const { getToken, isSignedIn } = useAuth();
 
   const selectedPkg = packages.find(p => p.id === selectedPkgId) ?? null;
+
+  useEffect(() => { setQuantity(1); setWalletResult(null); }, [selectedPkgId]);
 
   useEffect(() => {
     if (!gameId) return;
@@ -139,13 +150,43 @@ export default function GameProductsPage() {
     window.open(`https://wa.me/${WA_SUPPORT}?text=${msg}`, "_blank", "noopener,noreferrer");
   }, [selectedPkg, userId, game, currencyLabel]);
 
-  const handleBuy = useCallback(() => {
+  const handleBuy = useCallback(async () => {
     if (!selectedPkg) return;
     if (!userId.trim()) {
       setIdError(isMLBB ? "Please enter your User ID first." : "Please enter your Player ID first.");
       return;
     }
     setIdError("");
+
+    if (paymentMethod === "wallet") {
+      if (!isSignedIn) { setIdError("Please sign in to use wallet."); return; }
+      setWalletBuying(true);
+      setWalletResult(null);
+      try {
+        const token = await getToken();
+        for (let i = 0; i < quantity; i++) {
+          const res = await fetch(`/api/orders/wallet-pay`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ packageId: selectedPkg.id, mlbbUserId: userId.trim(), mlbbServerId: isMLBB ? serverId.trim() : "", mlbbIgn: "", isForFriend: false }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            setWalletResult({ ok: false, msg: data.error || "Wallet payment failed. Please try again." });
+            return;
+          }
+        }
+        const totalDiamonds = (selectedPkg.diamonds + (selectedPkg.bonus_diamonds || 0)) * quantity;
+        setWalletResult({ ok: true, msg: `Order placed! ${totalDiamonds.toLocaleString()} ${currencyLabel} will be delivered shortly.` });
+        setSelectedPkgId(null);
+      } catch {
+        setWalletResult({ ok: false, msg: "Network error. Please try again." });
+      } finally {
+        setWalletBuying(false);
+      }
+      return;
+    }
+
     setMLBBTarget({
       userId: userId.trim(),
       serverId: isMLBB ? serverId.trim() : "",
@@ -167,8 +208,10 @@ export default function GameProductsPage() {
       currencyLabel,
     });
     sessionStorage.setItem("preferredPaymentMethod", paymentMethod);
+    if (quantity > 1) sessionStorage.setItem("orderQuantity", String(quantity));
+    else sessionStorage.removeItem("orderQuantity");
     setLocation("/pay");
-  }, [selectedPkg, userId, serverId, isMLBB, game, currencyLabel, paymentMethod, setLocation]);
+  }, [selectedPkg, userId, serverId, isMLBB, game, currencyLabel, paymentMethod, setLocation, isSignedIn, getToken, quantity]);
 
   return (
     <div style={{ background: "transparent", minHeight: "100vh", paddingBottom: 80 }}>
@@ -337,13 +380,26 @@ export default function GameProductsPage() {
                     {/* Name + currency */}
                     <div>
                       <div style={{ color: isSelected ? "#fff" : "rgba(255,255,255,0.87)", fontWeight: 700, fontSize: 12, lineHeight: 1.3, marginBottom: 2 }}>
-                        {pkg.name || `${total.toLocaleString()} ${currencyLabel}`}
+                        {pkg.name || `${pkg.diamonds.toLocaleString()} ${currencyLabel}`}
                       </div>
                       <div style={{ color: "rgba(255,255,255,0.32)", fontSize: 10 }}>
-                        {total.toLocaleString()} {currencyLabel}
-                        {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()}</span>}
+                        {pkg.diamonds.toLocaleString()} {currencyLabel}
+                        {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()} bonus</span>}
                       </div>
                     </div>
+
+                    {/* Add to Cart button */}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        addToCart({ id: pkg.id, diamonds: pkg.diamonds, bonus_diamonds: pkg.bonus_diamonds, price: pkg.price, old_price: pkg.old_price ?? null, name: pkg.name, category: pkg.category, image: pkg.image ?? null, gameName: game?.name || "", currencyLabel });
+                        setCartAdded(pkg.id);
+                        setTimeout(() => setCartAdded(null), 1800);
+                      }}
+                      style={{ background: cartAdded === pkg.id ? "rgba(34,197,94,0.15)" : "rgba(139,92,246,0.1)", border: `1px solid ${cartAdded === pkg.id ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.3)"}`, borderRadius: 8, padding: "5px 8px", color: cartAdded === pkg.id ? "#4ade80" : "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", WebkitTapHighlightColor: "transparent" }}
+                    >
+                      {cartAdded === pkg.id ? "✓ Added!" : "🛒 Add to Cart"}
+                    </button>
                   </div>
                 );
               })}
@@ -385,6 +441,21 @@ export default function GameProductsPage() {
               </div>
             </div>
 
+            {/* Quantity Selector */}
+            {!isStarlight && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Quantity</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent" }}>−</button>
+                  <span style={{ color: "#fff", fontWeight: 800, fontSize: 16, minWidth: 24, textAlign: "center" }}>{quantity}</span>
+                  <button onClick={() => setQuantity(q => Math.min(10, q + 1))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent" }}>+</button>
+                  {quantity > 1 && (
+                    <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginLeft: 4 }}>= ₹{(parseFloat(selectedPkg!.price) * quantity).toFixed(0)} total</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Payment Method */}
             {!isStarlight && (
               <div style={{ marginBottom: 14 }}>
@@ -403,14 +474,21 @@ export default function GameProductsPage() {
               </div>
             )}
 
+            {/* Wallet Result */}
+            {walletResult && (
+              <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: walletResult.ok ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${walletResult.ok ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)"}`, color: walletResult.ok ? "#4ade80" : "#f87171", fontSize: 12, fontWeight: 600 }}>
+                {walletResult.ok ? "✅ " : "❌ "}{walletResult.msg}
+              </div>
+            )}
+
             {/* Buy Button */}
             <button
               onClick={() => isStarlight ? handleStarlightBuy() : handleBuy()}
-              disabled={!userId.trim()}
-              style={{ width: "100%", padding: "14px 0", borderRadius: 12, background: userId.trim() ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "rgba(139,92,246,0.12)", color: userId.trim() ? "#fff" : "rgba(139,92,246,0.45)", border: userId.trim() ? "none" : "1px solid rgba(139,92,246,0.18)", fontWeight: 800, fontSize: 15, cursor: userId.trim() ? "pointer" : "not-allowed", transition: "all 0.2s", boxShadow: userId.trim() ? "0 4px 20px rgba(139,92,246,0.3)" : "none", WebkitTapHighlightColor: "transparent" }}
+              disabled={!userId.trim() || walletBuying}
+              style={{ width: "100%", padding: "14px 0", borderRadius: 12, background: (userId.trim() && !walletBuying) ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "rgba(139,92,246,0.12)", color: (userId.trim() && !walletBuying) ? "#fff" : "rgba(139,92,246,0.45)", border: (userId.trim() && !walletBuying) ? "none" : "1px solid rgba(139,92,246,0.18)", fontWeight: 800, fontSize: 15, cursor: (userId.trim() && !walletBuying) ? "pointer" : "not-allowed", transition: "all 0.2s", boxShadow: (userId.trim() && !walletBuying) ? "0 4px 20px rgba(139,92,246,0.3)" : "none", WebkitTapHighlightColor: "transparent" }}
             >
-              {userId.trim()
-                ? (isStarlight ? "Order via WhatsApp →" : "Buy Now →")
+              {walletBuying ? "Processing…" : userId.trim()
+                ? (isStarlight ? "Order via WhatsApp →" : paymentMethod === "wallet" ? "Pay with Wallet →" : "Buy Now →")
                 : "Enter your ID first (Step 1)"}
             </button>
           </div>

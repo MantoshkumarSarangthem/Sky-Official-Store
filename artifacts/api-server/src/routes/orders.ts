@@ -2,7 +2,7 @@ import { Router } from "express";
 import pool from "../lib/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { sendPushToAll } from "./push";
-import { sendOrderEmail, notifyAvailableStaff } from "../lib/email";
+import { sendOrderEmail } from "../lib/email";
 
 const router = Router();
 
@@ -43,7 +43,7 @@ async function assignAvailableStaff(): Promise<number | null> {
   return staffList[assignedIdx].id;
 }
 
-function fireNotifications(displayId: string, orderId: number, staffId: number | null, pkg: { diamonds: number; price: string }, mlbbId: string | null, remark: string | null, extra: { serverId: string | null; ign: string | null; isForFriend: boolean }) {
+function fireNotifications(displayId: string, orderId: number, _staffId: number | null, pkg: { diamonds: number; price: string }, mlbbId: string | null, remark: string | null, _extra: { serverId: string | null; ign: string | null; isForFriend: boolean }) {
   const diamonds = Number(pkg.diamonds).toLocaleString("en-IN");
   const price = parseFloat(pkg.price).toFixed(0);
 
@@ -58,10 +58,6 @@ function fireNotifications(displayId: string, orderId: number, staffId: number |
 
   sendOrderEmail({ orderId, diamonds: pkg.diamonds, price: pkg.price, mlbbId, remark }).catch((err) => {
     console.error(`[notify] EMAIL_FAILED — owner email for order ${displayId}:`, err?.message);
-  });
-
-  notifyAvailableStaff(displayId, staffId, { diamonds: pkg.diamonds, price: pkg.price, mlbbId }, pool).catch((err) => {
-    console.error(`[notify] EMAIL_FAILED — staff notifications for order ${displayId}:`, err?.message);
   });
 }
 
@@ -205,7 +201,6 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
 
     sendPushToAll({ title: "🛒 Cart Order!", body: `${orderIds.length} items · ₹${totalPrice.toFixed(0)}`, tag: "new-order", url: "/admin" });
 
-    const firstDisplayId = displayIds[0] ?? "CART";
     sendOrderEmail({
       orderId: orderIds[0] ?? 0,
       diamonds: totalDiamonds,
@@ -214,14 +209,6 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
       remark: remark ?? `${orderIds.length} cart items — ${displayIds.join(", ")}`,
     }).catch((err: any) => {
       console.error(`[notify] EMAIL_FAILED — owner cart email: ${err?.message}`);
-    });
-
-    notifyAvailableStaff(firstDisplayId, staffId, {
-      diamonds: totalDiamonds,
-      price: totalPrice.toFixed(2),
-      mlbbId,
-    }, pool).catch((err: any) => {
-      console.error(`[notify] EMAIL_FAILED — staff cart email: ${err?.message}`);
     });
 
   } catch (err: any) {

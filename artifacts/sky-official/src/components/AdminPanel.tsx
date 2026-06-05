@@ -249,6 +249,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [staffList, setStaffList] = useState<RechargeStaff[]>([]);
   const [staffSaving, setStaffSaving] = useState(false);
   const [showAddStaff, setShowAddStaff] = useState(false);
+  const [revealedStaff, setRevealedStaff] = useState<Record<number, boolean>>({});
   const [newStaff, setNewStaff] = useState({ name: "", email: "", whatsapp: "", upi_id: "", shift_hours: "", status: "offline", pin: "" });
   const [staffQrPreview, setStaffQrPreview] = useState<string | null>(null);
   const staffQrRef = useRef<HTMLInputElement>(null);
@@ -2042,10 +2043,17 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             <span className="text-white font-bold text-sm">{s.name}</span>
                             <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: s.status === "available" ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)", color: s.status === "available" ? "#22c55e" : "#9ca3af" }}>{s.status === "available" ? "● Available" : "○ Offline"}</span>
                           </div>
-                          {s.email && <div className="text-gray-400 text-xs mt-1">✉ {s.email}</div>}
-                          {s.whatsapp && <div className="text-gray-400 text-xs mt-0.5">📱 {s.whatsapp}</div>}
                           {s.shift_hours && <div className="text-gray-500 text-xs mt-0.5">⏰ {s.shift_hours}</div>}
-                          {s.staff_pin && <div className="text-gray-600 text-xs mt-0.5">🔐 Portal PIN: <span className="font-mono text-amber-600">{s.staff_pin}</span></div>}
+                          <button onClick={() => setRevealedStaff(prev => ({ ...prev, [s.id]: !prev[s.id] }))} className="text-xs mt-1.5 px-2 py-0.5 rounded" style={{ background: revealedStaff[s.id] ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.06)", color: revealedStaff[s.id] ? "#f59e0b" : "rgba(255,255,255,0.4)", border: `1px solid ${revealedStaff[s.id] ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.1)"}`, cursor: "pointer" }}>
+                            {revealedStaff[s.id] ? "🔒 Hide Details" : "🔓 Reveal Details"}
+                          </button>
+                          {revealedStaff[s.id] && (
+                            <div className="mt-1.5 flex flex-col gap-0.5">
+                              {s.email && <div className="text-gray-400 text-xs">✉ {s.email}</div>}
+                              {s.whatsapp && <div className="text-gray-400 text-xs">📱 {s.whatsapp}</div>}
+                              {s.staff_pin && <div className="text-gray-600 text-xs">🔐 Portal PIN: <span className="font-mono text-amber-600">{s.staff_pin}</span></div>}
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col gap-1.5 flex-shrink-0 items-end">
                           <button onClick={() => toggleStaffStatus(s.id, s.status)} className="px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: s.status === "available" ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: s.status === "available" ? "#ef4444" : "#22c55e", border: `1px solid ${s.status === "available" ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}` }}>{s.status === "available" ? "Set Offline" : "Set Available"}</button>

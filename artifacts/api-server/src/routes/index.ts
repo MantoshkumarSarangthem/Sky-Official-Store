@@ -153,10 +153,11 @@ router.get("/stats", async (_req, res) => {
 router.get("/orders/recent", async (_req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT mlbb_ign, diamonds, created_at
-      FROM orders
-      WHERE status = 'completed' AND diamonds > 0
-      ORDER BY created_at DESC
+      SELECT o.mlbb_ign, o.diamonds, o.created_at, p.name AS pack_name, p.currency_label
+      FROM orders o
+      LEFT JOIN packages p ON p.id = o.package_id
+      WHERE o.status = 'completed' AND o.diamonds > 0
+      ORDER BY o.created_at DESC
       LIMIT 12
     `);
     res.json(rows);

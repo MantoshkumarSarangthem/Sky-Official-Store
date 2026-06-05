@@ -411,19 +411,8 @@ function AnimatedBackground() {
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh",
       zIndex: 0, overflow: "hidden", pointerEvents: "none",
-    }}>
-      <div style={{
-        position: "absolute", inset: 0,
-        backgroundImage: "url('/bg.webp')",
-        backgroundSize: "cover",
-        backgroundPosition: "center center",
-        transform: "scale(1.08)",
-      }} />
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.42) 100%)",
-      }} />
-    </div>
+      background: "#BFC0C0",
+    }} />
   );
 }
 
@@ -451,11 +440,18 @@ function PromoBannerSlider() {
     return () => window.removeEventListener("skyAdminUpdate", fetchBanners);
   }, [fetchBanners]);
 
+  const advanceSlide = useCallback(() => {
+    setActiveIdx(i => (i + 1) % banners.length);
+  }, [banners.length]);
+
   useEffect(() => {
     if (banners.length < 2) return;
-    timerRef.current = setInterval(() => setActiveIdx(i => (i + 1) % banners.length), 3500);
+    const currentBanner = banners[activeIdx];
+    const isVid = currentBanner && (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(currentBanner.image) || currentBanner.image?.startsWith("data:video/"));
+    if (isVid) return;
+    timerRef.current = setInterval(advanceSlide, 3500);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [banners.length]);
+  }, [banners.length, activeIdx, advanceSlide]);
 
   if (banners.length === 0) return null;
   const banner = banners[activeIdx];
@@ -463,7 +459,6 @@ function PromoBannerSlider() {
   function go(dir: 1 | -1) {
     if (timerRef.current) clearInterval(timerRef.current);
     setActiveIdx(i => (i + dir + banners.length) % banners.length);
-    timerRef.current = setInterval(() => setActiveIdx(i => (i + 1) % banners.length), 3500);
   }
 
   return (
@@ -488,7 +483,7 @@ function PromoBannerSlider() {
         {banners.map((b, i) => {
           const isVid = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) || b.image.startsWith("data:video/");
           return isVid ? (
-            <video key={b.id} src={b.image} autoPlay muted loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
+            <video key={b.id} src={b.image} autoPlay muted playsInline onEnded={advanceSlide} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
           ) : (
             <img key={b.id} src={b.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
           );
@@ -496,7 +491,7 @@ function PromoBannerSlider() {
         {banners.length > 1 && (
           <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5, zIndex: 5 }}>
             {banners.map((_, i) => (
-              <div key={i} onClick={e => { e.stopPropagation(); if (timerRef.current) clearInterval(timerRef.current); setActiveIdx(i); timerRef.current = setInterval(() => setActiveIdx(j => (j + 1) % banners.length), 3500); }} style={{ width: i === activeIdx ? 20 : 6, height: 6, borderRadius: 999, background: i === activeIdx ? "#f59e0b" : "rgba(255,255,255,0.4)", transition: "all 0.3s ease", cursor: "pointer" }} />
+              <div key={i} onClick={e => { e.stopPropagation(); if (timerRef.current) clearInterval(timerRef.current); setActiveIdx(i); }} style={{ width: i === activeIdx ? 20 : 6, height: 6, borderRadius: 999, background: i === activeIdx ? "#f59e0b" : "rgba(255,255,255,0.4)", transition: "all 0.3s ease", cursor: "pointer" }} />
             ))}
           </div>
         )}
@@ -789,7 +784,7 @@ function maskName(name: string): string {
   return name[0].toUpperCase() + "***";
 }
 
-interface RecentOrder { mlbb_ign: string | null; diamonds: number; created_at: string; }
+interface RecentOrder { mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null; }
 
 function LiveTicker() {
   const [purchases, setPurchases] = useState<RecentOrder[]>([]);
@@ -812,12 +807,16 @@ function LiveTicker() {
         <div className="flex-shrink-0 px-3 py-1 flex items-center gap-1 font-bold" style={{ color: "#f59e0b", fontSize: 13 }}>⚡ Live Purchases</div>
         <div className="flex overflow-hidden">
           <div className="flex gap-6 whitespace-nowrap" style={{ animation: `scrollTicker ${duration}s linear infinite`, willChange: "transform" }}>
-            {doubled.map((p, i) => (
-              <span key={i} className="text-gray-700 flex-shrink-0" style={{ fontSize: 13 }}>
-                <span className="font-bold text-amber-600">{maskName(p.mlbb_ign ?? "Player")}</span>{" bought "}<span className="font-bold">{Number(p.diamonds).toLocaleString()} products</span>
-                <span className="ml-5 text-gray-300">|</span>
-              </span>
-            ))}
+            {doubled.map((p, i) => {
+              const label = p.currency_label || "Diamonds";
+              const displayName = p.pack_name || `${Number(p.diamonds).toLocaleString()} ${label}`;
+              return (
+                <span key={i} className="text-gray-700 flex-shrink-0" style={{ fontSize: 13 }}>
+                  <span className="font-bold text-amber-600">{maskName(p.mlbb_ign ?? "Player")}</span>{" bought "}<span className="font-bold">{displayName}</span>
+                  <span className="ml-5 text-gray-300">|</span>
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1191,52 +1190,31 @@ function PromoCarousel() {
   );
 }
 
-let introPlayedThisSession = false;
-
 // ── Main Site Page ─────────────────────────────────────────────────────────
 function MainSite() {
-  const [introDone, setIntroDone] = useState(introPlayedThisSession);
-  const [introMounted, setIntroMounted] = useState(!introPlayedThisSession);
-
-  const handleIntroDone = () => {
-    introPlayedThisSession = true;
-    window.dispatchEvent(new Event("skyIntroDone"));
-    setIntroDone(true);
-    setTimeout(() => setIntroMounted(false), 1000);
-  };
-
   return (
-    <>
-      {/* Main content always rendered so video starts immediately */}
-      <div style={{ pointerEvents: introDone ? "auto" : "none", overflowX: "hidden", paddingTop: "88px", display: "flex", flexDirection: "column", minHeight: "100vh", boxSizing: "border-box" }}>
-        <div style={{ flex: 1 }}>
-          <AnimatedPage>
-            <div style={{ minHeight: "220px" }}>
-              <PromoBannerSlider />
-            </div>
-            <div style={{ height: 20 }} />
-            <div style={{ minHeight: "500px" }}>
-              <GameSelectSection />
-            </div>
-            <AnnouncementBar />
-            <PromoCarousel />
-            <StatsSection />
-            <WhyChooseUs />
-            <LiveTicker />
-            <WhatsAppSection />
-          </AnimatedPage>
-        </div>
-        <Footer />
-        <WhatsAppFAB />
-        {introDone && <LatestNewsPopup />}
+    <div style={{ overflowX: "hidden", paddingTop: "88px", display: "flex", flexDirection: "column", minHeight: "100vh", boxSizing: "border-box" }}>
+      <div style={{ flex: 1 }}>
+        <AnimatedPage>
+          <div style={{ minHeight: "220px" }}>
+            <PromoBannerSlider />
+          </div>
+          <div style={{ height: 20 }} />
+          <div style={{ minHeight: "500px" }}>
+            <GameSelectSection />
+          </div>
+          <AnnouncementBar />
+          <PromoCarousel />
+          <StatsSection />
+          <WhyChooseUs />
+          <LiveTicker />
+          <WhatsAppSection />
+        </AnimatedPage>
       </div>
-      {/* Intro overlays on top and fades out — content plays underneath */}
-      {introMounted && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, opacity: introDone ? 0 : 1, transition: "opacity 0.68s ease", pointerEvents: introDone ? "none" : "auto" }}>
-          <LoadingScreen onDone={handleIntroDone} />
-        </div>
-      )}
-    </>
+      <Footer />
+      <WhatsAppFAB />
+      <LatestNewsPopup />
+    </div>
   );
 }
 

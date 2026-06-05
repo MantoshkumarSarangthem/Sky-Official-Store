@@ -157,6 +157,9 @@ async function initDb() {
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='games' AND column_name='region') THEN
         ALTER TABLE games ADD COLUMN region TEXT;
       END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='packages' AND column_name='currency_label') THEN
+        ALTER TABLE packages ADD COLUMN currency_label TEXT;
+      END IF;
     END$$;
   `);
 }
