@@ -2,6 +2,48 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
+// ── Biometric (WebAuthn) helpers ──────────────────────────────────────────
+const ADMIN_BIO_CRED = "admin_bio_cred_id";
+const ADMIN_BIO_TOKEN = "admin_bio_token";
+
+async function adminBioAvailable(): Promise<boolean> {
+  if (!window.PublicKeyCredential) return false;
+  try { return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }
+  catch { return false; }
+}
+
+async function adminBioRegister(token: string): Promise<boolean> {
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const userId = crypto.getRandomValues(new Uint8Array(16));
+  const cred = await navigator.credentials.create({
+    publicKey: {
+      challenge, rp: { name: "Sky Official Admin", id: window.location.hostname },
+      user: { id: userId, name: "admin", displayName: "Admin" },
+      pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+      timeout: 60000,
+    }
+  }) as PublicKeyCredential | null;
+  if (!cred) return false;
+  localStorage.setItem(ADMIN_BIO_CRED, btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+  localStorage.setItem(ADMIN_BIO_TOKEN, token);
+  return true;
+}
+
+async function adminBioAuthenticate(): Promise<string | null> {
+  const b64 = localStorage.getItem(ADMIN_BIO_CRED);
+  if (!b64) return null;
+  const credId = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const assertion = await navigator.credentials.get({
+    publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: [{ id: credId, type: "public-key" }],
+      userVerification: "required", timeout: 60000,
+    }
+  });
+  return assertion ? localStorage.getItem(ADMIN_BIO_TOKEN) : null;
+}
+
 interface OfferBanner { id: string; title: string; subtitle?: string; emoji?: string; bgGradient?: string; ctaText?: string; ctaLink?: string; }
 
 interface Package {
@@ -67,6 +109,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [authed, setAuthed] = useState(() => !!sessionStorage.getItem("admin_token"));
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [bioAvail, setBioAvail] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(() => !!localStorage.getItem(ADMIN_BIO_CRED));
+  const [bioLoading, setBioLoading] = useState(false);
+  const [bioMsg, setBioMsg] = useState("");
   const [tab, setTab] = useState<Tab>("packages");
   const [packages, setPackages] = useState<Package[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -773,8 +819,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setWalletLoading(null);
   };
 
+  useEffect(() => { adminBioAvailable().then(setBioAvail); }, []);
+
   const login = async () => {
-    setLoginError("");
+    setLoginError(""); setBioMsg("");
     const res = await fetch(`${API}/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -786,6 +834,33 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     } else {
       setLoginError("Wrong password. Try again.");
     }
+  };
+
+  const loginWithBio = async () => {
+    setBioLoading(true); setLoginError(""); setBioMsg("");
+    try {
+      const token = await adminBioAuthenticate();
+      if (token) { sessionStorage.setItem("admin_token", token); setAuthed(true); }
+      else setBioMsg("Biometric verification failed. Use password instead.");
+    } catch (e: any) {
+      setBioMsg(e?.name === "NotAllowedError" ? "Biometric cancelled." : "Biometric login failed.");
+    } finally { setBioLoading(false); }
+  };
+
+  const enableBio = async () => {
+    setBioLoading(true); setBioMsg("");
+    try {
+      const ok = await adminBioRegister(password);
+      if (ok) { setBioEnabled(true); setBioMsg("✓ Biometric login enabled for this device!"); }
+      else setBioMsg("Could not save biometric credential.");
+    } catch (e: any) {
+      setBioMsg(e?.name === "NotAllowedError" ? "Biometric setup cancelled." : "Biometric setup failed.");
+    } finally { setBioLoading(false); }
+  };
+
+  const disableBio = () => {
+    localStorage.removeItem(ADMIN_BIO_CRED); localStorage.removeItem(ADMIN_BIO_TOKEN);
+    setBioEnabled(false); setBioMsg("Biometric login removed.");
   };
 
   const savePkg = async (pkg: Package) => {
@@ -958,6 +1033,30 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
           {/* Right: compact actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {authed && notifButton()}
+            {authed && bioAvail && !bioEnabled && password && (
+              <button
+                onClick={enableBio}
+                disabled={bioLoading}
+                title="Enable biometric login for this device"
+                className="flex items-center justify-center text-xs font-semibold transition-colors"
+                style={{ color: "#a5b4fc", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 8, padding: "5px 10px", whiteSpace: "nowrap" }}
+              >
+                {bioLoading ? "…" : "🔑 Enable Biometrics"}
+              </button>
+            )}
+            {authed && bioAvail && bioEnabled && (
+              <button
+                onClick={disableBio}
+                title="Remove biometric login from this device"
+                className="flex items-center justify-center text-xs font-semibold transition-colors"
+                style={{ color: "#6b7280", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "5px 10px", whiteSpace: "nowrap" }}
+              >
+                🔑 Biometrics On
+              </button>
+            )}
+            {authed && bioMsg && (
+              <span className="text-xs text-amber-400 max-w-[120px] truncate">{bioMsg}</span>
+            )}
             {authed && (
               <button
                 onClick={logout}
@@ -983,6 +1082,23 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               <div className="text-gray-400 text-sm mt-1">Enter your password to continue</div>
             </div>
             <div className="w-full max-w-xs flex flex-col gap-3">
+              {bioAvail && bioEnabled && (
+                <button
+                  onClick={loginWithBio}
+                  disabled={bioLoading}
+                  className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+                  style={{ background: "linear-gradient(135deg,#1e1b4b,#312e81)", border: "1.5px solid rgba(129,140,248,0.5)", color: "#a5b4fc" }}
+                >
+                  {bioLoading ? <span className="animate-pulse">Verifying…</span> : <><span style={{ fontSize: 18 }}>🔑</span> Login with Biometrics</>}
+                </button>
+              )}
+              {bioAvail && bioEnabled && (
+                <div className="flex items-center gap-2">
+                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+                  <span className="text-gray-600 text-xs">or use password</span>
+                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+                </div>
+              )}
               <input
                 type="password"
                 placeholder="Password"
@@ -993,7 +1109,9 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                 style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}
                 autoFocus
               />
-              {loginError && <p className="text-red-400 text-xs text-center">{loginError}</p>}
+              {(loginError || bioMsg) && (
+                <p className={`text-xs text-center ${loginError ? "text-red-400" : "text-amber-400"}`}>{loginError || bioMsg}</p>
+              )}
               <button
                 onClick={login}
                 className="w-full py-3 rounded-xl font-bold text-sm text-black"

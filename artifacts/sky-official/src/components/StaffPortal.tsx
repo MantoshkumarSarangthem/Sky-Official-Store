@@ -2,6 +2,50 @@ import { useState, useEffect, useCallback } from "react";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
+// ── Biometric (WebAuthn) helpers ──────────────────────────────────────────
+const STAFF_BIO_CRED = "staff_bio_cred_id";
+const STAFF_BIO_DATA = "staff_bio_data";
+
+async function staffBioAvailable(): Promise<boolean> {
+  if (!window.PublicKeyCredential) return false;
+  try { return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }
+  catch { return false; }
+}
+
+async function staffBioRegister(token: string, staff: unknown): Promise<boolean> {
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const userId = crypto.getRandomValues(new Uint8Array(16));
+  const cred = await navigator.credentials.create({
+    publicKey: {
+      challenge, rp: { name: "Sky Official Staff", id: window.location.hostname },
+      user: { id: userId, name: "staff", displayName: "Staff" },
+      pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+      timeout: 60000,
+    }
+  }) as PublicKeyCredential | null;
+  if (!cred) return false;
+  localStorage.setItem(STAFF_BIO_CRED, btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+  localStorage.setItem(STAFF_BIO_DATA, JSON.stringify({ token, staff }));
+  return true;
+}
+
+async function staffBioAuthenticate(): Promise<{ token: string; staff: unknown } | null> {
+  const b64 = localStorage.getItem(STAFF_BIO_CRED);
+  if (!b64) return null;
+  const credId = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const assertion = await navigator.credentials.get({
+    publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: [{ id: credId, type: "public-key" }],
+      userVerification: "required", timeout: 60000,
+    }
+  });
+  if (!assertion) return null;
+  try { return JSON.parse(localStorage.getItem(STAFF_BIO_DATA) || "null"); }
+  catch { return null; }
+}
+
 interface StaffOrder {
   id: number;
   display_id: string | null;
@@ -110,12 +154,49 @@ export default function StaffPortal() {
   const [loginPin, setLoginPin] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [bioAvail, setBioAvail] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(() => !!localStorage.getItem(STAFF_BIO_CRED));
+  const [bioLoading, setBioLoading] = useState(false);
+  const [bioMsg, setBioMsg] = useState("");
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<StaffOrder | null>(null);
 
   const authHeader = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+  useEffect(() => { staffBioAvailable().then(setBioAvail); }, []);
+
+  const loginWithBio = async () => {
+    setBioLoading(true); setLoginError(""); setBioMsg("");
+    try {
+      const data = await staffBioAuthenticate();
+      if (data && data.token) {
+        setToken(data.token as string);
+        setStaff(data.staff as StaffInfo);
+        localStorage.setItem("staff_token", data.token as string);
+        localStorage.setItem("staff_info", JSON.stringify(data.staff));
+      } else setBioMsg("Biometric verification failed. Use PIN instead.");
+    } catch (e: any) {
+      setBioMsg(e?.name === "NotAllowedError" ? "Biometric cancelled." : "Biometric login failed.");
+    } finally { setBioLoading(false); }
+  };
+
+  const enableBio = async (tok: string, staffData: StaffInfo) => {
+    setBioLoading(true); setBioMsg("");
+    try {
+      const ok = await staffBioRegister(tok, staffData);
+      if (ok) { setBioEnabled(true); setBioMsg("✓ Biometric login enabled for this device!"); }
+      else setBioMsg("Could not save biometric credential.");
+    } catch (e: any) {
+      setBioMsg(e?.name === "NotAllowedError" ? "Biometric setup cancelled." : "Biometric setup failed.");
+    } finally { setBioLoading(false); }
+  };
+
+  const disableBio = () => {
+    localStorage.removeItem(STAFF_BIO_CRED); localStorage.removeItem(STAFF_BIO_DATA);
+    setBioEnabled(false); setBioMsg("Biometric login removed.");
+  };
 
   const fetchOrders = useCallback(async () => {
     if (!token) return;
@@ -190,6 +271,22 @@ export default function StaffPortal() {
             <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginTop: 4 }}>Sky Official — Internal Use Only</div>
           </div>
           <div style={{ background: "#111", borderRadius: 20, border: "1px solid rgba(245,158,11,0.2)", padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+            {bioAvail && bioEnabled && (
+              <button
+                onClick={loginWithBio}
+                disabled={bioLoading}
+                style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: "linear-gradient(135deg,#1e1b4b,#312e81)", border: "1.5px solid rgba(129,140,248,0.5)", color: "#a5b4fc", fontWeight: 800, fontSize: 15, cursor: bioLoading ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+              >
+                {bioLoading ? <span>Verifying…</span> : <><span style={{ fontSize: 20 }}>🔑</span> Login with Biometrics</>}
+              </button>
+            )}
+            {bioAvail && bioEnabled && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+                <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>or use PIN</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+              </div>
+            )}
             <div>
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Your Name</div>
               <input value={loginName} onChange={e => setLoginName(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} placeholder="Enter your staff name"
@@ -200,8 +297,10 @@ export default function StaffPortal() {
               <input type="password" value={loginPin} onChange={e => setLoginPin(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} placeholder="Enter your PIN"
                 style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
             </div>
-            {loginError && (
-              <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, padding: "8px 12px", color: "#ef4444", fontSize: 13 }}>{loginError}</div>
+            {(loginError || bioMsg) && (
+              <div style={{ background: loginError ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.08)", border: `1px solid ${loginError ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.2)"}`, borderRadius: 8, padding: "8px 12px", color: loginError ? "#ef4444" : "#fbbf24", fontSize: 13 }}>
+                {loginError || bioMsg}
+              </div>
             )}
             <button onClick={login} disabled={loginLoading}
               style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: loginLoading ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 800, fontSize: 15, border: "none", cursor: loginLoading ? "default" : "pointer" }}>
@@ -287,6 +386,25 @@ export default function StaffPortal() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={fetchOrders} style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>↻ Refresh</button>
+          {bioAvail && !bioEnabled && (
+            <button
+              onClick={() => enableBio(token, staff!)}
+              disabled={bioLoading}
+              title="Enable biometric login for this device"
+              style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", color: "#a5b4fc", fontSize: 11, cursor: bioLoading ? "default" : "pointer", fontWeight: 600 }}
+            >
+              {bioLoading ? "…" : "🔑"}
+            </button>
+          )}
+          {bioAvail && bioEnabled && (
+            <button
+              onClick={disableBio}
+              title="Biometric login is ON — tap to remove"
+              style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+            >
+              🔑
+            </button>
+          )}
           <button onClick={logout} style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Logout</button>
         </div>
       </div>
