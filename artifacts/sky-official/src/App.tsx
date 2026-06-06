@@ -22,7 +22,6 @@ import {
   useClerk,
   useAuth,
 } from "@clerk/react";
-import { dark } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 
 const WHATSAPP_GROUP = "https://chat.whatsapp.com/DB3FwXqNUi649KT18VjVu9";
@@ -47,20 +46,19 @@ function stripBase(path: string): string {
 }
 
 const clerkAppearance = {
-  baseTheme: dark,
   cssLayerName: "clerk",
   options: {
     logoPlacement: "none" as const,
   },
   variables: {
-    colorPrimary: "#f59e0b",
-    colorForeground: "#f9fafb",
-    colorMutedForeground: "#6b7280",
+    colorPrimary: "#A89482",
+    colorForeground: "#3D2B1F",
+    colorMutedForeground: "#7a6558",
     colorDanger: "#ef4444",
-    colorBackground: "#07080a",
-    colorInput: "#111318",
-    colorInputForeground: "#f9fafb",
-    colorNeutral: "#374151",
+    colorBackground: "#FAF9F6",
+    colorInput: "#FFFFFF",
+    colorInputForeground: "#3D2B1F",
+    colorNeutral: "#C5B4A2",
     fontFamily: "Inter, sans-serif",
     borderRadius: "0.65rem",
     fontSize: "0.9rem",
@@ -74,22 +72,22 @@ const clerkAppearance = {
     headerSubtitle: "hidden",
     header: "hidden",
     socialButtonsBlockButtonArrow: "hidden",
-    socialButtonsBlockButton: "!bg-[#1a1c22] !border-2 !border-white/35 hover:!border-amber-500/60 hover:!bg-[#22242c] !transition-all !rounded-lg !h-11 !shadow-none",
-    socialButtonsBlockButtonText: "!text-white !font-medium !text-sm",
-    formFieldLabel: "!text-gray-400 !font-medium !text-xs !uppercase !tracking-wide",
-    footerActionLink: "!text-amber-400 !font-semibold hover:!text-amber-300",
-    footerActionText: "!text-gray-600 !text-sm",
-    dividerText: "!text-gray-600 !text-xs",
-    identityPreviewEditButton: "!text-amber-400",
-    formFieldSuccessText: "!text-green-400",
-    alertText: "!text-red-400 !text-sm",
+    socialButtonsBlockButton: "!bg-white !border-2 !border-[#C5B4A2]/50 hover:!border-[#A89482] hover:!bg-[#FAF9F6] !transition-all !rounded-lg !h-11 !shadow-none",
+    socialButtonsBlockButtonText: "!text-[#3D2B1F] !font-medium !text-sm",
+    formFieldLabel: "!text-[#7a6558] !font-medium !text-xs !uppercase !tracking-wide",
+    footerActionLink: "!text-[#A89482] !font-semibold hover:!text-[#8a7468]",
+    footerActionText: "!text-[#7a6558] !text-sm",
+    dividerText: "!text-[#7a6558] !text-xs",
+    identityPreviewEditButton: "!text-[#A89482]",
+    formFieldSuccessText: "!text-green-600",
+    alertText: "!text-red-500 !text-sm",
     socialButtonsBlockButtonIconBox: "!mr-2",
-    formButtonPrimary: "!bg-amber-500 hover:!bg-amber-400 !text-black !font-bold !transition-colors !rounded-lg !h-11 !shadow-none",
-    formFieldInput: "!bg-[#111318] !border-[#1f2937] !text-white focus:!border-amber-500/60 !rounded-lg !h-11 !text-sm",
-    footerAction: "!border-t !border-white/5 !mt-5",
-    dividerLine: "!bg-white/8",
-    alert: "!border !border-red-900/50 !bg-red-950/30 !rounded-lg",
-    otpCodeFieldInput: "!bg-[#111318] !border-[#1f2937] !text-white",
+    formButtonPrimary: "!bg-[#A89482] hover:!bg-[#8a7468] !text-white !font-bold !transition-colors !rounded-lg !h-11 !shadow-none",
+    formFieldInput: "!bg-white !border-[#C5B4A2] !text-[#3D2B1F] focus:!border-[#A89482] !rounded-lg !h-11 !text-sm",
+    footerAction: "!border-t !border-[#C5B4A2]/30 !mt-5",
+    dividerLine: "!bg-[#C5B4A2]/30",
+    alert: "!border !border-red-300 !bg-red-50 !rounded-lg",
+    otpCodeFieldInput: "!bg-white !border-[#C5B4A2] !text-[#3D2B1F]",
     formFieldRow: "gap-3",
     main: "gap-5",
     socialButtons: "gap-2.5",
@@ -133,8 +131,8 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: "#0a0a0a" }}>
-      <div style={{ position: "absolute", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, rgba(245,158,11,0.025) 0%, transparent 60%)", pointerEvents: "none" }} />
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: "#FAF9F6" }}>
+      <div style={{ position: "absolute", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,148,130,0.06) 0%, transparent 60%)", pointerEvents: "none" }} />
       <div className="relative flex flex-col items-center z-10" style={{ gap: 28 }}>
         <div style={{ position: "relative", width: 74, height: 74 }}>
           <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(245,158,11,0.15)" }} />
@@ -144,10 +142,10 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
           </div>
         </div>
         <div className="flex flex-col items-center" style={{ gap: 6 }}>
-          <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.3em" }}>SKY OFFICIAL</span>
+          <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.3em" }}>SKY OFFICIAL</span>
           <span style={{ fontSize: 7, fontWeight: 600, letterSpacing: "0.32em", background: "linear-gradient(90deg, transparent, #f59e0b, #fcd34d, #f59e0b, transparent)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "skyShimmer 2s ease-in-out infinite" }}>SHOP SMART | PLAY HARD</span>
         </div>
-        <div style={{ width: 100, height: 1, background: "rgba(255,255,255,0.07)", borderRadius: 999, overflow: "hidden" }}>
+        <div style={{ width: 100, height: 1, background: "rgba(61,43,31,0.12)", borderRadius: 999, overflow: "hidden" }}>
           <div style={{ height: "100%", background: "linear-gradient(90deg,#f59e0b,#fcd34d)", borderRadius: 999, animation: "skyBar 2s ease-out forwards" }} />
         </div>
       </div>
@@ -235,11 +233,11 @@ function Navbar() {
         top: 10,
         left: 12,
         right: 12,
-        background: "rgba(13,13,13,0.96)",
+        background: "rgba(230,222,211,0.97)",
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         borderRadius: 20,
-        boxShadow: "0 0 18px 4px rgba(245,158,11,0.1), 0 6px 32px rgba(0,0,0,0.65)",
+        boxShadow: "0 0 12px 2px rgba(168,148,130,0.1), 0 4px 20px rgba(61,43,31,0.07)",
         animation: "navSlideDown 0.38s cubic-bezier(0.22,1,0.36,1) both",
       }}
     >
@@ -271,13 +269,13 @@ function Navbar() {
         className="flex items-center gap-2"
         style={{ background: "none", border: "none", cursor: "pointer", padding: 0, touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
       >
-        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: "#000", border: "1.5px solid #f59e0b", boxShadow: "0 0 8px 1.5px rgba(245,158,11,0.4)" }}>
+        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: "#FAF9F6", border: "1.5px solid #A89482", boxShadow: "0 0 6px 1px rgba(168,148,130,0.3)" }}>
           <img src="/logo.webp" alt="Sky Official" className="w-full h-full object-cover" />
         </div>
         <div className="flex items-center gap-1.5">
           <div style={{ position: "relative", height: 26, minWidth: 80 }}>
-            <span className="sky-glitch font-bold" style={{ color: "#fff", fontSize: 13, position: "absolute", top: -1, left: 0, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>Sky Official</span>
-            <div style={{ position: "absolute", bottom: 0, left: 0, fontSize: 8, lineHeight: 1, color: "#f59e0b", opacity: visible ? 1 : 0, transition: "opacity 0.35s ease", textAlign: "left", whiteSpace: "nowrap", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>{NAV_SUBTITLES[subtitleIdx]}</div>
+            <span className="sky-glitch font-bold" style={{ color: "#3D2B1F", fontSize: 13, position: "absolute", top: -1, left: 0, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>Sky Official</span>
+            <div style={{ position: "absolute", bottom: 0, left: 0, fontSize: 8, lineHeight: 1, color: "#A89482", opacity: visible ? 1 : 0, transition: "opacity 0.35s ease", textAlign: "left", whiteSpace: "nowrap", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>{NAV_SUBTITLES[subtitleIdx]}</div>
           </div>
         </div>
       </button>
@@ -304,7 +302,7 @@ function Navbar() {
                 </div>
               </button>
               {showProfileMenu && (
-                <div style={{ position: "absolute", right: 0, top: "calc(100% + 10px)", background: "#111316", border: "1px solid rgba(245,158,11,0.22)", borderRadius: 14, boxShadow: "0 10px 40px rgba(0,0,0,0.7)", minWidth: 168, overflow: "hidden", zIndex: 999, animation: "navSlideDown 0.14s ease both" }}>
+                <div style={{ position: "absolute", right: 0, top: "calc(100% + 10px)", background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 14, boxShadow: "0 8px 30px rgba(61,43,31,0.1)", minWidth: 168, overflow: "hidden", zIndex: 999, animation: "navSlideDown 0.14s ease both" }}>
                   {([
                     { label: "Profile", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, action: () => { setLocation("/profile"); setShowProfileMenu(false); } },
                     { label: "My Orders", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>, action: () => { setLocation("/orders"); setShowProfileMenu(false); } },
@@ -315,11 +313,11 @@ function Navbar() {
                       key={item.label}
                       onClick={item.action}
                       className="flex items-center gap-2.5 w-full"
-                      style={{ padding: "10px 14px", background: "none", border: "none", borderBottom: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "left" }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                      style={{ padding: "10px 14px", background: "none", border: "none", borderBottom: "1px solid rgba(197,180,162,0.25)", color: "#3D2B1F", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "left" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(197,180,162,0.12)")}
                       onMouseLeave={e => (e.currentTarget.style.background = "none")}
                     >
-                      <span style={{ color: "rgba(255,255,255,0.45)", display: "flex" }}>{item.icon}</span>
+                      <span style={{ color: "rgba(61,43,31,0.4)", display: "flex" }}>{item.icon}</span>
                       {item.label}
                     </button>
                   ))}
@@ -339,8 +337,8 @@ function Navbar() {
           ) : (
             <button
               onClick={() => setLocation("/sign-in")}
-              className="px-4 py-1.5 rounded-full font-bold text-black"
-              style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)", boxShadow: "0 2px 12px rgba(245,158,11,0.4)", fontSize: 12 }}
+              className="px-4 py-1.5 rounded-full font-bold"
+              style={{ background: "#A89482", color: "#FAF9F6", boxShadow: "0 2px 10px rgba(168,148,130,0.35)", fontSize: 12 }}
             >
               Sign In
             </button>
@@ -411,7 +409,7 @@ function AnimatedBackground() {
     <div style={{
       position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh",
       zIndex: 0, overflow: "hidden", pointerEvents: "none",
-      background: "#BFC0C0",
+      background: "#FAF9F6",
     }} />
   );
 }
@@ -534,10 +532,10 @@ function GameSelectSection() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {Array.from({ length: GAME_SKELETON_COUNT }).map((_, i) => (
-            <div key={i} style={{ borderRadius: 16, background: "rgba(10,10,10,0.82)", overflow: "hidden", animation: `gameSkel 1.6s ease-in-out ${i * 0.08}s infinite` }}>
-              <div style={{ width: "100%", aspectRatio: "1/1", background: "rgba(255,255,255,0.04)" }} />
+            <div key={i} style={{ borderRadius: 16, background: "rgba(197,180,162,0.15)", overflow: "hidden", animation: `gameSkel 1.6s ease-in-out ${i * 0.08}s infinite` }}>
+              <div style={{ width: "100%", aspectRatio: "1/1", background: "rgba(197,180,162,0.12)" }} />
               <div style={{ padding: "6px 8px 10px", display: "flex", justifyContent: "center" }}>
-                <div style={{ width: "65%", height: 10, borderRadius: 4, background: "rgba(255,255,255,0.06)" }} />
+                <div style={{ width: "65%", height: 10, borderRadius: 4, background: "rgba(197,180,162,0.2)" }} />
               </div>
             </div>
           ))}
@@ -553,7 +551,7 @@ function GameSelectSection() {
           <rect x="3" y="6" width="18" height="13" rx="3" stroke="#f59e0b" strokeWidth="1.4"/>
           <path d="M7 12h4m-2-2v4M15 12h2" stroke="#f59e0b" strokeWidth="1.4" strokeLinecap="round"/>
         </svg>
-        <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 13, fontWeight: 600 }}>No games available yet</span>
+        <span style={{ color: "rgba(61,43,31,0.35)", fontSize: 13, fontWeight: 600 }}>No games available yet</span>
       </section>
     );
   }
@@ -564,7 +562,7 @@ function GameSelectSection() {
     <section style={{ background: "transparent", padding: "28px 16px 28px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>Select Game</span>
+        <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>Select Game</span>
       </div>
       <style>{`@keyframes nameMarquee{0%,25%{transform:translateX(0)}80%,100%{transform:translateX(-50%)}}`}</style>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
@@ -583,17 +581,17 @@ function GameSelectSection() {
                 }
               }}
               style={{
-                background: "rgba(13,13,13,0.92)",
+                background: "#FFFFFF",
                 backdropFilter: "blur(14px)",
                 WebkitBackdropFilter: "blur(14px)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                border: "1px solid rgba(197,180,162,0.4)",
                 borderRadius: 16,
                 cursor: "pointer",
                 padding: 0,
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
-                boxShadow: "0 6px 28px rgba(0,0,0,0.7)",
+                boxShadow: "0 3px 12px rgba(61,43,31,0.07)",
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
                 transition: "transform 0.15s ease, box-shadow 0.2s ease",
@@ -612,12 +610,12 @@ function GameSelectSection() {
                 {/* Name — fixed-height row so all panels align uniformly */}
                 <div style={{ height: 18, overflow: "hidden", width: "100%", display: "flex", alignItems: "center", justifyContent: needsMarquee ? "flex-start" : "center" }}>
                   {needsMarquee ? (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "inline-flex", alignItems: "center", flexShrink: 0, whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(20, game.name.length * 0.9)}s ease-in-out infinite` }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#3D2B1F", display: "inline-flex", alignItems: "center", flexShrink: 0, whiteSpace: "nowrap", animation: `nameMarquee ${Math.max(20, game.name.length * 0.9)}s ease-in-out infinite` }}>
                       <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
                       <span style={{ paddingRight: "2.5em" }}>{game.name}</span>
                     </span>
                   ) : (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", display: "block", width: "100%", lineHeight: "18px", whiteSpace: "nowrap", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis" }}>{game.name}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#3D2B1F", display: "block", width: "100%", lineHeight: "18px", whiteSpace: "nowrap", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis" }}>{game.name}</span>
                   )}
                 </div>
                 {/* Region — always rendered so non-region panels keep same height */}
@@ -656,25 +654,25 @@ function HeroSection({ animate = false }: { animate?: boolean }) {
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 55% 38% at 50% 50%, rgba(251,191,36,0.03) 0%, transparent 70%)", zIndex: 2 }} />
       <div className="relative z-10 flex flex-col gap-2.5 px-5 pt-5 pb-9 max-w-lg mx-auto w-full">
         <div className="flex justify-center" style={el(0, 0)}>
-          <span className="px-3 py-0.5 rounded-full font-bold uppercase" style={{ border: "1.5px solid rgba(245,158,11,0.55)", color: "#f59e0b", background: "rgba(245,158,11,0.07)", letterSpacing: "0.14em", fontSize: 8 }}>Game Top Up Store</span>
+          <span className="px-3 py-0.5 rounded-full font-bold uppercase" style={{ border: "1.5px solid rgba(168,148,130,0.55)", color: "#A89482", background: "rgba(168,148,130,0.07)", letterSpacing: "0.14em", fontSize: 8 }}>Game Top Up Store</span>
         </div>
         <div className="text-center">
           <h1 className="font-extrabold leading-tight" style={{ fontSize: "clamp(1.15rem,5.5vw,1.65rem)" }}>
-            <span className="text-white block" style={{ textShadow: "0 0 18px rgba(255,255,255,0.55), 0 0 40px rgba(255,255,255,0.18)", ...el(0.13, 0.04) }}>Recharge Fast.</span>
-            <span className="block" style={{ color: "#f59e0b", textShadow: "0 0 16px rgba(251,191,36,0.7), 0 0 40px rgba(245,158,11,0.35), 0 0 70px rgba(245,158,11,0.15)", ...el(0.26, 0.08) }}>Dominate the</span>
-            <span className="block" style={{ color: "#f59e0b", textShadow: "0 0 16px rgba(251,191,36,0.7), 0 0 40px rgba(245,158,11,0.35), 0 0 70px rgba(245,158,11,0.15)", ...el(0.39, 0.11) }}>Game.</span>
+            <span className="block" style={{ color: "#3D2B1F", ...el(0.13, 0.04) }}>Recharge Fast.</span>
+            <span className="block" style={{ color: "#A89482", ...el(0.26, 0.08) }}>Dominate the</span>
+            <span className="block" style={{ color: "#A89482", ...el(0.39, 0.11) }}>Game.</span>
           </h1>
         </div>
-        <p className="text-center text-gray-400 leading-relaxed px-2" style={{ maxWidth: 260, margin: "0 auto", fontSize: 11, ...el(0.52, 0.14) }}>
+        <p className="text-center leading-relaxed px-2" style={{ maxWidth: 260, margin: "0 auto", fontSize: 11, color: "rgba(61,43,31,0.55)", ...el(0.52, 0.14) }}>
           Instant delivery, secure payments, and the best prices for Mobile Legends Bang Bang. Shop smart, play hard.
         </p>
         <div className="relative h-4 flex items-center justify-center overflow-hidden" style={el(0.65, 0.17)}>
           {featureTexts.map((text, i) => (
-            <span key={i} className="absolute font-semibold text-center" style={{ fontSize: 9.5, color: "#fbbf24", opacity: activeFeature === i ? 1 : 0, transform: activeFeature === i ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.41s ease, transform 0.41s ease", pointerEvents: "none", letterSpacing: "0.05em" }}>✦ {text}</span>
+            <span key={i} className="absolute font-semibold text-center" style={{ fontSize: 9.5, color: "#A89482", opacity: activeFeature === i ? 1 : 0, transform: activeFeature === i ? "translateY(0)" : "translateY(6px)", transition: "opacity 0.41s ease, transform 0.41s ease", pointerEvents: "none", letterSpacing: "0.05em" }}>✦ {text}</span>
           ))}
         </div>
         <div className="flex justify-center mt-1" style={el(0.78, 0.20)}>
-          <button onClick={() => navigateTo("/packages", "forward")} className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full font-bold text-black" style={{ background: "linear-gradient(135deg,#fcd34d,#f59e0b)", boxShadow: "0 0 22px rgba(245,158,11,0.5), 0 3px 12px rgba(0,0,0,0.5)", fontSize: 12, border: "none", cursor: "pointer" }}>
+          <button onClick={() => navigateTo("/packages", "forward")} className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full font-bold" style={{ background: "#A89482", color: "#FAF9F6", boxShadow: "0 4px 16px rgba(168,148,130,0.4)", fontSize: 12, border: "none", cursor: "pointer" }}>
             View Packages <span style={{ fontSize: 13 }}>→</span>
           </button>
         </div>
@@ -702,7 +700,7 @@ function FeaturesSection() {
     { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1" fill="#a855f7" /><rect x="13" y="3" width="8" height="8" rx="1" fill="#a855f7" /><rect x="3" y="13" width="8" height="8" rx="1" fill="#a855f7" /><rect x="13" y="13" width="8" height="8" rx="1" fill="#a855f7" /></svg>, bg: "#f3e8ff", title: "5 Categories", sub: "All pack types" },
   ];
   return (
-    <section className="py-8 px-4" style={{ background: "#f5f5f5" }} id="packages">
+    <section className="py-8 px-4" style={{ background: "#FAF9F6" }} id="packages">
       <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
         {features.map((f, i) => (
           <div key={i} className="rounded-xl p-3 flex flex-row items-start gap-2.5" style={{ background: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
@@ -727,12 +725,12 @@ function StatsSection() {
   }, []);
 
   const stats = [
-    { value: real ? real.total_orders.toLocaleString() : "—", label: "Total Orders", color: "#111", icon: null },
-    { value: real ? Number(real.total_diamonds).toLocaleString() : "—", label: "Products Sold", color: "#f59e0b", icon: "box" },
-    { value: real ? real.total_users.toLocaleString() : "—", label: "Happy Gamers", color: "#111", icon: "★" },
+    { value: real ? real.total_orders.toLocaleString() : "—", label: "Total Orders", color: "#3D2B1F", icon: null },
+    { value: real ? Number(real.total_diamonds).toLocaleString() : "—", label: "Products Sold", color: "#A89482", icon: "box" },
+    { value: real ? real.total_users.toLocaleString() : "—", label: "Happy Gamers", color: "#3D2B1F", icon: "★" },
   ];
   return (
-    <section className="py-5 px-4" style={{ background: "#f5f5f5" }}>
+    <section className="py-5 px-4" style={{ background: "#FAF9F6" }}>
       <div className="flex flex-col gap-2.5 max-w-lg mx-auto">
         {stats.map((s, i) => (
           <div key={i} className="rounded-xl p-4 text-center" style={{ background: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
@@ -754,23 +752,23 @@ function HowItWorks() {
     { num: "3", title: "Get Diamonds", desc: "Diamonds are credited instantly to your account." },
   ];
   return (
-    <section className="py-10 px-5" style={{ background: "#0a0a0a" }}>
+    <section className="py-10 px-5" style={{ background: "#FAF9F6" }}>
       <div className="max-w-lg mx-auto text-center">
-        <div className="inline-block px-3.5 py-1 rounded-full font-bold uppercase tracking-widest mb-3" style={{ fontSize: 10, background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}>Simple Process</div>
-        <h2 className="text-white font-extrabold text-2xl mb-1">How It Works</h2>
-        <p className="text-gray-400 mb-6" style={{ fontSize: 14 }}>Three simple steps to recharge your account</p>
+        <div className="inline-block px-3.5 py-1 rounded-full font-bold uppercase tracking-widest mb-3" style={{ fontSize: 10, background: "rgba(168,148,130,0.1)", color: "#A89482", border: "1px solid rgba(197,180,162,0.5)" }}>Simple Process</div>
+        <h2 className="font-extrabold text-2xl mb-1" style={{ color: "#3D2B1F" }}>How It Works</h2>
+        <p className="mb-6" style={{ fontSize: 14, color: "rgba(61,43,31,0.55)" }}>Three simple steps to recharge your account</p>
         <div className="flex flex-col items-center gap-0">
           {steps.map((s, i) => (
             <div key={i} className="flex flex-col items-center w-full">
               <div className="flex flex-col items-center gap-2.5">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-xl" style={{ background: "linear-gradient(135deg,#1e2d4a,#0f1a2e)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)", boxShadow: "0 3px 14px rgba(0,0,0,0.4)" }}>{s.num}</div>
-                <div className="text-center"><div className="text-white font-bold text-base">{s.title}</div><div className="text-gray-400 mt-0.5 max-w-xs" style={{ fontSize: 14 }}>{s.desc}</div></div>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-xl" style={{ background: "#FFFFFF", color: "#A89482", border: "1px solid rgba(197,180,162,0.5)", boxShadow: "0 2px 10px rgba(61,43,31,0.07)" }}>{s.num}</div>
+                <div className="text-center"><div className="font-bold text-base" style={{ color: "#3D2B1F" }}>{s.title}</div><div className="mt-0.5 max-w-xs" style={{ fontSize: 14, color: "rgba(61,43,31,0.55)" }}>{s.desc}</div></div>
               </div>
-              {i < steps.length - 1 && <div className="w-0.5 h-7 my-2" style={{ background: "rgba(245,158,11,0.25)" }} />}
+              {i < steps.length - 1 && <div className="w-0.5 h-7 my-2" style={{ background: "rgba(197,180,162,0.4)" }} />}
             </div>
           ))}
         </div>
-        <button onClick={() => navigateTo("/packages", "forward")} className="inline-flex items-center gap-1.5 px-7 py-3 rounded-full font-bold text-black mt-7" style={{ fontSize: 15, background: "linear-gradient(135deg,#fbbf24,#f59e0b)", boxShadow: "0 0 18px rgba(245,158,11,0.4)", border: "none", cursor: "pointer" }}>
+        <button onClick={() => navigateTo("/packages", "forward")} className="inline-flex items-center gap-1.5 px-7 py-3 rounded-full font-bold mt-7" style={{ fontSize: 15, background: "#A89482", color: "#FAF9F6", boxShadow: "0 4px 16px rgba(168,148,130,0.4)", border: "none", cursor: "pointer" }}>
           Start Now <span>→</span>
         </button>
       </div>
@@ -869,18 +867,18 @@ function Footer() {
   };
 
   return (
-    <footer className="py-7 px-5 text-center" style={{ background: "#0a0a0f", borderTop: "1px solid rgba(255,255,255,0.08)", position: "relative", zIndex: 1 }}>
+    <footer className="py-7 px-5 text-center" style={{ background: "#E6DED3", borderTop: "1px solid #C5B4A2", position: "relative", zIndex: 1 }}>
       <div className="flex flex-col items-center gap-2.5 max-w-sm mx-auto">
-        <div className="w-10 h-10 rounded-full overflow-hidden" style={{ background: "#000", border: "1.5px solid #f59e0b", boxShadow: "0 0 8px 1.5px rgba(245,158,11,0.4)" }}>
+        <div className="w-10 h-10 rounded-full overflow-hidden" style={{ background: "#FAF9F6", border: "1.5px solid #A89482", boxShadow: "0 0 6px 1px rgba(168,148,130,0.3)" }}>
           <img src="/logo.webp" alt="Sky Official" className="w-full h-full object-cover" />
         </div>
         <div>
-          <div className="font-bold text-sm" style={{ color: "#fff" }}>Sky Official</div>
-          <p className="mt-0.5 leading-relaxed max-w-xs" style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>The most trusted top up shop for mobile game products and services.</p>
+          <div className="font-bold text-sm" style={{ color: "#3D2B1F" }}>Sky Official</div>
+          <p className="mt-0.5 leading-relaxed max-w-xs" style={{ fontSize: 10, color: "rgba(61,43,31,0.5)" }}>The most trusted top up shop for mobile game products and services.</p>
         </div>
         <div className="flex items-center gap-4 mt-1">
           {["Packages", "Contact"].map((link) => (
-            <a key={link} href="#" className="text-gray-400 hover:text-gray-700 transition-colors" style={{ textDecoration: "none", fontSize: 11 }}>{link}</a>
+            <a key={link} href="#" className="hover:opacity-70 transition-opacity" style={{ textDecoration: "none", fontSize: 11, color: "rgba(61,43,31,0.55)" }}>{link}</a>
           ))}
         </div>
         <div className="flex items-center gap-3 mt-1">
@@ -889,7 +887,7 @@ function Footer() {
             { label: "Privacy Policy",   to: "/privacy" },
             { label: "Refund Policy",    to: "/refund" },
           ].map(({ label, to }) => (
-            <button key={to} onClick={() => setLocation(to)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#9ca3af", fontSize: 9.5 }}>
+            <button key={to} onClick={() => setLocation(to)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "rgba(61,43,31,0.5)", fontSize: 9.5 }}>
               {label}
             </button>
           ))}
@@ -907,16 +905,16 @@ function Footer() {
           </a>
         )}
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <span style={{ color: "#9ca3af", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Accepted Payment Methods</span>
+          <span style={{ color: "rgba(61,43,31,0.5)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Accepted Payment Methods</span>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
             {["UPI", "GPay", "PhonePe", "Paytm", "BHIM"].map(method => (
-              <span key={method} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{method}</span>
+              <span key={method} style={{ background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, fontWeight: 700, color: "rgba(61,43,31,0.55)" }}>{method}</span>
             ))}
           </div>
         </div>
         <p
-          className="text-gray-300 mt-2 select-none"
-          style={{ fontSize: 9.5, cursor: "default" }}
+          className="mt-2 select-none"
+          style={{ color: "rgba(61,43,31,0.45)", fontSize: 9.5, cursor: "default" }}
           onClick={handleCopyrightTap}
         >
           © 2026 Sky Official. All rights reserved.
@@ -997,26 +995,26 @@ function LatestNewsPopup() {
     >
       <style>{`@keyframes newsPopIn{from{opacity:0;transform:scale(0.92) translateY(12px);}to{opacity:1;transform:scale(1) translateY(0);}}`}</style>
       <div
-        style={{ background: "#111318", border: "1px solid rgba(245,158,11,0.28)", borderRadius: 22, overflow: "hidden", maxWidth: 360, width: "100%", position: "relative", animation: "newsPopIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both" }}
+        style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 22, overflow: "hidden", maxWidth: 360, width: "100%", position: "relative", animation: "newsPopIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both" }}
         onClick={e => e.stopPropagation()}
       >
         <button
           onClick={() => setOpen(false)}
-          style={{ position: "absolute", top: 12, right: 12, width: 28, height: 28, borderRadius: "50%", background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
+          style={{ position: "absolute", top: 12, right: 12, width: 28, height: 28, borderRadius: "50%", background: "rgba(61,43,31,0.08)", border: "1px solid rgba(197,180,162,0.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="rgba(61,43,31,0.6)" strokeWidth="2" strokeLinecap="round"/></svg>
         </button>
-        <div style={{ padding: "13px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-          <span style={{ color: "#f59e0b", fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.15em" }}>Latest Event</span>
+        <div style={{ padding: "13px 16px 10px", borderBottom: "1px solid rgba(197,180,162,0.3)" }}>
+          <span style={{ color: "#A89482", fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.15em" }}>Latest Event</span>
         </div>
         <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", background: "#000" }}>
           <img src={eventData.image} alt="Latest Event" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </div>
         <div style={{ display: "flex", gap: 8, padding: "14px 16px" }}>
-          <button onClick={() => setOpen(false)} style={{ flex: 1, padding: "11px 0", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.55)", fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: "pointer" }}>
+          <button onClick={() => setOpen(false)} style={{ flex: 1, padding: "11px 0", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", color: "rgba(61,43,31,0.5)", fontWeight: 700, fontSize: 13, borderRadius: 12, cursor: "pointer" }}>
             Later
           </button>
-          <button onClick={handleShopNow} style={{ flex: 2, padding: "11px 0", background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 800, fontSize: 13, borderRadius: 12, border: "none", cursor: "pointer" }}>
+          <button onClick={handleShopNow} style={{ flex: 2, padding: "11px 0", background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 13, borderRadius: 12, border: "none", cursor: "pointer" }}>
             Shop Now →
           </button>
         </div>
@@ -1036,10 +1034,10 @@ function WhyChooseUs() {
     { icon: "📦", title: "All Types of Products & Services", desc: "Diamonds, UC, passes, rank boosting, and more." },
   ];
   return (
-    <section className="py-10 px-5" style={{ background: "#f5f5f5" }}>
+    <section className="py-10 px-5" style={{ background: "#FAF9F6" }}>
       <div className="max-w-lg mx-auto">
         <div className="text-center mb-6">
-          <div className="inline-block px-3.5 py-1 rounded-full font-bold uppercase tracking-widest mb-3" style={{ fontSize: 10, background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}>Why Us</div>
+          <div className="inline-block px-3.5 py-1 rounded-full font-bold uppercase tracking-widest mb-3" style={{ fontSize: 10, background: "rgba(168,148,130,0.1)", color: "#A89482", border: "1px solid rgba(197,180,162,0.5)" }}>Why Us</div>
           <h2 className="text-gray-900 font-extrabold text-2xl">Why Choose Sky Official?</h2>
           <p className="text-gray-400 mt-1" style={{ fontSize: 14 }}>Everything you need from a game top-up store</p>
         </div>
@@ -1122,7 +1120,7 @@ function PromoCarousel() {
   const ev = events[activeIdx];
 
   return (
-    <div style={{ background: "#0a0a0a" }}>
+    <div style={{ background: "#FAF9F6" }}>
       <style>{`
         @keyframes promoBgKen { from { transform: scale(1.04); } to { transform: scale(1); } }
         @keyframes promoFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

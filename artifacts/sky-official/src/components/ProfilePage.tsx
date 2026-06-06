@@ -163,8 +163,8 @@ export default function ProfilePage() {
 
 
   if (!isLoaded || !user) return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 14 }}>Loading…</div>
+    <div style={{ background: "#FAF9F6", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 14 }}>Loading…</div>
     </div>
   );
 
@@ -179,23 +179,23 @@ export default function ProfilePage() {
   };
 
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingBottom: 48 }}>
+    <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 48 }}>
       <style>{`
         @keyframes profIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
       `}</style>
 
       {/* Header bar */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(10,10,10,0.93)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
-        <button onClick={() => setLocation("/")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
+        <button onClick={() => setLocation("/")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#3D2B1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-        <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, flex: 1 }}>My Profile</span>
+        <span style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 16, flex: 1 }}>My Profile</span>
         <button
           onClick={() => { setShowSettings(true); setNewName(displayName); setSettingsMsg(null); setSettingsTab("name"); }}
-          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
           title="Settings"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(61,43,31,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
           </svg>
         </button>
@@ -203,12 +203,12 @@ export default function ProfilePage() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(61,43,31,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={e => { if (e.target === e.currentTarget) setShowSettings(false); }}>
-          <div style={{ width: "100%", maxWidth: 480, background: "#111316", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", boxShadow: "0 -20px 60px rgba(0,0,0,0.6)" }}>
+          <div style={{ width: "100%", maxWidth: 480, background: "#FFFFFF", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", boxShadow: "0 -20px 60px rgba(61,43,31,0.15)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <span style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>Account Settings</span>
-              <button onClick={() => setShowSettings(false)} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <span style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 17 }}>Account Settings</span>
+              <button onClick={() => setShowSettings(false)} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(61,43,31,0.06)", border: "none", color: "rgba(61,43,31,0.5)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
             </div>
 
             {/* Tabs */}
@@ -216,9 +216,9 @@ export default function ProfilePage() {
               {(["name","password","photo"] as const).map(tab => (
                 <button key={tab} onClick={() => { setSettingsTab(tab); setSettingsMsg(null); }}
                   style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
-                    background: settingsTab === tab ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)",
-                    color: settingsTab === tab ? "#f59e0b" : "rgba(255,255,255,0.4)",
-                    outline: settingsTab === tab ? "1px solid rgba(245,158,11,0.4)" : "none",
+                    background: settingsTab === tab ? "rgba(168,148,130,0.12)" : "rgba(61,43,31,0.04)",
+                    color: settingsTab === tab ? "#A89482" : "rgba(61,43,31,0.4)",
+                    outline: settingsTab === tab ? "1px solid rgba(197,180,162,0.5)" : "none",
                   }}>
                   {tab === "name" ? "Display Name" : tab === "password" ? "Password" : "Photo"}
                 </button>
@@ -233,12 +233,12 @@ export default function ProfilePage() {
 
             {settingsTab === "name" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginBottom: 4 }}>Change your display name shown across the app.</div>
+                <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12, marginBottom: 4 }}>Change your display name shown across the app.</div>
                 <input
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   placeholder="New display name"
-                  style={{ background: "#0d0d11", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 15, padding: "12px 14px", outline: "none", fontFamily: "inherit" }}
+                  style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 15, padding: "12px 14px", outline: "none", fontFamily: "inherit" }}
                 />
                 <button
                   disabled={settingsSaving}
@@ -253,7 +253,7 @@ export default function ProfilePage() {
                       setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Failed to update name." });
                     } finally { setSettingsSaving(false); }
                   }}
-                  style={{ padding: "13px 0", borderRadius: 12, background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                  style={{ padding: "13px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
                 >
                   {settingsSaving ? "Saving…" : "Save Name"}
                 </button>
@@ -262,14 +262,14 @@ export default function ProfilePage() {
 
             {settingsTab === "password" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginBottom: 4 }}>Update your password. Only available if you signed up with email.</div>
+                <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12, marginBottom: 4 }}>Update your password. Only available if you signed up with email.</div>
                 <input
                   type="password"
                   value={curPassword}
                   onChange={e => setCurPassword(e.target.value)}
                   placeholder="Current password"
                   autoComplete="current-password"
-                  style={{ background: "#0d0d11", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 15, padding: "12px 14px", outline: "none", fontFamily: "inherit" }}
+                  style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 15, padding: "12px 14px", outline: "none", fontFamily: "inherit" }}
                 />
                 <input
                   type="password"
@@ -277,7 +277,7 @@ export default function ProfilePage() {
                   onChange={e => setNewPassword(e.target.value)}
                   placeholder="New password (min. 8 characters)"
                   autoComplete="new-password"
-                  style={{ background: "#0d0d11", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 15, padding: "12px 14px", outline: "none", fontFamily: "inherit" }}
+                  style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 15, padding: "12px 14px", outline: "none", fontFamily: "inherit" }}
                 />
                 <button
                   disabled={settingsSaving}
@@ -293,11 +293,11 @@ export default function ProfilePage() {
                       setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Failed to update password." });
                     } finally { setSettingsSaving(false); }
                   }}
-                  style={{ padding: "13px 0", borderRadius: 12, background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                  style={{ padding: "13px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
                 >
                   {settingsSaving ? "Saving…" : "Update Password"}
                 </button>
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14, marginTop: 4 }}>
+                <div style={{ borderTop: "1px solid rgba(197,180,162,0.25)", paddingTop: 14, marginTop: 4 }}>
                   {fpStep === 0 ? (
                     <button
                       disabled={fpLoading}
@@ -313,15 +313,15 @@ export default function ProfilePage() {
                           setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Could not send reset code." });
                         } finally { setFpLoading(false); }
                       }}
-                      style={{ background: "none", border: "none", color: "#38bdf8", fontSize: 13, cursor: "pointer", fontFamily: "inherit", padding: "4px 0", opacity: fpLoading ? 0.5 : 1, textDecoration: "underline" }}
+                      style={{ background: "none", border: "none", color: "#A89482", fontSize: 13, cursor: "pointer", fontFamily: "inherit", padding: "4px 0", opacity: fpLoading ? 0.5 : 1, textDecoration: "underline" }}
                     >
                       {fpLoading ? "Sending code…" : "Forgot password? Send reset code"}
                     </button>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ fontSize: 12, color: "#38bdf8", lineHeight: 1.55 }}>Reset code sent to <strong>{user.primaryEmailAddress?.emailAddress}</strong>. Check your email.</div>
-                      <input value={fpCode} onChange={e => setFpCode(e.target.value)} placeholder="Enter reset code" style={{ background: "#0d0d11", border: "1px solid rgba(56,189,248,0.35)", borderRadius: 10, color: "#fff", fontSize: 14, padding: "11px 14px", outline: "none", fontFamily: "inherit" }} />
-                      <input type="password" value={fpNewPw} onChange={e => setFpNewPw(e.target.value)} placeholder="New password (min. 8 chars)" style={{ background: "#0d0d11", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#fff", fontSize: 14, padding: "11px 14px", outline: "none", fontFamily: "inherit" }} />
+                      <div style={{ fontSize: 12, color: "#A89482", lineHeight: 1.55 }}>Reset code sent to <strong>{user.primaryEmailAddress?.emailAddress}</strong>. Check your email.</div>
+                      <input value={fpCode} onChange={e => setFpCode(e.target.value)} placeholder="Enter reset code" style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 14, padding: "11px 14px", outline: "none", fontFamily: "inherit" }} />
+                      <input type="password" value={fpNewPw} onChange={e => setFpNewPw(e.target.value)} placeholder="New password (min. 8 chars)" style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 14, padding: "11px 14px", outline: "none", fontFamily: "inherit" }} />
                       <button
                         disabled={fpLoading || !fpCode || fpNewPw.length < 8}
                         onClick={async () => {
@@ -336,11 +336,11 @@ export default function ProfilePage() {
                             setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Invalid code or error. Try again." });
                           } finally { setFpLoading(false); }
                         }}
-                        style={{ padding: "12px 0", borderRadius: 12, background: (!fpCode || fpNewPw.length < 8) ? "rgba(56,189,248,0.2)" : "linear-gradient(135deg,#38bdf8,#0ea5e9)", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                        style={{ padding: "12px 0", borderRadius: 12, background: (!fpCode || fpNewPw.length < 8) ? "rgba(168,148,130,0.2)" : "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
                       >
                         {fpLoading ? "Resetting…" : "Reset Password"}
                       </button>
-                      <button onClick={() => { setFpStep(0); setFpCode(""); setFpNewPw(""); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "2px 0" }}>Cancel</button>
+                      <button onClick={() => { setFpStep(0); setFpCode(""); setFpNewPw(""); }} style={{ background: "none", border: "none", color: "rgba(61,43,31,0.35)", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "2px 0" }}>Cancel</button>
                     </div>
                   )}
                 </div>
@@ -349,8 +349,8 @@ export default function ProfilePage() {
 
             {settingsTab === "photo" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
-                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginBottom: 4, alignSelf: "flex-start" }}>Upload a new profile photo.</div>
-                <div style={{ width: 80, height: 80, borderRadius: "50%", border: "3px solid #f59e0b", overflow: "hidden" }}>
+                <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12, marginBottom: 4, alignSelf: "flex-start" }}>Upload a new profile photo.</div>
+                <div style={{ width: 80, height: 80, borderRadius: "50%", border: "3px solid #A89482", overflow: "hidden" }}>
                   <img src={user.imageUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
@@ -362,7 +362,7 @@ export default function ProfilePage() {
                 <button
                   disabled={settingsSaving}
                   onClick={() => photoInputRef.current?.click()}
-                  style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                  style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
                 >
                   {settingsSaving ? "Uploading…" : "Choose Photo"}
                 </button>
@@ -376,16 +376,16 @@ export default function ProfilePage() {
 
         {/* Avatar + name */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 24, paddingBottom: 28, animation: "profIn 0.5s ease both" }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", border: "3px solid #f59e0b", boxShadow: "0 0 20px rgba(245,158,11,0.45)", overflow: "hidden", marginBottom: 12 }}>
+          <div style={{ width: 80, height: 80, borderRadius: "50%", border: "3px solid #A89482", boxShadow: "0 0 20px rgba(168,148,130,0.3)", overflow: "hidden", marginBottom: 12 }}>
             <img src={user.imageUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 20, letterSpacing: "-0.01em" }}>{displayName}</div>
-          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 3 }}>{user.emailAddresses?.[0]?.emailAddress}</div>
+          <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 20, letterSpacing: "-0.01em" }}>{displayName}</div>
+          <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 12, marginTop: 3 }}>{user.emailAddresses?.[0]?.emailAddress}</div>
         </div>
 
         {/* Stats strip */}
         {loading ? (
-          <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 13, padding: "20px 0" }}>Loading…</div>
+          <div style={{ textAlign: "center", color: "rgba(61,43,31,0.35)", fontSize: 13, padding: "20px 0" }}>Loading…</div>
         ) : stats && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20, animation: "profIn 0.5s ease 0.1s both" }}>
             {[
@@ -393,42 +393,42 @@ export default function ProfilePage() {
               { label: "Diamonds", value: stats.total_diamonds.toLocaleString() },
               { label: "Spent", value: `₹${stats.total_spent.toFixed(0)}` },
             ].map(s => (
-              <div key={s.label} style={{ background: "#111", borderRadius: 14, border: "1px solid rgba(255,255,255,0.07)", padding: "14px 10px", textAlign: "center" }}>
-                <div style={{ color: "#f59e0b", fontWeight: 800, fontSize: 20 }}>{s.value}</div>
-                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 3 }}>{s.label}</div>
+              <div key={s.label} style={{ background: "#FFFFFF", borderRadius: 14, border: "1px solid rgba(197,180,162,0.35)", padding: "14px 10px", textAlign: "center", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
+                <div style={{ color: "#A89482", fontWeight: 800, fontSize: 20 }}>{s.value}</div>
+                <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11, marginTop: 3 }}>{s.label}</div>
               </div>
             ))}
           </div>
         )}
 
         {/* Wallet card */}
-        <div style={{ background: "linear-gradient(135deg,#1a1200,#111)", borderRadius: 18, border: "1px solid rgba(245,158,11,0.25)", padding: "20px 18px", marginBottom: 16, animation: "profIn 0.5s ease 0.18s both", boxShadow: "0 0 30px rgba(245,158,11,0.08)" }}>
+        <div style={{ background: "#FFFFFF", borderRadius: 18, border: "1px solid rgba(197,180,162,0.4)", padding: "20px 18px", marginBottom: 16, animation: "profIn 0.5s ease 0.18s both", boxShadow: "0 2px 10px rgba(61,43,31,0.05)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div>
-              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sky Wallet (S Coins)</div>
-              <div style={{ color: "#fff", fontWeight: 800, fontSize: 28, marginTop: 2 }}>
+              <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sky Wallet (S Coins)</div>
+              <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 28, marginTop: 2 }}>
                 S {loading ? "—" : (stats?.wallet_balance ?? 0).toFixed(0)}
               </div>
-              <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 2 }}>1 S coin = ₹1</div>
+              <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 10, marginTop: 2 }}>1 S coin = ₹1</div>
             </div>
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(168,148,130,0.1)", border: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
               <img src="/scoin.png" alt="S Coin" style={{ width: 40, height: 40, objectFit: "contain" }} />
             </div>
           </div>
-          <div style={{ background: "rgba(245,158,11,0.08)", borderRadius: 10, padding: "8px 12px", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ background: "rgba(168,148,130,0.08)", borderRadius: 10, padding: "8px 12px", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 14 }}>🏷️</span>
-            <span style={{ color: "#f59e0b", fontSize: 12, fontWeight: 600 }}>0.5% discount on recharges above ₹1000 paid via wallet</span>
+            <span style={{ color: "#A89482", fontSize: 12, fontWeight: 600 }}>0.5% discount on recharges above ₹1000 paid via wallet</span>
           </div>
           <button
             onClick={() => { setShowTopup(v => !v); setTopupMsg(null); }}
-            style={{ width: "100%", padding: "12px 0", borderRadius: 12, background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
           >
             {showTopup ? "Cancel" : "+ Add Funds"}
           </button>
 
           {showTopup && (
             <div style={{ marginTop: 16 }}>
-              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, marginBottom: 14, lineHeight: 1.6 }}>
+              <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12, marginBottom: 14, lineHeight: 1.6 }}>
                 Pick an amount — you'll see the payment QR on the next screen.
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
@@ -438,9 +438,9 @@ export default function ProfilePage() {
                     onClick={() => setTopupAmount(String(amt))}
                     style={{
                       padding: "8px 14px", borderRadius: 999, fontSize: 13, fontWeight: 700,
-                      background: topupAmount === String(amt) ? "rgba(245,158,11,0.18)" : "rgba(255,255,255,0.06)",
-                      border: topupAmount === String(amt) ? "1.5px solid rgba(245,158,11,0.65)" : "1px solid rgba(255,255,255,0.1)",
-                      color: topupAmount === String(amt) ? "#f59e0b" : "rgba(255,255,255,0.6)",
+                      background: topupAmount === String(amt) ? "rgba(168,148,130,0.15)" : "rgba(61,43,31,0.04)",
+                      border: topupAmount === String(amt) ? "1.5px solid rgba(168,148,130,0.6)" : "1px solid rgba(197,180,162,0.4)",
+                      color: topupAmount === String(amt) ? "#A89482" : "rgba(61,43,31,0.55)",
                       cursor: "pointer", touchAction: "manipulation",
                     }}
                   >₹{amt}</button>
@@ -451,7 +451,7 @@ export default function ProfilePage() {
                 placeholder="Or enter custom amount"
                 value={topupAmount}
                 onChange={e => setTopupAmount(e.target.value)}
-                style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 14, marginBottom: 10, boxSizing: "border-box" }}
+                style={{ width: "100%", background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, padding: "10px 14px", color: "#3D2B1F", fontSize: 14, marginBottom: 10, boxSizing: "border-box" }}
               />
               {topupMsg && (
                 <div style={{ padding: "8px 12px", borderRadius: 8, background: topupMsg.ok ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: topupMsg.ok ? "#22c55e" : "#ef4444", fontSize: 13, marginBottom: 10 }}>
@@ -466,7 +466,7 @@ export default function ProfilePage() {
                   sessionStorage.setItem("walletTopupAmount", String(amt));
                   setLocation("/pay");
                 }}
-                style={{ width: "100%", padding: "11px 0", borderRadius: 10, background: "#f59e0b", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                style={{ width: "100%", padding: "11px 0", borderRadius: 10, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
               >Pay Now</button>
             </div>
           )}
@@ -474,16 +474,16 @@ export default function ProfilePage() {
 
         {/* Wallet transaction history */}
         {transactions.length > 0 && (
-          <div style={{ background: "#111", borderRadius: 18, border: "1px solid rgba(255,255,255,0.07)", padding: "16px 14px", marginBottom: 16, animation: "profIn 0.5s ease 0.24s both" }}>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Wallet Transactions</div>
+          <div style={{ background: "#FFFFFF", borderRadius: 18, border: "1px solid rgba(197,180,162,0.35)", padding: "16px 14px", marginBottom: 16, animation: "profIn 0.5s ease 0.24s both", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
+            <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Wallet Transactions</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {transactions.map(tx => (
                 <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{tx.description ?? (tx.type === "credit" ? "Top-up" : "Debit")}</div>
-                    <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 11 }}>{new Date(tx.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
+                    <div style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 600 }}>{tx.description ?? (tx.type === "credit" ? "Top-up" : "Debit")}</div>
+                    <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 11 }}>{new Date(tx.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
                     {tx.upi_ref && tx.upi_ref.startsWith("TUP-") && (
-                      <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, fontFamily: "monospace" }}>ID: {tx.upi_ref}</div>
+                      <div style={{ color: "rgba(61,43,31,0.25)", fontSize: 10, fontFamily: "monospace" }}>ID: {tx.upi_ref}</div>
                     )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
@@ -502,28 +502,28 @@ export default function ProfilePage() {
 
         {/* Favourites */}
         {favPkgIds.length > 0 && (
-          <div style={{ background: "#111", borderRadius: 18, border: "1px solid rgba(255,255,255,0.07)", padding: "16px 14px", marginBottom: 16, animation: "profIn 0.5s ease 0.26s both" }}>
+          <div style={{ background: "#FFFFFF", borderRadius: 18, border: "1px solid rgba(197,180,162,0.35)", padding: "16px 14px", marginBottom: 16, animation: "profIn 0.5s ease 0.26s both", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="#ef4444"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                 Favourites
               </div>
-              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>{favPkgIds.length} saved</span>
+              <span style={{ color: "rgba(61,43,31,0.3)", fontSize: 10 }}>{favPkgIds.length} saved</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {favPkgIds.map(id => {
                 const pkg = favPackages.find(p => p.id === id);
                 return (
-                  <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(239,68,68,0.04)", borderRadius: 10, border: "1px solid rgba(239,68,68,0.1)", padding: "10px 12px" }}>
+                  <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(239,68,68,0.03)", borderRadius: 10, border: "1px solid rgba(239,68,68,0.12)", padding: "10px 12px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: pkg?.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg?.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: pkg?.image ? "transparent" : "rgba(139,92,246,0.08)", border: pkg?.image ? "none" : "1px solid rgba(139,92,246,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {pkg?.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <svg width="18" height="18" viewBox="0 0 40 40" fill="none"><polygon points="20,4 36,14 36,26 20,36 4,26 4,14" stroke="rgba(139,92,246,0.55)" strokeWidth="1.5" fill="rgba(139,92,246,0.1)" /><polygon points="20,4 36,14 20,22 4,14" fill="rgba(139,92,246,0.18)" /></svg>}
                       </div>
                       <div style={{ overflow: "hidden" }}>
-                        <div style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {pkg ? (pkg.name || `${(pkg.diamonds + pkg.bonus_diamonds).toLocaleString()} Credits`) : `Pack #${id}`}
                         </div>
-                        {pkg && <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>}
+                        {pkg && <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 11 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>}
                       </div>
                     </div>
                     <button
@@ -546,23 +546,23 @@ export default function ProfilePage() {
 
         {/* Quick links */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, animation: "profIn 0.5s ease 0.3s both" }}>
-          <button onClick={() => setLocation("/orders")} style={{ background: "#111", borderRadius: 14, border: "1px solid rgba(255,255,255,0.07)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%" }}>
+          <button onClick={() => setLocation("/orders")} style={{ background: "#FFFFFF", borderRadius: 14, border: "1px solid rgba(197,180,162,0.35)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(168,148,130,0.1)", border: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </div>
-              <span style={{ color: "#fff", fontWeight: 600, fontSize: 14 }}>Order History</span>
+              <span style={{ color: "#3D2B1F", fontWeight: 600, fontSize: 14 }}>Order History</span>
             </div>
-            <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(255,255,255,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(61,43,31,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <button onClick={() => setLocation("/packages")} style={{ background: "#111", borderRadius: 14, border: "1px solid rgba(255,255,255,0.07)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%" }}>
+          <button onClick={() => setLocation("/packages")} style={{ background: "#FFFFFF", borderRadius: 14, border: "1px solid rgba(197,180,162,0.35)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(168,148,130,0.1)", border: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 <img src="/scoin.png" alt="S Coin" style={{ width: 30, height: 30, objectFit: "contain" }} />
               </div>
-              <span style={{ color: "#fff", fontWeight: 600, fontSize: 14 }}>Browse Packages</span>
+              <span style={{ color: "#3D2B1F", fontWeight: 600, fontSize: 14 }}>Browse Packages</span>
             </div>
-            <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(255,255,255,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(61,43,31,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
       </div>
@@ -570,13 +570,13 @@ export default function ProfilePage() {
       {/* Crop modal */}
       {cropSrc && cropImgEl && (
         <div
-          style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.93)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: 24 }}
+          style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(61,43,31,0.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: 24 }}
           onMouseMove={handleCropMouseMove}
           onMouseUp={handleCropEnd}
           onMouseLeave={handleCropEnd}
         >
-          <div style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>Position your photo</div>
-          <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 12, marginTop: -14 }}>Drag to reposition · Pinch or use +/− to zoom</div>
+          <div style={{ color: "#FAF9F6", fontSize: 15, fontWeight: 700 }}>Position your photo</div>
+          <div style={{ color: "rgba(250,249,246,0.55)", fontSize: 12, marginTop: -14 }}>Drag to reposition · Pinch or use +/− to zoom</div>
 
           {/* Circular crop viewport */}
           <div
@@ -608,12 +608,12 @@ export default function ProfilePage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => setCropScale(s => Math.max(0.15, s - 0.1))}
-              style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+              style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(250,249,246,0.1)", border: "1px solid rgba(250,249,246,0.2)", color: "#FAF9F6", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
             >−</button>
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, minWidth: 48, textAlign: "center" }}>{Math.round(cropScale * 100)}%</span>
+            <span style={{ color: "rgba(250,249,246,0.55)", fontSize: 12, minWidth: 48, textAlign: "center" }}>{Math.round(cropScale * 100)}%</span>
             <button
               onClick={() => setCropScale(s => Math.min(5, s + 0.1))}
-              style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+              style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(250,249,246,0.1)", border: "1px solid rgba(250,249,246,0.2)", color: "#FAF9F6", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
             >+</button>
           </div>
 
@@ -621,14 +621,14 @@ export default function ProfilePage() {
           <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 300 }}>
             <button
               onClick={() => { setCropSrc(null); setCropImgEl(null); }}
-              style={{ flex: 1, padding: "13px 0", borderRadius: 12, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+              style={{ flex: 1, padding: "13px 0", borderRadius: 12, background: "rgba(250,249,246,0.1)", border: "1px solid rgba(250,249,246,0.2)", color: "rgba(250,249,246,0.75)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
             >
               Cancel
             </button>
             <button
               disabled={settingsSaving}
               onClick={confirmCrop}
-              style={{ flex: 2, padding: "13px 0", borderRadius: 12, background: settingsSaving ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: settingsSaving ? "not-allowed" : "pointer" }}
+              style={{ flex: 2, padding: "13px 0", borderRadius: 12, background: settingsSaving ? "rgba(168,148,130,0.4)" : "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: settingsSaving ? "not-allowed" : "pointer" }}
             >
               {settingsSaving ? "Uploading…" : "Crop & Set Photo"}
             </button>

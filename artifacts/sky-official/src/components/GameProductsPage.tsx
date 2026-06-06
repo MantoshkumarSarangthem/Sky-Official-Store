@@ -74,7 +74,7 @@ function HeartIcon({ filled }: { filled: boolean }) {
     </svg>
   ) : (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="rgba(255,255,255,0.35)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="rgba(61,43,31,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -224,13 +224,13 @@ export default function GameProductsPage() {
       `}</style>
 
       {/* ── Game Banner — starts at top-0, sits behind the global navbar ── */}
-      <div style={{ height: 210, overflow: "hidden", position: "relative", background: "#0d0d0d" }}>
+      <div style={{ height: 210, overflow: "hidden", position: "relative", background: "#1a1228" }}>
         {loading ? (
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(139,92,246,0.06),rgba(0,0,0,0))", animation: "gpBankSkel 1.6s ease-in-out infinite" }} />
         ) : game?.image ? (
           <>
             <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.42)" }} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,10,10,0.05) 30%, #0a0a0a 100%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(26,18,40,0.05) 30%, #FAF9F6 100%)" }} />
           </>
         ) : (
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(139,92,246,0.07),rgba(0,0,0,0))" }} />
@@ -254,37 +254,37 @@ export default function GameProductsPage() {
       <div style={{ padding: "16px 14px 0", display: "flex", flexDirection: "column", gap: 14 }}>
 
         {/* ── Step 1: Enter ID ── */}
-        <div style={{ background: "linear-gradient(135deg,#111,#0c0a14)", border: "1.5px solid rgba(139,92,246,0.22)", borderRadius: 18, padding: "16px", animation: "gpFadeIn 0.3s ease" }}>
+        <div style={{ background: "#FFFFFF", border: "1.5px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "16px", animation: "gpFadeIn 0.3s ease", boxShadow: "0 1px 4px rgba(61,43,31,0.05)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#fff", flexShrink: 0 }}>1</div>
-            <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            <span style={{ color: "#8b5cf6", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               {isMLBB ? "Enter Your MLBB Account" : `Enter Your ${game?.name ?? "Game"} ID`}
             </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
-              <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>
+              <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>
                 {isMLBB ? "User ID" : "Player ID"}
               </div>
               <input
                 type="number" inputMode="numeric" value={userId}
                 onChange={e => { setUserId(e.target.value); setIdError(""); }}
                 placeholder={isMLBB ? "e.g. 123456789" : "e.g. 987654321"}
-                style={{ width: "100%", background: "#1a1a1a", border: `1.5px solid ${idError ? "rgba(239,68,68,0.55)" : userId ? "rgba(139,92,246,0.55)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
+                style={{ width: "100%", background: "#FAF9F6", border: `1.5px solid ${idError ? "rgba(239,68,68,0.55)" : userId ? "rgba(139,92,246,0.55)" : "rgba(197,180,162,0.4)"}`, borderRadius: 12, padding: "12px 14px", color: "#3D2B1F", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
                 onFocus={e => !idError && (e.target.style.borderColor = "rgba(139,92,246,0.65)")}
-                onBlur={e => { if (!idError && !userId) e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                onBlur={e => { if (!idError && !userId) e.target.style.borderColor = "rgba(197,180,162,0.4)"; }}
               />
             </div>
             {isMLBB && (
               <div>
-                <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Zone ID (Server)</div>
+                <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Zone ID (Server)</div>
                 <input
                   type="number" inputMode="numeric" value={serverId}
                   onChange={e => setServerId(e.target.value)}
                   placeholder="e.g. 2345"
-                  style={{ width: "100%", background: "#1a1a1a", border: `1.5px solid ${serverId ? "rgba(139,92,246,0.45)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
+                  style={{ width: "100%", background: "#FAF9F6", border: `1.5px solid ${serverId ? "rgba(139,92,246,0.45)" : "rgba(197,180,162,0.4)"}`, borderRadius: 12, padding: "12px 14px", color: "#3D2B1F", fontSize: 15, outline: "none", fontFamily: "'Courier New', monospace", transition: "border-color 0.2s", boxSizing: "border-box" }}
                   onFocus={e => (e.target.style.borderColor = "rgba(139,92,246,0.65)")}
-                  onBlur={e => { if (!serverId) e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                  onBlur={e => { if (!serverId) e.target.style.borderColor = "rgba(197,180,162,0.4)"; }}
                 />
               </div>
             )}
@@ -307,21 +307,21 @@ export default function GameProductsPage() {
         {loading ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[0,1,2,3].map(i => (
-              <div key={i} style={{ borderRadius: 16, background: "linear-gradient(145deg,#111,#0d0d0d)", border: "1px solid rgba(255,255,255,0.07)", minHeight: 140, animation: `gpPulse 1.6s ease-in-out ${i * 0.09}s infinite` }} />
+              <div key={i} style={{ borderRadius: 16, background: "rgba(197,180,162,0.15)", border: "1px solid rgba(197,180,162,0.25)", minHeight: 140, animation: `gpPulse 1.6s ease-in-out ${i * 0.09}s infinite` }} />
             ))}
           </div>
         ) : packages.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <div style={{ fontSize: 44, marginBottom: 14, lineHeight: 1 }}>🎮</div>
-            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Coming Soon</div>
-            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Packages for {game?.name ?? "this game"} are being set up.</div>
+            <div style={{ color: "rgba(61,43,31,0.65)", fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Coming Soon</div>
+            <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 13 }}>Packages for {game?.name ?? "this game"} are being set up.</div>
           </div>
         ) : (
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#fff", flexShrink: 0 }}>2</div>
-              <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Select Pack</span>
-              <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, marginLeft: "auto" }}>{packages.length} available</span>
+              <span style={{ color: "#8b5cf6", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Select Pack</span>
+              <span style={{ color: "rgba(61,43,31,0.35)", fontSize: 10, marginLeft: "auto" }}>{packages.length} available</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {packages.map((pkg, idx) => {
@@ -335,8 +335,8 @@ export default function GameProductsPage() {
                     key={pkg.id}
                     onClick={() => setSelectedPkgId(pkg.id)}
                     style={{
-                      background: isSelected ? "linear-gradient(145deg,#130d20,#0d0a0a)" : "linear-gradient(145deg,#111,#0d0d0d)",
-                      border: isSelected ? "2px solid #8b5cf6" : "1px solid rgba(255,255,255,0.08)",
+                      background: isSelected ? "rgba(139,92,246,0.07)" : "#FFFFFF",
+                      border: isSelected ? "2px solid #8b5cf6" : "1px solid rgba(197,180,162,0.35)",
                       borderRadius: 16,
                       padding: "10px 10px 8px",
                       display: "flex",
@@ -346,7 +346,7 @@ export default function GameProductsPage() {
                       position: "relative",
                       overflow: "hidden",
                       cursor: "pointer",
-                      boxShadow: isSelected ? "0 0 0 2px rgba(139,92,246,0.2), 0 4px 20px rgba(139,92,246,0.12)" : "0 2px 8px rgba(0,0,0,0.3)",
+                      boxShadow: isSelected ? "0 0 0 2px rgba(139,92,246,0.15), 0 4px 16px rgba(139,92,246,0.1)" : "0 1px 3px rgba(61,43,31,0.06)",
                       transition: "border-color 0.18s, box-shadow 0.18s, background 0.18s",
                       WebkitTapHighlightColor: "transparent",
                     }}
@@ -364,12 +364,12 @@ export default function GameProductsPage() {
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                         <div style={{ textAlign: "right" }}>
-                          {hasOldPrice && <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
+                          {hasOldPrice && <div style={{ color: "rgba(61,43,31,0.3)", fontSize: 10, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
                           <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
                         </div>
                         <button
                           onClick={e => { e.stopPropagation(); toggleFav(pkg.id); }}
-                          style={{ background: isFav ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.05)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.09)", borderRadius: 7, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
+                          style={{ background: isFav ? "rgba(239,68,68,0.1)" : "rgba(61,43,31,0.04)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(197,180,162,0.35)", borderRadius: 7, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
                           title={isFav ? "Remove from favourites" : "Add to favourites"}
                         >
                           <HeartIcon filled={isFav} />
@@ -379,10 +379,10 @@ export default function GameProductsPage() {
 
                     {/* Name + currency */}
                     <div>
-                      <div style={{ color: isSelected ? "#fff" : "rgba(255,255,255,0.87)", fontWeight: 700, fontSize: 12, lineHeight: 1.3, marginBottom: 2 }}>
+                      <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 12, lineHeight: 1.3, marginBottom: 2 }}>
                         {pkg.name || `${pkg.diamonds.toLocaleString()} ${currencyLabel}`}
                       </div>
-                      <div style={{ color: "rgba(255,255,255,0.32)", fontSize: 10 }}>
+                      <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 10 }}>
                         {pkg.diamonds.toLocaleString()} {currencyLabel}
                         {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()} bonus</span>}
                       </div>
@@ -409,34 +409,34 @@ export default function GameProductsPage() {
 
         {/* ── Step 3: Secure Checkout ── */}
         {selectedPkg && (
-          <div style={{ background: "linear-gradient(135deg,#111,#0c0a14)", border: "1.5px solid rgba(139,92,246,0.28)", borderRadius: 18, padding: "16px", animation: "gpCoIn 0.28s ease both" }}>
+          <div style={{ background: "#FFFFFF", border: "1.5px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "16px", animation: "gpCoIn 0.28s ease both", boxShadow: "0 1px 4px rgba(61,43,31,0.05)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
               <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#fff", flexShrink: 0 }}>3</div>
-              <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Secure Checkout</span>
+              <span style={{ color: "#8b5cf6", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>Secure Checkout</span>
             </div>
 
             {/* Pack Snapshot */}
-            <div style={{ background: "rgba(139,92,246,0.07)", borderRadius: 12, border: "1px solid rgba(139,92,246,0.15)", padding: "12px 14px", marginBottom: 14 }}>
-              <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Pack Snapshot</div>
+            <div style={{ background: "rgba(139,92,246,0.05)", borderRadius: 12, border: "1px solid rgba(139,92,246,0.15)", padding: "12px 14px", marginBottom: 14 }}>
+              <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Pack Snapshot</div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: selectedPkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: selectedPkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: selectedPkg.image ? "transparent" : "rgba(139,92,246,0.08)", border: selectedPkg.image ? "none" : "1px solid rgba(139,92,246,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {selectedPkg.image ? <img src={selectedPkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={22} />}
                   </div>
                   <div style={{ overflow: "hidden" }}>
-                    <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {selectedPkg.name || `${(selectedPkg.diamonds + selectedPkg.bonus_diamonds).toLocaleString()} ${currencyLabel}`}
                     </div>
-                    <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>
+                    <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 11 }}>
                       {(selectedPkg.diamonds + selectedPkg.bonus_diamonds).toLocaleString()} {currencyLabel}
                     </div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                   {selectedPkg.old_price && parseFloat(selectedPkg.old_price) > parseFloat(selectedPkg.price) && (
-                    <div style={{ color: "rgba(255,255,255,0.28)", fontSize: 10, textDecoration: "line-through" }}>₹{parseFloat(selectedPkg.old_price).toFixed(0)}</div>
+                    <div style={{ color: "rgba(61,43,31,0.3)", fontSize: 10, textDecoration: "line-through" }}>₹{parseFloat(selectedPkg.old_price).toFixed(0)}</div>
                   )}
-                  <div style={{ color: "#a78bfa", fontWeight: 800, fontSize: 16 }}>₹{parseFloat(selectedPkg.price).toFixed(0)}</div>
+                  <div style={{ color: "#8b5cf6", fontWeight: 800, fontSize: 16 }}>₹{parseFloat(selectedPkg.price).toFixed(0)}</div>
                 </div>
               </div>
             </div>
@@ -444,13 +444,13 @@ export default function GameProductsPage() {
             {/* Quantity Selector */}
             {!isStarlight && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Quantity</div>
+                <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Quantity</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent" }}>−</button>
-                  <span style={{ color: "#fff", fontWeight: 800, fontSize: 16, minWidth: 24, textAlign: "center" }}>{quantity}</span>
-                  <button onClick={() => setQuantity(q => Math.min(10, q + 1))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent" }}>+</button>
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.35)", color: "#3D2B1F", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent" }}>−</button>
+                  <span style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 16, minWidth: 24, textAlign: "center" }}>{quantity}</span>
+                  <button onClick={() => setQuantity(q => Math.min(10, q + 1))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.35)", color: "#3D2B1F", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent" }}>+</button>
                   {quantity > 1 && (
-                    <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginLeft: 4 }}>= ₹{(parseFloat(selectedPkg!.price) * quantity).toFixed(0)} total</span>
+                    <span style={{ color: "rgba(61,43,31,0.4)", fontSize: 11, marginLeft: 4 }}>= ₹{(parseFloat(selectedPkg!.price) * quantity).toFixed(0)} total</span>
                   )}
                 </div>
               </div>
@@ -459,13 +459,13 @@ export default function GameProductsPage() {
             {/* Payment Method */}
             {!isStarlight && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Payment Method</div>
+                <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Payment Method</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {(["upi", "wallet"] as const).map(method => (
                     <button
                       key={method}
                       onClick={() => setPaymentMethod(method)}
-                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: paymentMethod === method ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.04)", border: paymentMethod === method ? "2px solid rgba(139,92,246,0.65)" : "1px solid rgba(255,255,255,0.1)", color: paymentMethod === method ? "#a78bfa" : "rgba(255,255,255,0.45)", fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "all 0.15s", WebkitTapHighlightColor: "transparent" }}
+                      style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: paymentMethod === method ? "rgba(139,92,246,0.1)" : "rgba(61,43,31,0.03)", border: paymentMethod === method ? "2px solid rgba(139,92,246,0.55)" : "1px solid rgba(197,180,162,0.35)", color: paymentMethod === method ? "#8b5cf6" : "rgba(61,43,31,0.5)", fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "all 0.15s", WebkitTapHighlightColor: "transparent" }}
                     >
                       {method === "upi" ? "💳 UPI" : "💰 Wallet"}
                     </button>

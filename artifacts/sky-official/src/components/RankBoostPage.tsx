@@ -64,21 +64,22 @@ function calcPrice(curRank: string, curSub: string, tarRank: string, tarSub: str
 }
 
 const CARD: React.CSSProperties = {
-  background: "#111316",
-  border: "1px solid rgba(245,158,11,0.18)",
+  background: "#FFFFFF",
+  border: "1px solid rgba(197,180,162,0.4)",
   borderRadius: 16,
   padding: "22px 20px",
   marginBottom: 14,
+  boxShadow: "0 1px 4px rgba(61,43,31,0.05)",
 };
 const LBL: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-  textTransform: "uppercase", color: "rgba(255,255,255,0.4)",
+  textTransform: "uppercase", color: "rgba(61,43,31,0.5)",
   display: "block", marginBottom: 8,
 };
 const INPUT: React.CSSProperties = {
-  width: "100%", background: "#0d0d11",
-  border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10,
-  color: "#fff", fontSize: 16, padding: "12px 14px",
+  width: "100%", background: "#FAF9F6",
+  border: "1px solid rgba(197,180,162,0.4)", borderRadius: 10,
+  color: "#3D2B1F", fontSize: 16, padding: "12px 14px",
   outline: "none", boxSizing: "border-box",
   fontFamily: "inherit",
   WebkitAppearance: "none", appearance: "none",
@@ -86,7 +87,7 @@ const INPUT: React.CSSProperties = {
 };
 const SEL: React.CSSProperties = {
   ...INPUT,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23f59e0b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23A89482' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
   backgroundRepeat: "no-repeat",
   backgroundPosition: "right 13px center",
   paddingRight: 36,
@@ -113,27 +114,27 @@ function useIosSelectPoll(ref: React.RefObject<HTMLSelectElement | null>, setter
 }
 
 function focusOn(e: React.FocusEvent<HTMLElement>) {
-  e.currentTarget.style.borderColor = "rgba(245,158,11,0.6)";
-  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 3px rgba(245,158,11,0.08)";
-  (e.currentTarget as HTMLElement).style.background  = "#14120a";
+  e.currentTarget.style.borderColor = "rgba(168,148,130,0.65)";
+  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 3px rgba(168,148,130,0.08)";
+  (e.currentTarget as HTMLElement).style.background  = "#FAF9F6";
 }
 function focusOff(e: React.FocusEvent<HTMLElement>) {
-  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+  e.currentTarget.style.borderColor = "rgba(197,180,162,0.4)";
   (e.currentTarget as HTMLElement).style.boxShadow = "none";
-  (e.currentTarget as HTMLElement).style.background  = "#0d0d11";
+  (e.currentTarget as HTMLElement).style.background  = "#FAF9F6";
 }
 
 function StepHead({ n, title, sub }: { n: number; title: string; sub: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 20 }}>
       <div style={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-        background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000",
+        background: "#A89482", color: "#FAF9F6",
         fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {n}
       </div>
       <div>
-        <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{title}</div>
-        <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2 }}>{sub}</div>
+        <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 14 }}>{title}</div>
+        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 11, marginTop: 2 }}>{sub}</div>
       </div>
     </div>
   );
@@ -223,14 +224,14 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
         .rb-card:nth-child(2){animation-delay:.09s}
         .rb-card:nth-child(3){animation-delay:.14s}
         .rb-card:nth-child(4){animation-delay:.19s}
-        select option { background:#111316; color:#fff; }
+        select option { background:#FAF9F6; color:#3D2B1F; }
       `}</style>
 
       {/* Back button */}
       <div style={{ padding: "82px 16px 0" }}>
         <button
           onClick={goBack}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 999, padding: "7px 14px 7px 10px", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 12, fontWeight: 700, WebkitTapHighlightColor: "transparent" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(61,43,31,0.06)", border: "1px solid rgba(197,180,162,0.35)", borderRadius: 999, padding: "7px 14px 7px 10px", color: "rgba(61,43,31,0.7)", cursor: "pointer", fontSize: 12, fontWeight: 700, WebkitTapHighlightColor: "transparent" }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           Back
@@ -247,8 +248,8 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
               key={type}
               onClick={() => setService(type)}
               style={{
-                background: service === type ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)",
-                border: service === type ? "1.5px solid rgba(245,158,11,0.65)" : "1.5px solid rgba(255,255,255,0.12)",
+                background: service === type ? "rgba(168,148,130,0.1)" : "rgba(61,43,31,0.03)",
+                border: service === type ? "1.5px solid rgba(168,148,130,0.65)" : "1.5px solid rgba(197,180,162,0.35)",
                 borderRadius: 12, padding: "16px 14px", cursor: "pointer",
                 textAlign: "left", fontFamily: "inherit",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
@@ -258,10 +259,10 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
               <span style={{ fontSize: 22, display: "block", marginBottom: 8 }}>
                 {type === "urgent" ? "⚡" : "🕐"}
               </span>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: service === type ? "#f59e0b" : "#fff" }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: service === type ? "#A89482" : "#3D2B1F" }}>
                 {type === "urgent" ? "Urgent (+20%)" : "Not Urgent"}
               </span>
-              <span style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>
+              <span style={{ display: "block", fontSize: 11, color: "rgba(61,43,31,0.45)", marginTop: 3 }}>
                 {type === "urgent" ? "Completed as soon as possible" : "Standard delivery time"}
               </span>
             </button>
@@ -328,15 +329,15 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
           display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
         }}>
           <div>
-            <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>Estimated Price</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>
+            <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(61,43,31,0.4)", marginBottom: 5 }}>Estimated Price</div>
+            <div style={{ fontSize: 12, color: "rgba(61,43,31,0.45)", fontFamily: "monospace" }}>
               {priceResult
                 ? priceResult.note
                 : curRank && tarRank ? "⚠ Target must be higher" : "Select your ranks above"}
             </div>
           </div>
           <div style={{ fontFamily: "monospace", fontSize: 30, fontWeight: 700, letterSpacing: "-1px", whiteSpace: "nowrap",
-            color: priceResult ? "#f59e0b" : "rgba(255,255,255,0.18)" }}>
+            color: priceResult ? "#A89482" : "rgba(61,43,31,0.2)" }}>
             {priceResult ? `₹${priceResult.price}` : "—"}
           </div>
         </div>
@@ -395,8 +396,8 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
         }}>
           <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
           <div>
-            <div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>Safe Payment Policy</div>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 2 }}>Pay 50% upfront · Remaining 50% only after boost is complete</div>
+            <div style={{ color: "#3D2B1F", fontWeight: 600, fontSize: 13 }}>Safe Payment Policy</div>
+            <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12, marginTop: 2 }}>Pay 50% upfront · Remaining 50% only after boost is complete</div>
           </div>
         </div>
       </div>
@@ -410,14 +411,14 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
       >
         <div style={{
           width: 22, height: 22, minWidth: 22, borderRadius: 6, marginTop: 1, flexShrink: 0,
-          background: agreed ? "#f59e0b" : "rgba(255,255,255,0.05)",
-          border: agreed ? "none" : "1.5px solid rgba(255,255,255,0.2)",
+          background: agreed ? "#A89482" : "rgba(61,43,31,0.04)",
+          border: agreed ? "none" : "1.5px solid rgba(197,180,162,0.4)",
           display: "flex", alignItems: "center", justifyContent: "center",
           transition: "background 0.15s",
         }}>
           {agreed && <svg width="11" height="8" viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
         </div>
-        <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, lineHeight: 1.6 }}>
+        <span style={{ color: "rgba(61,43,31,0.5)", fontSize: 13, lineHeight: 1.6 }}>
           I understand that boosting carries a minor risk and agree to the 50% upfront payment policy. My account password will only be requested after payment is confirmed.
         </span>
       </div>
@@ -439,7 +440,7 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
         {submitted ? "✅ Order Details Sent" : "Send Order Details 🚀"}
       </button>
 
-      <p style={{ textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.25)", marginTop: 16, lineHeight: 1.6 }}>
+      <p style={{ textAlign: "center", fontSize: 12, color: "rgba(61,43,31,0.3)", marginTop: 16, lineHeight: 1.6 }}>
         Your order goes directly to our WhatsApp.<br />We confirm within 1 hour. ✅
       </p>
       </div>

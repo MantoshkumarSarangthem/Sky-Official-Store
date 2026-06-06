@@ -158,6 +158,7 @@ export default function StaffPortal() {
   const [bioEnabled, setBioEnabled] = useState(() => !!localStorage.getItem(STAFF_BIO_CRED));
   const [bioLoading, setBioLoading] = useState(false);
   const [bioMsg, setBioMsg] = useState("");
+  const [showPinForm, setShowPinForm] = useState(() => !localStorage.getItem(STAFF_BIO_CRED));
   const [orders, setOrders] = useState<StaffOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -280,32 +281,34 @@ export default function StaffPortal() {
                 {bioLoading ? <span>Verifying…</span> : <><span style={{ fontSize: 20 }}>🔑</span> Login with Biometrics</>}
               </button>
             )}
-            {bioAvail && bioEnabled && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-                <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>or use PIN</span>
-                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-              </div>
+            {bioAvail && bioEnabled && !showPinForm && (
+              <button onClick={() => setShowPinForm(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 12, padding: 0, textAlign: "center" }}>
+                Use PIN instead
+              </button>
             )}
-            <div>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Your Name</div>
-              <input value={loginName} onChange={e => setLoginName(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} placeholder="Enter your staff name"
-                style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-            </div>
-            <div>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>PIN</div>
-              <input type="password" value={loginPin} onChange={e => setLoginPin(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} placeholder="Enter your PIN"
-                style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-            </div>
+            {(!bioEnabled || !bioAvail || showPinForm) && (
+              <>
+                <div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Your Name</div>
+                  <input value={loginName} onChange={e => setLoginName(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} placeholder="Enter your staff name"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>PIN</div>
+                  <input type="password" value={loginPin} onChange={e => setLoginPin(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} placeholder="Enter your PIN"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <button onClick={login} disabled={loginLoading}
+                  style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: loginLoading ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 800, fontSize: 15, border: "none", cursor: loginLoading ? "default" : "pointer" }}>
+                  {loginLoading ? "Signing in…" : "Sign In"}
+                </button>
+              </>
+            )}
             {(loginError || bioMsg) && (
               <div style={{ background: loginError ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.08)", border: `1px solid ${loginError ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.2)"}`, borderRadius: 8, padding: "8px 12px", color: loginError ? "#ef4444" : "#fbbf24", fontSize: 13 }}>
                 {loginError || bioMsg}
               </div>
             )}
-            <button onClick={login} disabled={loginLoading}
-              style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: loginLoading ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 800, fontSize: 15, border: "none", cursor: loginLoading ? "default" : "pointer" }}>
-              {loginLoading ? "Signing in…" : "Sign In"}
-            </button>
           </div>
         </div>
       </div>

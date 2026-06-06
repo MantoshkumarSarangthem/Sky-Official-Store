@@ -113,6 +113,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [bioEnabled, setBioEnabled] = useState(() => !!localStorage.getItem(ADMIN_BIO_CRED));
   const [bioLoading, setBioLoading] = useState(false);
   const [bioMsg, setBioMsg] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [showPwForm, setShowPwForm] = useState(() => !localStorage.getItem(ADMIN_BIO_CRED));
   const [tab, setTab] = useState<Tab>("packages");
   const [packages, setPackages] = useState<Package[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -257,6 +259,22 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       window.dispatchEvent(new Event("skyAdminUpdate"));
     } finally { setPromoBannersSaving(false); }
   };
+  const uploadMediaFile = (file: File, onProgress: (p: number) => void): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
+      xhr.onload = () => {
+        if (xhr.status === 200) { try { resolve(JSON.parse(xhr.responseText).url); } catch { reject(new Error("Invalid response")); } }
+        else reject(new Error(`Upload failed (${xhr.status})`));
+      };
+      xhr.onerror = () => reject(new Error("Network error"));
+      const fd = new FormData();
+      fd.append("file", file);
+      xhr.open("POST", `${API}/admin/upload-media`);
+      xhr.setRequestHeader("Authorization", `Bearer ${sessionStorage.getItem("admin_token") ?? ""}`);
+      xhr.send(fd);
+    });
+
   const addPromoBanner = async () => {
     if (promoBanners.length >= 5) return;
     let image = "";
@@ -266,7 +284,18 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     } else {
       if (!promoBannerImgRef.current?.files?.[0]) return;
       const file = promoBannerImgRef.current.files[0];
-      image = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(file); });
+      setPromoBannersSaving(true);
+      setUploadProgress(0);
+      try {
+        image = await uploadMediaFile(file, p => setUploadProgress(p));
+      } catch (err: any) {
+        alert(`Upload failed: ${err?.message ?? "Unknown error"}`);
+        setUploadProgress(null);
+        setPromoBannersSaving(false);
+        return;
+      }
+      setUploadProgress(null);
+      setPromoBannersSaving(false);
     }
     let link = "";
     if (bannerLinkType === "url") link = newBannerLink.trim();
@@ -1037,25 +1066,20 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               <button
                 onClick={enableBio}
                 disabled={bioLoading}
-                title="Enable biometric login for this device"
-                className="flex items-center justify-center text-xs font-semibold transition-colors"
-                style={{ color: "#a5b4fc", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 8, padding: "5px 10px", whiteSpace: "nowrap" }}
+                title={bioLoading ? "Setting up…" : "Enable biometric login for this device"}
+                style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 }}
               >
-                {bioLoading ? "…" : "🔑 Enable Biometrics"}
+                {bioLoading ? "…" : "🔑"}
               </button>
             )}
             {authed && bioAvail && bioEnabled && (
               <button
                 onClick={disableBio}
-                title="Remove biometric login from this device"
-                className="flex items-center justify-center text-xs font-semibold transition-colors"
-                style={{ color: "#6b7280", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "5px 10px", whiteSpace: "nowrap" }}
+                title="Biometric ON — click to remove"
+                style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(99,102,241,0.12)", border: "1.5px solid rgba(99,102,241,0.35)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 }}
               >
-                🔑 Biometrics On
+                🔑
               </button>
-            )}
-            {authed && bioMsg && (
-              <span className="text-xs text-amber-400 max-w-[120px] truncate">{bioMsg}</span>
             )}
             {authed && (
               <button
@@ -1092,33 +1116,38 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                   {bioLoading ? <span className="animate-pulse">Verifying…</span> : <><span style={{ fontSize: 18 }}>🔑</span> Login with Biometrics</>}
                 </button>
               )}
-              {bioAvail && bioEnabled && (
-                <div className="flex items-center gap-2">
-                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-                  <span className="text-gray-600 text-xs">or use password</span>
-                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-                </div>
+              {bioAvail && bioEnabled && !showPwForm && (
+                <button
+                  onClick={() => setShowPwForm(true)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 12, padding: 0 }}
+                >
+                  Use password instead
+                </button>
               )}
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && login()}
-                className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
-                style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}
-                autoFocus
-              />
+              {(!bioEnabled || !bioAvail || showPwForm) && (
+                <>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && login()}
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
+                    style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={login}
+                    className="w-full py-3 rounded-xl font-bold text-sm text-black"
+                    style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
+                  >
+                    Enter
+                  </button>
+                </>
+              )}
               {(loginError || bioMsg) && (
                 <p className={`text-xs text-center ${loginError ? "text-red-400" : "text-amber-400"}`}>{loginError || bioMsg}</p>
               )}
-              <button
-                onClick={login}
-                className="w-full py-3 rounded-xl font-bold text-sm text-black"
-                style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
-              >
-                Enter
-              </button>
             </div>
           </div>
         ) : (
@@ -2368,8 +2397,13 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             <div className="text-gray-500 text-xs py-1">Banner will link to the Packages page.</div>
                           )}
                         </div>
-                        <button onClick={addPromoBanner} disabled={promoBannersSaving} className="py-2.5 rounded-xl text-sm font-bold text-black" style={{ background: promoBannersSaving ? "rgba(245,158,11,0.5)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>
-                          {promoBannersSaving ? "Saving…" : "Upload & Add Banner"}
+                        {uploadProgress !== null && (
+                          <div style={{ borderRadius: 8, overflow: "hidden", background: "rgba(255,255,255,0.06)", height: 6 }}>
+                            <div style={{ height: "100%", background: "linear-gradient(90deg,#6366f1,#a5b4fc)", width: `${uploadProgress}%`, transition: "width 0.3s ease", borderRadius: 8 }} />
+                          </div>
+                        )}
+                        <button onClick={addPromoBanner} disabled={promoBannersSaving || uploadProgress !== null} className="py-2.5 rounded-xl text-sm font-bold text-black" style={{ background: (promoBannersSaving || uploadProgress !== null) ? "rgba(245,158,11,0.5)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>
+                          {uploadProgress !== null ? `Uploading ${uploadProgress}%…` : promoBannersSaving ? "Saving…" : "Upload & Add Banner"}
                         </button>
                       </div>
                     </div>

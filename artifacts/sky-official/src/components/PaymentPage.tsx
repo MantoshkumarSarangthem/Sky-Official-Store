@@ -33,10 +33,10 @@ export function getWalletTopupAmount() { return _walletTopupAmount; }
 
 function InfoRow({ label, value, mono, accent, action }: { label: string; value: string; mono?: boolean; accent?: boolean; action?: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", gap: 8 }}>
-      <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, flexShrink: 0 }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderBottom: "1px solid rgba(197,180,162,0.25)", gap: 8 }}>
+      <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13, flexShrink: 0 }}>{label}</span>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <span style={{ color: accent ? "#f59e0b" : "#fff", fontWeight: mono ? 600 : 700, fontSize: 13, fontFamily: mono ? "'Courier New', monospace" : undefined, textAlign: "right", wordBreak: "break-all" }}>{value}</span>
+        <span style={{ color: accent ? "#A89482" : "#3D2B1F", fontWeight: mono ? 600 : 700, fontSize: 13, fontFamily: mono ? "'Courier New', monospace" : undefined, textAlign: "right", wordBreak: "break-all" }}>{value}</span>
         {action}
       </div>
     </div>
@@ -255,26 +255,26 @@ export default function PaymentPage() {
   // ── Success screen ──────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingBottom: 48 }}>
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(10,10,10,0.95)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
-          <div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>Order Submitted</div>
+      <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 48 }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
+          <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 16 }}>Order Submitted</div>
         </div>
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "88px 16px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(34,197,94,0.12)", border: "2px solid rgba(34,197,94,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ color: "#fff", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>{isWalletTopup ? "Top-up Submitted!" : "Order Placed!"}</div>
-            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, lineHeight: 1.6 }}>
+            <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>{isWalletTopup ? "Top-up Submitted!" : "Order Placed!"}</div>
+            <div style={{ color: "rgba(61,43,31,0.55)", fontSize: 13, lineHeight: 1.6 }}>
               {isWalletTopup
-                ? <>Your wallet top-up of <strong style={{ color: "#f59e0b" }}>₹{walletTopupAmt}</strong> has been submitted. Funds will be added once payment is verified.</>
+                ? <>Your wallet top-up of <strong style={{ color: "#A89482" }}>₹{walletTopupAmt}</strong> has been submitted. Funds will be added once payment is verified.</>
                 : isCartMode
                   ? `Your cart order (${orderIds.length} order${orderIds.length !== 1 ? "s" : ""}) has been submitted. Diamonds will be delivered once payment is confirmed.`
-                  : <>Your order for <strong style={{ color: "#f59e0b" }}>♦ {pkg?.diamonds.toLocaleString()} {currLabel}</strong> has been submitted. {currLabel} will be delivered once payment is confirmed.</>
+                  : <>Your order for <strong style={{ color: "#A89482" }}>♦ {pkg?.diamonds.toLocaleString()} {currLabel}</strong> has been submitted. {currLabel} will be delivered once payment is confirmed.</>
               }
             </div>
           </div>
-          <div style={{ width: "100%", background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "4px 20px" }}>
+          <div style={{ width: "100%", background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "4px 20px", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
             {orderId && <InfoRow label="Order ID" value={`#${orderId}`} />}
             {orderIds.length > 0 && <InfoRow label="Order IDs" value={orderIds.map(id => `#${id}`).join(", ")} />}
             <InfoRow label="Reference" value={remark} mono />
@@ -286,18 +286,18 @@ export default function PaymentPage() {
             {target && <InfoRow label={isMlbbPkg ? "MLBB Account" : "Game Account"} value={target.ign ? `${target.ign} (${target.userId})` : target.userId} />}
             {target?.isForFriend && <InfoRow label="For" value="Friend / Relative" />}
             <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 11 }}>
-              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Status</span>
-              <span style={{ color: "#fbbf24", fontWeight: 700, fontSize: 13 }}>Pending Verification</span>
+              <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13 }}>Status</span>
+              <span style={{ color: "#A89482", fontWeight: 700, fontSize: 13 }}>Pending Verification</span>
             </div>
           </div>
-          <div style={{ width: "100%", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+          <div style={{ width: "100%", background: "rgba(168,148,130,0.07)", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "rgba(61,43,31,0.55)", lineHeight: 1.6 }}>
             💬 Need help? Chat with us on WhatsApp for instant support.
           </div>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
             {isWalletTopup
-              ? <button onClick={() => setLocation("/profile")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}>Back to Profile</button>
-              : <><button onClick={() => setLocation("/orders")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}>View My Orders</button>
-                 <button onClick={() => setLocation("/packages")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Buy More Diamonds</button></>
+              ? <button onClick={() => setLocation("/profile")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}>Back to Profile</button>
+              : <><button onClick={() => setLocation("/orders")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}>View My Orders</button>
+                 <button onClick={() => setLocation("/packages")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "rgba(61,43,31,0.04)", border: "1px solid rgba(197,180,162,0.4)", color: "rgba(61,43,31,0.55)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Buy More Diamonds</button></>
             }
           </div>
         </div>
@@ -308,7 +308,7 @@ export default function PaymentPage() {
   // ── Expired screen ──────────────────────────────────────────────────────
   if (expired) {
     return (
-      <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 20px" }}>
+      <div style={{ background: "#FAF9F6", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 20px" }}>
         <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(239,68,68,0.12)", border: "2px solid rgba(239,68,68,0.4)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2"/>
@@ -316,13 +316,13 @@ export default function PaymentPage() {
             <circle cx="12" cy="17" r="1" fill="#ef4444"/>
           </svg>
         </div>
-        <div style={{ color: "#fff", fontWeight: 800, fontSize: 22, textAlign: "center", marginBottom: 10 }}>Session Expired</div>
-        <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, textAlign: "center", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
+        <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 22, textAlign: "center", marginBottom: 10 }}>Session Expired</div>
+        <div style={{ color: "rgba(61,43,31,0.55)", fontSize: 14, textAlign: "center", lineHeight: 1.6, marginBottom: 28, maxWidth: 300 }}>
           The payment window has expired. Please go back and start a new transaction.
         </div>
         <button
           onClick={() => setLocation(isWalletTopup ? "/profile" : isCartMode ? "/cart" : "/packages")}
-          style={{ padding: "14px 36px", borderRadius: 14, background: "linear-gradient(135deg,#fcd34d,#f59e0b)", color: "#000", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}
+          style={{ padding: "14px 36px", borderRadius: 14, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}
         >
           Go Back
         </button>
@@ -332,26 +332,26 @@ export default function PaymentPage() {
 
   // ── Payment screen ──────────────────────────────────────────────────────
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingBottom: 60 }}>
+    <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 60 }}>
       <style>{`
         @keyframes payIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes qrPulse { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 0 8px rgba(245,158,11,0.1)} }
+        @keyframes qrPulse { 0%,100%{box-shadow:0 0 0 0 rgba(168,148,130,0)} 50%{box-shadow:0 0 0 8px rgba(168,148,130,0.12)} }
         @keyframes confirmBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
         @keyframes urgentPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
       `}</style>
 
       {/* Header */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(10,10,10,0.95)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(245,158,11,0.12)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
-        <button onClick={() => setLocation(isWalletTopup ? "/profile" : isCartMode ? "/cart" : "/packages")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
+        <button onClick={() => setLocation(isWalletTopup ? "/profile" : isCartMode ? "/cart" : "/packages")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#3D2B1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", border: "1.5px solid rgba(245,158,11,0.5)", flexShrink: 0 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", border: "1.5px solid rgba(197,180,162,0.5)", flexShrink: 0 }}>
             <img src="/logo.webp" alt="Sky Official" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>Sky Official</div>
-            <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>Secure UPI Payment</div>
+            <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>Sky Official</div>
+            <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 10 }}>Secure UPI Payment</div>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 20, padding: "4px 10px" }}>
@@ -363,11 +363,11 @@ export default function PaymentPage() {
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "72px 14px 0", display: "flex", flexDirection: "column", gap: 12 }}>
 
         {/* ── Amount Card ── */}
-        <div style={{ background: "linear-gradient(135deg,#1a1300,#120e00)", border: "1.5px solid rgba(245,158,11,0.28)", borderRadius: 20, padding: "20px 20px 18px", animation: "payIn 0.4s ease both" }}>
+        <div style={{ background: "#FFFFFF", border: "1.5px solid rgba(197,180,162,0.4)", borderRadius: 20, padding: "20px 20px 18px", animation: "payIn 0.4s ease both", boxShadow: "0 2px 10px rgba(61,43,31,0.05)" }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Amount to be paid</div>
-            <div style={{ color: "#f59e0b", fontWeight: 900, fontSize: 46, letterSpacing: "-1px", lineHeight: 1 }}>₹{amount.toLocaleString("en-IN")}</div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 8 }}>
+            <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Amount to be paid</div>
+            <div style={{ color: "#A89482", fontWeight: 900, fontSize: 46, letterSpacing: "-1px", lineHeight: 1 }}>₹{amount.toLocaleString("en-IN")}</div>
+            <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 13, marginTop: 8 }}>
               {isWalletTopup ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <img src="/scoin.png" alt="S" style={{ width: 14, height: 14, objectFit: "contain", display: "inline-block" }} />
@@ -391,19 +391,19 @@ export default function PaymentPage() {
 
         {/* ── Cart items breakdown (cart mode only) ── */}
         {isCartMode && cartItems.length > 0 && (
-          <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "4px 20px", animation: "payIn 0.4s ease 0.04s both" }}>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 0 4px" }}>Cart Summary</div>
+          <div style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 20, padding: "4px 20px", animation: "payIn 0.4s ease 0.04s both", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
+            <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 0 4px" }}>Cart Summary</div>
             {cartItems.map(item => (
-              <div key={item.pkg.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                <span style={{ color: "#fff", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/diamond.png" alt="♦" style={{ width: 13, height: 13, objectFit: "contain" }} />{item.pkg.diamonds.toLocaleString()} × {item.quantity}</span>
-                <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 13 }}>₹{(parseFloat(item.pkg.price) * item.quantity).toLocaleString("en-IN")}</span>
+              <div key={item.pkg.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid rgba(197,180,162,0.2)" }}>
+                <span style={{ color: "#3D2B1F", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 4 }}><img src="/diamond.png" alt="♦" style={{ width: 13, height: 13, objectFit: "contain" }} />{item.pkg.diamonds.toLocaleString()} × {item.quantity}</span>
+                <span style={{ color: "#A89482", fontWeight: 700, fontSize: 13 }}>₹{(parseFloat(item.pkg.price) * item.quantity).toLocaleString("en-IN")}</span>
               </div>
             ))}
           </div>
         )}
 
         {/* ── Order Details Card ── */}
-        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "4px 20px 4px", animation: "payIn 0.4s ease 0.06s both" }}>
+        <div style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 20, padding: "4px 20px 4px", animation: "payIn 0.4s ease 0.06s both", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
           <InfoRow label="Order ID" value={refId} mono />
           <InfoRow label="Remark" value={remark} mono action={<CopyBtn text={remark} />} />
           <InfoRow label="Payee UPI" value={upiId} mono action={<CopyBtn text={upiId} />} />
@@ -418,10 +418,10 @@ export default function PaymentPage() {
         </div>
 
         {/* ── QR Card ── */}
-        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, overflow: "hidden", animation: "payIn 0.4s ease 0.12s both" }}>
-          <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 2 }}>Scan & Pay</div>
-            <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>Use any UPI app to scan this QR code</div>
+        <div style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 20, overflow: "hidden", animation: "payIn 0.4s ease 0.12s both", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
+          <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid rgba(197,180,162,0.25)" }}>
+            <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 14, marginBottom: 2 }}>Scan & Pay</div>
+            <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11 }}>Use any UPI app to scan this QR code</div>
           </div>
 
           {/* QR Image */}
@@ -438,15 +438,15 @@ export default function PaymentPage() {
 
           {/* Download QR */}
           <div style={{ padding: "0 20px 16px" }}>
-            <button onClick={downloadQR} style={{ width: "100%", padding: "10px 0", borderRadius: 12, background: "rgba(255,255,255,0.07)", border: "1.5px solid rgba(255,255,255,0.15)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v14m-7-7l7 7 7-7" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="19" width="18" height="2" rx="1" fill="#fff"/></svg>
+            <button onClick={downloadQR} style={{ width: "100%", padding: "10px 0", borderRadius: 12, background: "rgba(61,43,31,0.04)", border: "1.5px solid rgba(197,180,162,0.45)", color: "#3D2B1F", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v14m-7-7l7 7 7-7" stroke="#3D2B1F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/><rect x="3" y="19" width="18" height="2" rx="1" fill="#3D2B1F"/></svg>
               Download QR
             </button>
           </div>
 
           {/* UPI App Buttons */}
           <div style={{ padding: "0 20px 20px" }}>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Or open directly in app</div>
+            <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Or open directly in app</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {/* PhonePe */}
               <button
@@ -496,7 +496,7 @@ export default function PaymentPage() {
         </div>
 
         {/* ── Confirm Order ── */}
-        <div style={{ background: upiOpened ? "linear-gradient(135deg,#0d1a00,#0a1200)" : "#111", border: `1.5px solid ${upiOpened ? "rgba(34,197,94,0.35)" : "rgba(255,255,255,0.08)"}`, borderRadius: 20, padding: "18px 20px", animation: "payIn 0.4s ease 0.18s both", transition: "all 0.4s ease" }}>
+        <div style={{ background: upiOpened ? "rgba(34,197,94,0.04)" : "#FFFFFF", border: `1.5px solid ${upiOpened ? "rgba(34,197,94,0.35)" : "rgba(197,180,162,0.4)"}`, borderRadius: 20, padding: "18px 20px", animation: "payIn 0.4s ease 0.18s both", transition: "all 0.4s ease", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
           {upiOpened ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -504,8 +504,8 @@ export default function PaymentPage() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#22c55e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
                 <div>
-                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Payment done?</div>
-                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 1 }}>Tap below to confirm your order — no UTR needed</div>
+                  <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 14 }}>Payment done?</div>
+                  <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11, marginTop: 1 }}>Tap below to confirm your order — no UTR needed</div>
                 </div>
               </div>
               {error && (
@@ -513,12 +513,12 @@ export default function PaymentPage() {
                   {error}
                 </div>
               )}
-              <button onClick={confirmOrder} disabled={submitting} style={{ width: "100%", padding: "15px 0", borderRadius: 14, background: submitting ? "rgba(34,197,94,0.2)" : "linear-gradient(135deg,#4ade80,#22c55e)", color: submitting ? "rgba(0,0,0,0.4)" : "#000", fontWeight: 800, fontSize: 16, border: "none", cursor: submitting ? "default" : "pointer", transition: "all 0.2s", boxShadow: submitting ? "none" : "0 4px 20px rgba(34,197,94,0.35)", animation: submitting ? "none" : "confirmBounce 2s ease-in-out infinite" }}>
+              <button onClick={confirmOrder} disabled={submitting} style={{ width: "100%", padding: "15px 0", borderRadius: 14, background: submitting ? "rgba(34,197,94,0.2)" : "linear-gradient(135deg,#4ade80,#22c55e)", color: submitting ? "rgba(0,0,0,0.4)" : "#000", fontWeight: 800, fontSize: 16, border: "none", cursor: submitting ? "default" : "pointer", transition: "all 0.2s", boxShadow: submitting ? "none" : "0 4px 20px rgba(34,197,94,0.25)", animation: submitting ? "none" : "confirmBounce 2s ease-in-out infinite" }}>
                 {submitting ? "Confirming…" : "✓ I've Paid — Confirm Order"}
               </button>
             </>
           ) : (
-            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", fontSize: 13, padding: "4px 0" }}>
+            <div style={{ textAlign: "center", color: "rgba(61,43,31,0.45)", fontSize: 13, padding: "4px 0" }}>
               <span style={{ fontSize: 18 }}>👆</span>
               <div style={{ marginTop: 6 }}>Open a UPI app above to pay, then confirm your order here</div>
             </div>
@@ -530,8 +530,8 @@ export default function PaymentPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
             <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, lineHeight: 1.5, margin: 0 }}>
-            Only pay to UPI ID <strong style={{ color: "rgba(255,255,255,0.65)" }}>{upiId}</strong>. Always verify before paying.
+          <p style={{ color: "rgba(61,43,31,0.45)", fontSize: 12, lineHeight: 1.5, margin: 0 }}>
+            Only pay to UPI ID <strong style={{ color: "rgba(61,43,31,0.7)" }}>{upiId}</strong>. Always verify before paying.
           </p>
         </div>
 

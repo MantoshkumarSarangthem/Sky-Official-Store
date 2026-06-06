@@ -445,7 +445,7 @@ function ImagePane({ src, onError }: { src: string; onError?: () => void }) {
       {/* Bottom fade into card body */}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0, height: 42, zIndex: 2, pointerEvents: "none",
-        background: "linear-gradient(to top, rgba(14,14,14,0.96) 0%, rgba(14,14,14,0.55) 55%, transparent 100%)",
+        background: "linear-gradient(to top, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.55) 55%, transparent 100%)",
       }} />
     </div>
   );
@@ -462,8 +462,8 @@ function CategoryCard({ cat, onClick, index, isPopularNow, isExiting }: { cat: C
     <div
       onClick={() => cat.available && onClick()}
       style={{
-        background: "rgba(14,14,14,0.82)", borderRadius: 18,
-        border: `1px solid ${cat.available ? cat.color + "45" : "rgba(255,255,255,0.07)"}`,
+        background: "#FFFFFF", borderRadius: 18,
+        border: `1px solid ${cat.available ? cat.color + "45" : "rgba(197,180,162,0.3)"}`,
         overflow: "hidden", display: "flex", flexDirection: "column",
         cursor: cat.available ? "pointer" : "default",
         boxShadow: "none",
@@ -480,7 +480,7 @@ function CategoryCard({ cat, onClick, index, isPopularNow, isExiting }: { cat: C
         if (!cat.available) return;
         const el = e.currentTarget as HTMLDivElement;
         el.style.transform = "translateY(-3px) scale(1.02)";
-        el.style.boxShadow = `0 8px 24px rgba(0,0,0,0.6)`;
+        el.style.boxShadow = `0 8px 24px rgba(61,43,31,0.12)`;
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLDivElement;
@@ -507,7 +507,7 @@ function CategoryCard({ cat, onClick, index, isPopularNow, isExiting }: { cat: C
       )}
       {!cat.available && (
         <div style={{ position: "absolute", top: 10, right: 10, zIndex: 3,
-          background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)",
+          background: "rgba(61,43,31,0.06)", color: "rgba(61,43,31,0.4)",
           fontSize: 8, fontWeight: 700, padding: "3px 7px", borderRadius: 999,
           textTransform: "uppercase", letterSpacing: "0.08em" }}>
           Soon
@@ -520,15 +520,15 @@ function CategoryCard({ cat, onClick, index, isPopularNow, isExiting }: { cat: C
         {/* Bottom fade into card body */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0, height: 32, pointerEvents: "none",
-          background: "linear-gradient(to top, rgba(14,14,14,0.95) 0%, transparent 100%)",
+          background: "linear-gradient(to top, rgba(255,255,255,0.95) 0%, transparent 100%)",
         }} />
       </div>
 
       <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 5 }}>
-        <div style={{ color: cat.available ? "#fff" : "rgba(255,255,255,0.4)", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>
+        <div style={{ color: cat.available ? "#3D2B1F" : "rgba(61,43,31,0.45)", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>
           {cat.title}
         </div>
-        <div style={{ color: "rgba(255,255,255,0.32)", fontSize: 11, lineHeight: 1.4 }}>
+        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 11, lineHeight: 1.4 }}>
           {cat.subtitle}
         </div>
         {cat.available && (
@@ -557,11 +557,10 @@ function PackCard({ pack, isDouble, index, onSelect, isSelected, isExiting, pack
       <div
       onClick={() => { if (!isUnavailable) onSelect?.(pack); }}
       style={{
-        background: "rgba(14,14,14,0.88)", borderRadius: 18,
-        backdropFilter: "blur(6px)",
-        border: isSelected ? "2px solid rgba(245,158,11,0.85)" : pack.is_popular ? "1.5px solid rgba(245,158,11,0.5)" : isDouble ? "1.5px solid rgba(0,229,255,0.3)" : "1px solid rgba(255,255,255,0.08)",
+        background: "#FFFFFF", borderRadius: 18,
+        border: isSelected ? "2px solid rgba(168,148,130,0.85)" : pack.is_popular ? "1.5px solid rgba(168,148,130,0.55)" : isDouble ? "1.5px solid rgba(0,229,255,0.35)" : "1px solid rgba(197,180,162,0.35)",
         overflow: "hidden", display: "flex", flexDirection: "column",
-        boxShadow: isSelected ? "0 0 0 3px rgba(245,158,11,0.2), 0 8px 28px rgba(0,0,0,0.7)" : "0 2px 14px rgba(0,0,0,0.6)",
+        boxShadow: isSelected ? "0 0 0 3px rgba(168,148,130,0.18), 0 4px 20px rgba(61,43,31,0.1)" : "0 1px 4px rgba(61,43,31,0.06)",
         position: "relative", zIndex: 1, cursor: isUnavailable ? "default" : "pointer",
         opacity: isUnavailable ? 0.65 : 1,
         animation: isExiting
@@ -596,17 +595,17 @@ function PackCard({ pack, isDouble, index, onSelect, isSelected, isExiting, pack
       <div style={{ padding: "8px 12px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <img src="/diamond.png" alt="♦" style={{ width: 17, height: 17, objectFit: "contain", flexShrink: 0 }} />
-          <span style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{pack.diamonds.toLocaleString()}</span>
-          <span style={{ color: "rgba(255,255,255,0.38)", fontSize: 10 }}>Diamonds</span>
+          <span style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 15 }}>{pack.diamonds.toLocaleString()}</span>
+          <span style={{ color: "rgba(61,43,31,0.4)", fontSize: 10 }}>Diamonds</span>
         </div>
         {hasBonus ? (
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-            <span style={{ color: "rgba(255,255,255,0.5)" }}>{base.toLocaleString()}</span>
+          <div style={{ fontSize: 10, color: "rgba(61,43,31,0.35)" }}>
+            <span style={{ color: "rgba(61,43,31,0.55)" }}>{base.toLocaleString()}</span>
             {" + "}
-            <span style={{ color: isDouble ? "#00e5ff" : "#4ade80", fontWeight: 700 }}>{pack.bonus_diamonds} bonus</span>
+            <span style={{ color: isDouble ? "#00c4d4" : "#22c55e", fontWeight: 700 }}>{pack.bonus_diamonds} bonus</span>
           </div>
         ) : (
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>No bonus</div>
+          <div style={{ fontSize: 10, color: "rgba(61,43,31,0.3)" }}>No bonus</div>
         )}
         <div style={{ color: "#f59e0b", fontWeight: 800, fontSize: 16, marginTop: 3 }}>₹{Number(pack.price).toLocaleString("en-IN")}</div>
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 1 }}>
@@ -614,18 +613,18 @@ function PackCard({ pack, isDouble, index, onSelect, isSelected, isExiting, pack
           <span style={{ display: "inline-flex", alignItems: "center", gap: 2, background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.22)", borderRadius: 999, padding: "2px 6px", fontSize: 9, color: "#7dd3fc", fontWeight: 700 }}>✓ Secure</span>
         </div>
         {isUnavailable && (
-          <div style={{ marginTop: 4, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>
+          <div style={{ marginTop: 4, fontSize: 10, fontWeight: 700, color: "rgba(61,43,31,0.35)" }}>
             {pack.status === "out_of_stock" ? "Unavailable" : "Coming Soon"}
           </div>
         )}
         {isSelected && !isUnavailable && (
           <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span style={{ color: "#f59e0b", fontWeight: 800, fontSize: 10 }}>Selected</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#A89482" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span style={{ color: "#A89482", fontWeight: 800, fontSize: 10 }}>Selected</span>
           </div>
         )}
         {!isSelected && !isUnavailable && (
-          <div style={{ marginTop: 6, fontSize: 10, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>Tap to select</div>
+          <div style={{ marginTop: 6, fontSize: 10, color: "rgba(61,43,31,0.3)", fontWeight: 600 }}>Tap to select</div>
         )}
       </div>
       </div>
@@ -669,11 +668,10 @@ function StarlightCard({ pack, index, isExiting, starlightImagesCfg, mlbbAccount
       <div style={{ position: "absolute", inset: "-3px", borderRadius: 22, background: "rgba(245,200,66,0.45)", filter: "blur(12px)", animation: `packGlow 2.8s ease-in-out ${index * 0.13 + 0.5}s infinite`, zIndex: 0, pointerEvents: "none" }} />
       <div
         style={{
-          background: "rgba(14,14,14,0.88)", borderRadius: 18,
-          backdropFilter: "blur(6px)",
-          border: "1.5px solid rgba(245,200,66,0.35)",
+          background: "#FFFFFF", borderRadius: 18,
+          border: "1.5px solid rgba(245,200,66,0.45)",
           overflow: "hidden", display: "flex", flexDirection: "column",
-          boxShadow: "0 2px 14px rgba(0,0,0,0.6)",
+          boxShadow: "0 1px 6px rgba(61,43,31,0.08)",
           position: "relative", zIndex: 1, cursor: isUnavailable ? "default" : "pointer",
           opacity: isUnavailable ? 0.65 : 1,
           animation: isExiting
@@ -693,11 +691,11 @@ function StarlightCard({ pack, index, isExiting, starlightImagesCfg, mlbbAccount
         )}
         <ImagePane src={imgSrc} />
         <div style={{ padding: "8px 12px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 13, lineHeight: 1.3, minHeight: "2.6em", display: "flex", alignItems: "flex-start" }}>{pack.name || "Starlight Card"}</div>
+          <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 13, lineHeight: 1.3, minHeight: "2.6em", display: "flex", alignItems: "flex-start" }}>{pack.name || "Starlight Card"}</div>
           <div style={{ color: "#f5c842", fontWeight: 800, fontSize: 16, marginTop: 4 }}>₹{Number(pack.price).toLocaleString("en-IN")}</div>
           <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
             {isUnavailable ? (
-              <div style={{ flex: 1, textAlign: "center", padding: "6px 0", fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>
+              <div style={{ flex: 1, textAlign: "center", padding: "6px 0", fontSize: 10, fontWeight: 700, color: "rgba(61,43,31,0.4)" }}>
                 {pack.status === "out_of_stock" ? "Unavailable" : "Coming Soon"}
               </div>
             ) : (
@@ -725,11 +723,10 @@ function PassCard({ pack, index, onSelect, isSelected, isExiting, passImagesCfg 
       <div
       onClick={() => { if (!isUnavailable) onSelect?.(pack); }}
       style={{
-        background: "rgba(14,14,14,0.88)", borderRadius: 18,
-        backdropFilter: "blur(6px)",
-        border: isSelected ? "2px solid rgba(245,158,11,0.85)" : "1.5px solid rgba(168,85,247,0.3)",
+        background: "#FFFFFF", borderRadius: 18,
+        border: isSelected ? "2px solid rgba(168,148,130,0.85)" : "1.5px solid rgba(168,85,247,0.3)",
         overflow: "hidden", display: "flex", flexDirection: "column",
-        boxShadow: isSelected ? "0 0 0 3px rgba(245,158,11,0.2), 0 8px 28px rgba(0,0,0,0.7)" : "0 2px 14px rgba(0,0,0,0.6)",
+        boxShadow: isSelected ? "0 0 0 3px rgba(168,148,130,0.18), 0 4px 20px rgba(61,43,31,0.1)" : "0 1px 4px rgba(61,43,31,0.06)",
         position: "relative", zIndex: 1, cursor: isUnavailable ? "default" : "pointer",
         opacity: isUnavailable ? 0.65 : 1,
         animation: isExiting
@@ -756,21 +753,21 @@ function PassCard({ pack, index, onSelect, isSelected, isExiting, passImagesCfg 
       )}
       <ImagePane src={getPassImage(pack.name, passImagesCfg)} />
       <div style={{ padding: "8px 12px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-        <div style={{ color: "#fff", fontWeight: 800, fontSize: 13, lineHeight: 1.3, minHeight: "2.6em", display: "flex", alignItems: "flex-start" }}>{pack.name}</div>
+        <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 13, lineHeight: 1.3, minHeight: "2.6em", display: "flex", alignItems: "flex-start" }}>{pack.name}</div>
         <div style={{ color: "#f59e0b", fontWeight: 800, fontSize: 16, marginTop: 4 }}>₹{Number(pack.price).toLocaleString("en-IN")}</div>
         {isUnavailable && (
-          <div style={{ marginTop: 4, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>
+          <div style={{ marginTop: 4, fontSize: 10, fontWeight: 700, color: "rgba(61,43,31,0.35)" }}>
             {pack.status === "out_of_stock" ? "Unavailable" : "Coming Soon"}
           </div>
         )}
         {isSelected && !isUnavailable && (
           <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span style={{ color: "#f59e0b", fontWeight: 800, fontSize: 10 }}>Selected</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#A89482" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span style={{ color: "#A89482", fontWeight: 800, fontSize: 10 }}>Selected</span>
           </div>
         )}
         {!isSelected && !isUnavailable && (
-          <div style={{ marginTop: 6, fontSize: 10, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>Tap to select</div>
+          <div style={{ marginTop: 6, fontSize: 10, color: "rgba(61,43,31,0.3)", fontWeight: 600 }}>Tap to select</div>
         )}
       </div>
       </div>
@@ -780,23 +777,23 @@ function PassCard({ pack, index, onSelect, isSelected, isExiting, passImagesCfg 
 
 function SkeletonCard({ index = 0 }: { index?: number }) {
   return (
-    <div style={{ background: "rgba(14,14,14,0.88)", borderRadius: 18, border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden", position: "relative" }}>
+    <div style={{ background: "#FFFFFF", borderRadius: 18, border: "1px solid rgba(197,180,162,0.25)", overflow: "hidden", position: "relative", boxShadow: "0 1px 3px rgba(61,43,31,0.05)" }}>
       <style>{`@keyframes skelPulse{0%,100%{opacity:0.35}50%{opacity:0.75}}`}</style>
       {/* Image area */}
-      <div style={{ height: 112, background: "radial-gradient(ellipse at 50% 65%,#0c1a2e,#080a10)", position: "relative", animation: `skelPulse 1.6s ease-in-out ${index * 0.1}s infinite` }}>
-        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.03)" }} />
+      <div style={{ height: 112, background: "rgba(197,180,162,0.12)", position: "relative", animation: `skelPulse 1.6s ease-in-out ${index * 0.1}s infinite` }}>
+        <div style={{ position: "absolute", inset: 0, background: "rgba(197,180,162,0.08)" }} />
       </div>
       {/* Body */}
       <div style={{ padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 9, animation: `skelPulse 1.6s ease-in-out ${index * 0.1 + 0.1}s infinite` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 17, height: 17, borderRadius: 4, background: "rgba(245,158,11,0.12)", flexShrink: 0 }} />
-          <div style={{ height: 14, width: "55%", background: "rgba(255,255,255,0.07)", borderRadius: 5 }} />
+          <div style={{ width: 17, height: 17, borderRadius: 4, background: "rgba(197,180,162,0.2)", flexShrink: 0 }} />
+          <div style={{ height: 14, width: "55%", background: "rgba(197,180,162,0.25)", borderRadius: 5 }} />
         </div>
-        <div style={{ height: 10, width: "40%", background: "rgba(255,255,255,0.04)", borderRadius: 4 }} />
-        <div style={{ height: 18, width: "38%", background: "rgba(245,158,11,0.1)", borderRadius: 5 }} />
+        <div style={{ height: 10, width: "40%", background: "rgba(197,180,162,0.18)", borderRadius: 4 }} />
+        <div style={{ height: 18, width: "38%", background: "rgba(197,180,162,0.2)", borderRadius: 5 }} />
         <div style={{ display: "flex", gap: 5 }}>
-          <div style={{ height: 18, width: 52, background: "rgba(34,197,94,0.07)", borderRadius: 999 }} />
-          <div style={{ height: 18, width: 48, background: "rgba(56,189,248,0.07)", borderRadius: 999 }} />
+          <div style={{ height: 18, width: 52, background: "rgba(197,180,162,0.15)", borderRadius: 999 }} />
+          <div style={{ height: 18, width: 48, background: "rgba(197,180,162,0.15)", borderRadius: 999 }} />
         </div>
       </div>
     </div>
@@ -1016,8 +1013,8 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
   const activePacks = activeCategory ? filterByCategory(packages, activeCategory.id) : [];
 
   return (
-    <section style={{ position: "relative", background: activeCategory ? "#0a0a0a" : "transparent", minHeight: "100vh", paddingBottom: 48, overflow: "hidden" }}>
-      {activeCategory && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#0a0a0a", zIndex: 0, pointerEvents: "none" }} />}
+    <section style={{ position: "relative", background: activeCategory ? "#FAF9F6" : "transparent", minHeight: "100vh", paddingBottom: 48, overflow: "hidden" }}>
+      {activeCategory && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#FAF9F6", zIndex: 0, pointerEvents: "none" }} />}
       <style>{`
         @keyframes pkg-diagIn   { from{opacity:0;transform:translate(-20px,-20px)} to{opacity:1;transform:translate(0,0)} }
         @keyframes pkgSlideLeft { from{opacity:0;transform:translateX(-28px)} to{opacity:1;transform:translateX(0)} }
@@ -1068,10 +1065,10 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
                 animation: hdrAnim(0) }}>
                 Our Packages
               </div>
-              <h2 style={{ color: "#fff", fontSize: "clamp(1.6rem,6vw,2.2rem)", fontWeight: 800, lineHeight: 1.2, margin: 0, animation: hdrAnim(exitHeader ? 0.02 : 0.05) }}>
+              <h2 style={{ color: "#3D2B1F", fontSize: "clamp(1.6rem,6vw,2.2rem)", fontWeight: 800, lineHeight: 1.2, margin: 0, animation: hdrAnim(exitHeader ? 0.02 : 0.05) }}>
                 {activeCategory ? activeCategory.title : "Choose Your Pack"}
               </h2>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 8, animation: hdrAnim(exitHeader ? 0.04 : 0.09) }}>
+              <p style={{ color: "rgba(61,43,31,0.5)", fontSize: 13, marginTop: 8, animation: hdrAnim(exitHeader ? 0.04 : 0.09) }}>
                 {activeCategory ? "Tap a pack to purchase" : "Tap a category to view available packs"}
               </p>
             </div>
@@ -1083,9 +1080,9 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
           onClick={handleBackBtn}
           style={{
             display: "flex", alignItems: "center", gap: 8,
-            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)",
             borderRadius: 999, padding: "7px 16px 7px 12px",
-            color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600,
+            color: "rgba(61,43,31,0.65)", fontSize: 13, fontWeight: 600,
             cursor: "pointer", marginBottom: 20,
             animation: isExiting && !activeCategory
               ? `catFadeOut 0.15s ease 0.04s both`
@@ -1126,8 +1123,8 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
               <div style={{ fontSize: 20, flexShrink: 0, lineHeight: 1.3 }}>🎁</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <div style={{ color: "#f5c842", fontWeight: 800, fontSize: 13 }}>How Starlight Card Orders Work</div>
-                <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 11.5, lineHeight: 1.7 }}>
-                  Starlight Cards are gifted directly inside MLBB — this requires a <span style={{ color: "#f5c842", fontWeight: 700 }}>7-day in-game friendship</span> with us before the gift can be sent.
+                <div style={{ color: "rgba(61,43,31,0.6)", fontSize: 11.5, lineHeight: 1.7 }}>
+                  Starlight Cards are gifted directly inside MLBB — this requires a <span style={{ color: "#A89482", fontWeight: 700 }}>7-day in-game friendship</span> with us before the gift can be sent.
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 2 }}>
                   {[
@@ -1139,7 +1136,7 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
                       <div style={{ width: 18, height: 18, borderRadius: "50%", background: "rgba(245,200,66,0.18)", border: "1px solid rgba(245,200,66,0.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <span style={{ color: "#f5c842", fontSize: 9, fontWeight: 800 }}>{step}</span>
                       </div>
-                      <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>{text}</span>
+                      <span style={{ color: "rgba(61,43,31,0.6)", fontSize: 11 }}>{text}</span>
                     </div>
                   ))}
                 </div>
@@ -1157,7 +1154,7 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
               </div>
             )}
             {!loading && activePacks.length === 0 && (
-              <div style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", padding: "40px 0", fontSize: 14 }}>
+              <div style={{ textAlign: "center", color: "rgba(61,43,31,0.4)", padding: "40px 0", fontSize: 14 }}>
                 No packs in this category yet.
               </div>
             )}
@@ -1178,48 +1175,48 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
         {/* ── Purchase options panel ─────────────────────────────────── */}
         {selectedPack && !["starlight", "rank"].includes(activeCategory?.id ?? "") && (
           <div ref={purchaseRef} style={{
-            background: "rgba(14,14,14,0.97)", border: "1px solid rgba(245,158,11,0.35)",
+            background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.45)",
             borderRadius: 20, padding: "20px 16px", marginTop: 20,
-            boxShadow: "0 -4px 40px rgba(245,158,11,0.12), 0 8px 30px rgba(0,0,0,0.5)",
+            boxShadow: "0 4px 24px rgba(61,43,31,0.1)",
             animation: "catFadeIn 0.2s ease both",
           }}>
             {/* Pack summary */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
-                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Your Order</div>
+                <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Your Order</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <img src="/diamond.png" alt="♦" style={{ width: 15, height: 15, objectFit: "contain" }} />
-                  <span style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{selectedPack.diamonds.toLocaleString()} Diamonds</span>
+                  <span style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 15 }}>{selectedPack.diamonds.toLocaleString()} Diamonds</span>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ color: "#f59e0b", fontWeight: 800, fontSize: 20 }}>₹{(Number(selectedPack.price) * qty).toLocaleString("en-IN")}</div>
-                {qty > 1 && <div style={{ color: "rgba(255,255,255,0.32)", fontSize: 10 }}>₹{Number(selectedPack.price).toLocaleString("en-IN")} × {qty}</div>}
+                {qty > 1 && <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 10 }}>₹{Number(selectedPack.price).toLocaleString("en-IN")} × {qty}</div>}
               </div>
             </div>
 
             {/* Quantity */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.07)" }}>
-              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 600 }}>Quantity</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "10px 14px", background: "rgba(61,43,31,0.03)", borderRadius: 12, border: "1px solid rgba(197,180,162,0.3)" }}>
+              <span style={{ color: "rgba(61,43,31,0.6)", fontSize: 13, fontWeight: 600 }}>Quantity</span>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 30, height: 30, borderRadius: "50%", background: qty === 1 ? "rgba(255,255,255,0.04)" : "rgba(245,158,11,0.15)", border: qty === 1 ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(245,158,11,0.4)", color: qty === 1 ? "rgba(255,255,255,0.2)" : "#f59e0b", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", cursor: qty === 1 ? "default" : "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>−</button>
-                <span style={{ color: "#fff", fontWeight: 800, fontSize: 17, minWidth: 24, textAlign: "center" }}>{qty}</span>
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 30, height: 30, borderRadius: "50%", background: qty === 1 ? "rgba(61,43,31,0.04)" : "rgba(245,158,11,0.15)", border: qty === 1 ? "1px solid rgba(197,180,162,0.3)" : "1px solid rgba(245,158,11,0.4)", color: qty === 1 ? "rgba(61,43,31,0.2)" : "#f59e0b", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", cursor: qty === 1 ? "default" : "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>−</button>
+                <span style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 17, minWidth: 24, textAlign: "center" }}>{qty}</span>
                 <button onClick={() => setQty(q => q + 1)} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.4)", color: "#f59e0b", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>+</button>
               </div>
             </div>
 
             {/* Payment method */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Payment Method</div>
+              <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>Payment Method</div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setPayMethod("upi")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 11, background: payMethod === "upi" ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", border: payMethod === "upi" ? "1.5px solid rgba(245,158,11,0.7)" : "1px solid rgba(255,255,255,0.1)", cursor: "pointer", transition: "all 0.15s", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke={payMethod === "upi" ? "#f59e0b" : "rgba(255,255,255,0.4)"} strokeWidth="2"/><path d="M2 10h20" stroke={payMethod === "upi" ? "#f59e0b" : "rgba(255,255,255,0.4)"} strokeWidth="2"/></svg>
-                  <span style={{ color: payMethod === "upi" ? "#f59e0b" : "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700 }}>Pay via UPI</span>
+                <button onClick={() => setPayMethod("upi")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 11, background: payMethod === "upi" ? "rgba(168,148,130,0.12)" : "rgba(61,43,31,0.03)", border: payMethod === "upi" ? "1.5px solid rgba(168,148,130,0.65)" : "1px solid rgba(197,180,162,0.35)", cursor: "pointer", transition: "all 0.15s", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke={payMethod === "upi" ? "#A89482" : "rgba(61,43,31,0.4)"} strokeWidth="2"/><path d="M2 10h20" stroke={payMethod === "upi" ? "#A89482" : "rgba(61,43,31,0.4)"} strokeWidth="2"/></svg>
+                  <span style={{ color: payMethod === "upi" ? "#A89482" : "rgba(61,43,31,0.55)", fontSize: 12, fontWeight: 700 }}>Pay via UPI</span>
                 </button>
                 {walletBalance !== null && (
-                  <button onClick={() => setPayMethod("wallet")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 11, background: payMethod === "wallet" ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", border: payMethod === "wallet" ? "1.5px solid rgba(245,158,11,0.7)" : "1px solid rgba(255,255,255,0.1)", cursor: "pointer", transition: "all 0.15s", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
+                  <button onClick={() => setPayMethod("wallet")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 11, background: payMethod === "wallet" ? "rgba(168,148,130,0.12)" : "rgba(61,43,31,0.03)", border: payMethod === "wallet" ? "1.5px solid rgba(168,148,130,0.65)" : "1px solid rgba(197,180,162,0.35)", cursor: "pointer", transition: "all 0.15s", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
                     <img src="/scoin.png" alt="S" style={{ width: 14, height: 14, objectFit: "contain" }} />
-                    <span style={{ color: payMethod === "wallet" ? "#f59e0b" : "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700 }}>Wallet · ₹{walletBalance.toFixed(0)}</span>
+                    <span style={{ color: payMethod === "wallet" ? "#A89482" : "rgba(61,43,31,0.55)", fontSize: 12, fontWeight: 700 }}>Wallet · ₹{walletBalance.toFixed(0)}</span>
                   </button>
                 )}
               </div>
@@ -1249,39 +1246,39 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
 
       {/* ── MLBB ID Modal (wallet pay, no saved account) ── */}
       {showMlbbModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <div style={{ background: "#111117", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 20, padding: "28px 24px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,0.7)" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.45)", borderRadius: 20, padding: "28px 24px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 20px 60px rgba(61,43,31,0.15)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <img src="/diamond.png" alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
-              <div style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>Enter Your MLBB ID</div>
+              <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 17 }}>Enter Your MLBB ID</div>
             </div>
-            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 12.5, lineHeight: 1.55 }}>
+            <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12.5, lineHeight: 1.55 }}>
               No saved MLBB account found. Please enter your Player ID and Server ID to proceed with wallet payment.
             </div>
             <div>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 6, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Player ID</div>
+              <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 11, marginBottom: 6, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Player ID</div>
               <input
                 value={walletMlbb.uid}
                 onChange={e => setWalletMlbb(p => ({ ...p, uid: e.target.value }))}
                 placeholder="e.g. 123456789"
                 inputMode="numeric"
-                style={{ width: "100%", background: "#0d0d11", border: "1px solid rgba(245,158,11,0.22)", borderRadius: 10, color: "#fff", fontSize: 15, padding: "11px 14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                style={{ width: "100%", background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 10, color: "#3D2B1F", fontSize: 15, padding: "11px 14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
               />
             </div>
             <div>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 6, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Server ID</div>
+              <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 11, marginBottom: 6, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Server ID</div>
               <input
                 value={walletMlbb.sid}
                 onChange={e => setWalletMlbb(p => ({ ...p, sid: e.target.value }))}
                 placeholder="e.g. 2900"
                 inputMode="numeric"
-                style={{ width: "100%", background: "#0d0d11", border: "1px solid rgba(245,158,11,0.22)", borderRadius: 10, color: "#fff", fontSize: 15, padding: "11px 14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                style={{ width: "100%", background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 10, color: "#3D2B1F", fontSize: 15, padding: "11px 14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
               />
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
               <button
                 onClick={() => setShowMlbbModal(false)}
-                style={{ flex: 1, padding: "12px 0", borderRadius: 12, background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 14, border: "none", cursor: "pointer" }}
+                style={{ flex: 1, padding: "12px 0", borderRadius: 12, background: "rgba(61,43,31,0.05)", color: "rgba(61,43,31,0.6)", fontWeight: 600, fontSize: 14, border: "1px solid rgba(197,180,162,0.35)", cursor: "pointer" }}
               >
                 Cancel
               </button>
