@@ -228,15 +228,16 @@ function Navbar() {
 
   return (
     <nav
-      className="fixed z-40 flex items-center justify-between px-3 py-2"
+      className="fixed z-40 flex items-center justify-between px-3"
       style={{
         top: 10,
         left: 12,
         right: 12,
-        background: "rgba(230,222,211,0.97)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        borderRadius: 20,
+        height: 48,
+        background: "rgba(253,251,247,0.8)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderRadius: 12,
         boxShadow: "0 0 12px 2px rgba(168,148,130,0.1), 0 4px 20px rgba(61,43,31,0.07)",
         animation: "navSlideDown 0.38s cubic-bezier(0.22,1,0.36,1) both",
       }}
@@ -274,8 +275,8 @@ function Navbar() {
         </div>
         <div className="flex items-center gap-1.5">
           <div style={{ position: "relative", height: 26, minWidth: 80 }}>
-            <span className="sky-glitch font-bold" style={{ color: "#3D2B1F", fontSize: 13, position: "absolute", top: -1, left: 0, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>Sky Official</span>
-            <div style={{ position: "absolute", bottom: 0, left: 0, fontSize: 8, lineHeight: 1, color: "#A89482", opacity: visible ? 1 : 0, transition: "opacity 0.35s ease", textAlign: "left", whiteSpace: "nowrap", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>{NAV_SUBTITLES[subtitleIdx]}</div>
+            <span className="sky-glitch font-extrabold" style={{ color: "#3E2723", fontSize: 13, position: "absolute", top: -1, left: 0, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>Sky Official</span>
+            <div style={{ position: "absolute", bottom: 0, left: 0, fontSize: 8, lineHeight: 1, color: "#5D4037", opacity: visible ? 1 : 0, transition: "opacity 0.35s ease", textAlign: "left", whiteSpace: "nowrap", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>{NAV_SUBTITLES[subtitleIdx]}</div>
           </div>
         </div>
       </button>
@@ -337,8 +338,8 @@ function Navbar() {
           ) : (
             <button
               onClick={() => setLocation("/sign-in")}
-              className="px-4 py-1.5 rounded-full font-bold"
-              style={{ background: "#A89482", color: "#FAF9F6", boxShadow: "0 2px 10px rgba(168,148,130,0.35)", fontSize: 12 }}
+              className="px-4 rounded-full font-extrabold"
+              style={{ background: "#8D6E63", color: "#FFFFFF", boxShadow: "0 2px 10px rgba(141,110,99,0.4)", fontSize: 12, height: 32, letterSpacing: "0.01em" }}
             >
               Sign In
             </button>
