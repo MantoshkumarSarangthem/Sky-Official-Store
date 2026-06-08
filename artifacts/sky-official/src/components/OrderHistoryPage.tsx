@@ -58,7 +58,7 @@ function EmptyState() {
         <p style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 16, margin: 0 }}>No orders yet</p>
         <p style={{ color: "rgba(61,43,31,0.5)", fontSize: 13, marginTop: 6 }}>Your diamond purchases will appear here once you place an order.</p>
       </div>
-      <a href="#packages" style={{ display: "inline-block", padding: "10px 28px", borderRadius: 999, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, textDecoration: "none", marginTop: 4 }}>
+      <a href="#packages" style={{ display: "inline-block", padding: "12px 32px", borderRadius: 999, background: "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, textDecoration: "none", marginTop: 4, boxShadow: "0 3px 10px rgba(141,110,99,0.35)" }}>
         Browse Packages
       </a>
     </div>

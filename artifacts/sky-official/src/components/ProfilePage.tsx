@@ -421,7 +421,7 @@ export default function ProfilePage() {
           </div>
           <button
             onClick={() => { setShowTopup(v => !v); setTopupMsg(null); }}
-            style={{ width: "100%", padding: "12px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+            style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)", letterSpacing: "0.01em" }}
           >
             {showTopup ? "Cancel" : "+ Add Funds"}
           </button>
@@ -466,7 +466,7 @@ export default function ProfilePage() {
                   sessionStorage.setItem("walletTopupAmount", String(amt));
                   setLocation("/pay");
                 }}
-                style={{ width: "100%", padding: "11px 0", borderRadius: 10, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                style={{ width: "100%", padding: "13px 0", borderRadius: 10, background: "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)", letterSpacing: "0.01em" }}
               >Pay Now</button>
             </div>
           )}

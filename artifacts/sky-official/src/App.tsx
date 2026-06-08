@@ -173,9 +173,9 @@ function CartNavIcon({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      style={{ position: "relative", width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+      style={{ position: "relative", width: 34, height: 34, borderRadius: "50%", background: totalItems > 0 ? "rgba(141,110,99,0.12)" : "rgba(61,43,31,0.06)", border: totalItems > 0 ? "1px solid rgba(141,110,99,0.45)" : "1px solid rgba(197,180,162,0.55)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.15s" }}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" stroke={totalItems > 0 ? "#f59e0b" : "rgba(255,255,255,0.65)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" stroke={totalItems > 0 ? "#8D6E63" : "rgba(61,43,31,0.55)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
       {totalItems > 0 && (
         <span style={{ position: "absolute", top: -4, right: -4, background: "#f59e0b", color: "#000", fontSize: 9, fontWeight: 900, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px solid #0d0d0d" }}>
           {totalItems > 9 ? "9+" : totalItems}
@@ -286,10 +286,10 @@ function Navbar() {
         {isSignedIn && walletBalance !== null && !hideWallet && (
           <button
             onClick={() => setLocation("/profile")}
-            style={{ display: "flex", alignItems: "center", gap: 4, height: 34, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 999, padding: "0 10px 0 6px", cursor: "pointer", flexShrink: 0, touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+            style={{ display: "flex", alignItems: "center", gap: 4, height: 34, background: "rgba(141,110,99,0.12)", border: "1px solid rgba(141,110,99,0.4)", borderRadius: 999, padding: "0 10px 0 6px", cursor: "pointer", flexShrink: 0, touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
           >
             <img src="/scoin.png" alt="S" style={{ width: 16, height: 16, objectFit: "contain" }} />
-            <span style={{ color: "#f59e0b", fontSize: 11, fontWeight: 800 }}>₹{walletBalance.toFixed(0)}</span>
+            <span style={{ color: "#8D6E63", fontSize: 11, fontWeight: 800 }}>₹{walletBalance.toFixed(0)}</span>
           </button>
         )}
         {isLoaded && (
@@ -299,7 +299,7 @@ function Navbar() {
                 onClick={() => setShowProfileMenu(v => !v)}
                 style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: "50%", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
               >
-                <div className="rounded-full overflow-hidden border flex-shrink-0" style={{ width: 34, height: 34, borderColor: "#f59e0b", boxShadow: showProfileMenu ? "0 0 0 2px rgba(245,158,11,0.45)" : "none", transition: "box-shadow 0.15s" }}>
+                <div className="rounded-full overflow-hidden border flex-shrink-0" style={{ width: 34, height: 34, borderColor: "#A89482", boxShadow: showProfileMenu ? "0 0 0 2px rgba(141,110,99,0.4)" : "none", transition: "box-shadow 0.15s" }}>
                   <img src={user.imageUrl} alt={user.firstName ?? "User"} className="w-full h-full object-cover" />
                 </div>
               </button>

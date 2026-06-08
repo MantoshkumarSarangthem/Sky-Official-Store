@@ -134,7 +134,7 @@ export default function SupportPage() {
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: submitting ? "rgba(168,148,130,0.4)" : "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: submitting ? "default" : "pointer", transition: "all 0.2s" }}
+            style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: submitting ? "rgba(141,110,99,0.4)" : "#8D6E63", color: "#FFFFFF", fontWeight: 800, fontSize: 15, border: "none", cursor: submitting ? "default" : "pointer", transition: "all 0.2s", boxShadow: submitting ? "none" : "0 3px 12px rgba(141,110,99,0.35)", letterSpacing: "0.01em" }}
           >
             {submitting ? "Submitting…" : "Submit Inquiry"}
           </button>

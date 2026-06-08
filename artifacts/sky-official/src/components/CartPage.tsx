@@ -59,7 +59,7 @@ export default function CartPage() {
             <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 13, marginBottom: 24 }}>Add diamond packs to your cart and buy them together</div>
             <button
               onClick={() => setLocation("/packages")}
-              style={{ padding: "13px 32px", borderRadius: 14, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}
+              style={{ padding: "13px 32px", borderRadius: 14, background: "#8D6E63", color: "#FFFFFF", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)" }}
             >
               Browse Packages
             </button>
