@@ -8,11 +8,36 @@ import { useAuth } from "@clerk/react";
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
 const FAV_KEY = "skyFavoritePkgs";
+const FAV_FULL_KEY = "skyFavoritePkgsFull";
+
 function loadFavs(): number[] {
   try { return JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); } catch { return []; }
 }
 function saveFavs(ids: number[]) { localStorage.setItem(FAV_KEY, JSON.stringify(ids)); }
 export function getFavoritePkgIds(): number[] { return loadFavs(); }
+
+export interface FavoritePack {
+  id: number;
+  game_id: number;
+  game_name: string;
+  name: string | null;
+  diamonds: number;
+  bonus_diamonds: number;
+  price: string;
+  old_price?: string | null;
+  image?: string | null;
+  category: string | null;
+  currency_label: string;
+}
+function loadFavsFull(): FavoritePack[] {
+  try { return JSON.parse(localStorage.getItem(FAV_FULL_KEY) || "[]"); } catch { return []; }
+}
+function saveFavsFull(packs: FavoritePack[]) { localStorage.setItem(FAV_FULL_KEY, JSON.stringify(packs)); }
+export function getFavoritePackages(): FavoritePack[] { return loadFavsFull(); }
+export function removeFavoritePackage(id: number) {
+  saveFavs(loadFavs().filter(x => x !== id));
+  saveFavsFull(loadFavsFull().filter(p => p.id !== id));
+}
 
 interface GamePackage {
   id: number;
@@ -123,6 +148,12 @@ export default function GameProductsPage() {
         ? pkgs.filter((p: GamePackage) => p.status !== "out_of_stock" && p.status !== "coming_soon")
         : [];
       setPackages(active);
+      const pendingId = sessionStorage.getItem("pendingSelectPkgId");
+      if (pendingId) {
+        sessionStorage.removeItem("pendingSelectPkgId");
+        const pkgId = Number(pendingId);
+        if (active.find((p: GamePackage) => p.id === pkgId)) setSelectedPkgId(pkgId);
+      }
     }).finally(() => setLoading(false));
   }, [gameId]);
 
@@ -130,13 +161,33 @@ export default function GameProductsPage() {
   const isMLBB = game ? isMlbbGame(game.name) : false;
   const isStarlight = game ? isStarlightGame(game.name) : false;
 
-  const toggleFav = useCallback((id: number) => {
+  const toggleFav = useCallback((pkg: GamePackage) => {
+    const id = pkg.id;
     setFavorites(prev => {
-      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      const isFav = prev.includes(id);
+      const next = isFav ? prev.filter(x => x !== id) : [...prev, id];
       saveFavs(next);
+      const fullFavs = loadFavsFull();
+      if (isFav) {
+        saveFavsFull(fullFavs.filter(p => p.id !== id));
+      } else {
+        saveFavsFull([...fullFavs.filter(p => p.id !== id), {
+          id: pkg.id,
+          game_id: pkg.game_id ?? 0,
+          game_name: game?.name ?? "",
+          name: pkg.name,
+          diamonds: pkg.diamonds,
+          bonus_diamonds: pkg.bonus_diamonds,
+          price: pkg.price,
+          old_price: pkg.old_price,
+          image: pkg.image,
+          category: pkg.category,
+          currency_label: currencyLabel,
+        }]);
+      }
       return next;
     });
-  }, []);
+  }, [game, currencyLabel]);
 
   const handleStarlightBuy = useCallback(() => {
     if (!selectedPkg) return;
@@ -245,8 +296,8 @@ export default function GameProductsPage() {
         </button>
         {game && (
           <div style={{ position: "absolute", bottom: 14, left: 16, right: 16 }}>
-            <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, textShadow: "0 2px 10px rgba(0,0,0,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 3 }}>Instant {currencyLabel} top-up · Best rates</div>
+            <div style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+            <div style={{ color: "rgba(0,0,0,0.5)", fontSize: 11, marginTop: 3 }}>Instant {currencyLabel} top-up · Best rates</div>
           </div>
         )}
       </div>
@@ -368,7 +419,7 @@ export default function GameProductsPage() {
                           <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
                         </div>
                         <button
-                          onClick={e => { e.stopPropagation(); toggleFav(pkg.id); }}
+                          onClick={e => { e.stopPropagation(); toggleFav(pkg); }}
                           style={{ background: isFav ? "rgba(239,68,68,0.1)" : "rgba(61,43,31,0.04)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(197,180,162,0.35)", borderRadius: 7, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
                           title={isFav ? "Remove from favourites" : "Add to favourites"}
                         >

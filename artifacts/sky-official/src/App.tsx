@@ -11,6 +11,7 @@ import type { SelectedPackage } from "./components/PaymentPage";
 import SupportPage from "./components/SupportPage";
 import StaffPortal from "./components/StaffPortal";
 import GameProductsPage from "./components/GameProductsPage";
+import FavoritesPage from "./components/FavoritesPage";
 import RankBoostPage from "./components/RankBoostPage";
 import { CartProvider, useCart } from "./context/CartContext";
 import {
@@ -307,6 +308,7 @@ function Navbar() {
                   {([
                     { label: "Profile", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, action: () => { setLocation("/profile"); setShowProfileMenu(false); } },
                     { label: "My Orders", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>, action: () => { setLocation("/orders"); setShowProfileMenu(false); } },
+                    { label: "My Favorites", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>, action: () => { setLocation("/favorites"); setShowProfileMenu(false); } },
                     { label: "Wallet", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="14" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M16 14a1 1 0 110-2 1 1 0 010 2z" fill="currentColor"/><path d="M2 11h20" stroke="currentColor" strokeWidth="1.8"/></svg>, action: () => { setLocation("/profile"); setShowProfileMenu(false); } },
                     { label: "Support", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>, action: () => { setLocation("/support"); setShowProfileMenu(false); } },
                   ] as { label: string; icon: React.ReactNode; action: () => void }[]).map(item => (
@@ -868,18 +870,18 @@ function Footer() {
   };
 
   return (
-    <footer className="py-7 px-5 text-center" style={{ background: "#E6DED3", borderTop: "1px solid #C5B4A2", position: "relative", zIndex: 1 }}>
+    <footer className="py-7 px-5 text-center" style={{ background: "#000000", borderTop: "1px solid rgba(255,255,255,0.08)", position: "relative", zIndex: 1 }}>
       <div className="flex flex-col items-center gap-2.5 max-w-sm mx-auto">
         <div className="w-10 h-10 rounded-full overflow-hidden" style={{ background: "#FAF9F6", border: "1.5px solid #A89482", boxShadow: "0 0 6px 1px rgba(168,148,130,0.3)" }}>
           <img src="/logo.webp" alt="Sky Official" className="w-full h-full object-cover" />
         </div>
         <div>
-          <div className="font-bold text-sm" style={{ color: "#3D2B1F" }}>Sky Official</div>
-          <p className="mt-0.5 leading-relaxed max-w-xs" style={{ fontSize: 10, color: "rgba(61,43,31,0.5)" }}>The most trusted top up shop for mobile game products and services.</p>
+          <div className="font-bold text-sm" style={{ color: "#FFFFFF" }}>Sky Official</div>
+          <p className="mt-0.5 leading-relaxed max-w-xs" style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>The most trusted top up shop for mobile game products and services.</p>
         </div>
         <div className="flex items-center gap-4 mt-1">
           {["Packages", "Contact"].map((link) => (
-            <a key={link} href="#" className="hover:opacity-70 transition-opacity" style={{ textDecoration: "none", fontSize: 11, color: "rgba(61,43,31,0.55)" }}>{link}</a>
+            <a key={link} href="#" className="hover:opacity-70 transition-opacity" style={{ textDecoration: "none", fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{link}</a>
           ))}
         </div>
         <div className="flex items-center gap-3 mt-1">
@@ -888,7 +890,7 @@ function Footer() {
             { label: "Privacy Policy",   to: "/privacy" },
             { label: "Refund Policy",    to: "/refund" },
           ].map(({ label, to }) => (
-            <button key={to} onClick={() => setLocation(to)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "rgba(61,43,31,0.5)", fontSize: 9.5 }}>
+            <button key={to} onClick={() => setLocation(to)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "rgba(255,255,255,0.45)", fontSize: 9.5 }}>
               {label}
             </button>
           ))}
@@ -906,16 +908,16 @@ function Footer() {
           </a>
         )}
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <span style={{ color: "rgba(61,43,31,0.5)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Accepted Payment Methods</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Accepted Payment Methods</span>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
             {["UPI", "GPay", "PhonePe", "Paytm", "BHIM"].map(method => (
-              <span key={method} style={{ background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, fontWeight: 700, color: "rgba(61,43,31,0.55)" }}>{method}</span>
+              <span key={method} style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.55)" }}>{method}</span>
             ))}
           </div>
         </div>
         <p
           className="mt-2 select-none"
-          style={{ color: "rgba(61,43,31,0.45)", fontSize: 9.5, cursor: "default" }}
+          style={{ color: "rgba(255,255,255,0.3)", fontSize: 9.5, cursor: "default" }}
           onClick={handleCopyrightTap}
         >
           © 2026 Sky Official. All rights reserved.
@@ -1596,6 +1598,7 @@ function AppRoutes() {
           <Route path="/support" component={SupportPage} />
           <Route path="/staff" component={StaffPortal} />
           <Route path="/game/:gameId" component={GameProductsPage} />
+          <Route path="/favorites" component={FavoritesPage} />
           <Route path="/rank-boost" component={() => <RankBoostPage />} />
           <Route component={MainSite} />
         </Switch>
