@@ -322,7 +322,7 @@ export default function PaymentPage() {
         </div>
         <button
           onClick={() => setLocation(isWalletTopup ? "/profile" : isCartMode ? "/cart" : "/packages")}
-          style={{ padding: "14px 36px", borderRadius: 14, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}
+          style={{ padding: "14px 36px", borderRadius: 14, background: "#8D6E63", color: "#FFFFFF", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)" }}
         >
           Go Back
         </button>
@@ -366,7 +366,7 @@ export default function PaymentPage() {
         <div style={{ background: "#FFFFFF", border: "1.5px solid rgba(197,180,162,0.4)", borderRadius: 20, padding: "20px 20px 18px", animation: "payIn 0.4s ease both", boxShadow: "0 2px 10px rgba(61,43,31,0.05)" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>Amount to be paid</div>
-            <div style={{ color: "#A89482", fontWeight: 900, fontSize: 46, letterSpacing: "-1px", lineHeight: 1 }}>₹{amount.toLocaleString("en-IN")}</div>
+            <div style={{ color: "#3D2B1F", fontWeight: 900, fontSize: 46, letterSpacing: "-1px", lineHeight: 1 }}>₹{amount.toLocaleString("en-IN")}</div>
             <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 13, marginTop: 8 }}>
               {isWalletTopup ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>

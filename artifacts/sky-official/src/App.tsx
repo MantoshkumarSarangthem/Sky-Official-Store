@@ -502,7 +502,7 @@ function PromoBannerSlider() {
 }
 
 // ── Game Select Section ─────────────────────────────────────────────────────
-interface GameItem { id: number; name: string; image: string | null; region?: string | null; }
+interface GameItem { id: number; name: string; image: string | null; region?: string | null; status?: string | null; }
 
 const GAME_SKELETON_COUNT = 6;
 
@@ -602,11 +602,16 @@ function GameSelectSection() {
               onTouchStart={e => (e.currentTarget.style.transform = "scale(0.96)")}
               onTouchEnd={e => (e.currentTarget.style.transform = "scale(1)")}
             >
-              <div style={{ width: "100%", aspectRatio: "1/1", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <div style={{ width: "100%", aspectRatio: "1/1", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
                 {game.image ? (
-                  <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: game.status === "out_of_stock" ? "grayscale(60%) brightness(0.75)" : "none" }} />
                 ) : (
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
+                )}
+                {game.status === "out_of_stock" && (
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(220,38,38,0.88)", padding: "4px 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ color: "#FFFFFF", fontSize: 8, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>Out of Stock</span>
+                  </div>
                 )}
               </div>
               <div style={{ padding: "4px 8px 6px", height: 50, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>

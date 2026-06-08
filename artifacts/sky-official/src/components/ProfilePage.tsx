@@ -216,9 +216,9 @@ export default function ProfilePage() {
               {(["name","password","photo"] as const).map(tab => (
                 <button key={tab} onClick={() => { setSettingsTab(tab); setSettingsMsg(null); }}
                   style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
-                    background: settingsTab === tab ? "rgba(168,148,130,0.12)" : "rgba(61,43,31,0.04)",
-                    color: settingsTab === tab ? "#A89482" : "rgba(61,43,31,0.4)",
-                    outline: settingsTab === tab ? "1px solid rgba(197,180,162,0.5)" : "none",
+                    background: settingsTab === tab ? "rgba(141,110,99,0.12)" : "rgba(61,43,31,0.04)",
+                    color: settingsTab === tab ? "#8D6E63" : "rgba(61,43,31,0.4)",
+                    outline: settingsTab === tab ? "1px solid rgba(141,110,99,0.45)" : "none",
                   }}>
                   {tab === "name" ? "Display Name" : tab === "password" ? "Password" : "Photo"}
                 </button>
@@ -253,7 +253,7 @@ export default function ProfilePage() {
                       setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Failed to update name." });
                     } finally { setSettingsSaving(false); }
                   }}
-                  style={{ padding: "13px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                  style={{ padding: "13px 0", borderRadius: 12, background: "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)" }}
                 >
                   {settingsSaving ? "Saving…" : "Save Name"}
                 </button>
@@ -293,7 +293,7 @@ export default function ProfilePage() {
                       setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Failed to update password." });
                     } finally { setSettingsSaving(false); }
                   }}
-                  style={{ padding: "13px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                  style={{ padding: "13px 0", borderRadius: 12, background: "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)" }}
                 >
                   {settingsSaving ? "Saving…" : "Update Password"}
                 </button>
@@ -313,13 +313,13 @@ export default function ProfilePage() {
                           setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Could not send reset code." });
                         } finally { setFpLoading(false); }
                       }}
-                      style={{ background: "none", border: "none", color: "#A89482", fontSize: 13, cursor: "pointer", fontFamily: "inherit", padding: "4px 0", opacity: fpLoading ? 0.5 : 1, textDecoration: "underline" }}
+                      style={{ background: "none", border: "none", color: "#8D6E63", fontSize: 13, cursor: "pointer", fontFamily: "inherit", padding: "4px 0", opacity: fpLoading ? 0.5 : 1, textDecoration: "underline" }}
                     >
                       {fpLoading ? "Sending code…" : "Forgot password? Send reset code"}
                     </button>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ fontSize: 12, color: "#A89482", lineHeight: 1.55 }}>Reset code sent to <strong>{user.primaryEmailAddress?.emailAddress}</strong>. Check your email.</div>
+                      <div style={{ fontSize: 12, color: "#8D6E63", lineHeight: 1.55 }}>Reset code sent to <strong>{user.primaryEmailAddress?.emailAddress}</strong>. Check your email.</div>
                       <input value={fpCode} onChange={e => setFpCode(e.target.value)} placeholder="Enter reset code" style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 14, padding: "11px 14px", outline: "none", fontFamily: "inherit" }} />
                       <input type="password" value={fpNewPw} onChange={e => setFpNewPw(e.target.value)} placeholder="New password (min. 8 chars)" style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 14, padding: "11px 14px", outline: "none", fontFamily: "inherit" }} />
                       <button
@@ -336,7 +336,7 @@ export default function ProfilePage() {
                             setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Invalid code or error. Try again." });
                           } finally { setFpLoading(false); }
                         }}
-                        style={{ padding: "12px 0", borderRadius: 12, background: (!fpCode || fpNewPw.length < 8) ? "rgba(168,148,130,0.2)" : "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                        style={{ padding: "12px 0", borderRadius: 12, background: (!fpCode || fpNewPw.length < 8) ? "rgba(141,110,99,0.2)" : "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: (!fpCode || fpNewPw.length < 8) ? "none" : "0 3px 10px rgba(141,110,99,0.35)" }}
                       >
                         {fpLoading ? "Resetting…" : "Reset Password"}
                       </button>
@@ -362,7 +362,7 @@ export default function ProfilePage() {
                 <button
                   disabled={settingsSaving}
                   onClick={() => photoInputRef.current?.click()}
-                  style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}
+                  style={{ width: "100%", padding: "13px 0", borderRadius: 12, background: "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)" }}
                 >
                   {settingsSaving ? "Uploading…" : "Choose Photo"}
                 </button>

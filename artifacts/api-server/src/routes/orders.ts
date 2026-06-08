@@ -53,7 +53,7 @@ function fireNotifications(displayId: string, orderId: number, _staffId: number 
     title: "💎 New Order!",
     body: `${displayId} · ${diamonds} diamonds · ₹${price}`,
     tag: "new-order",
-    url: "/admin",
+    url: "/staff",
   });
 
   sendOrderEmail({ orderId, diamonds: pkg.diamonds, price: pkg.price, mlbbId, remark }).catch((err) => {

@@ -68,6 +68,7 @@ interface Order {
   diamonds: number;
   price: string;
   mlbb_id: string | null;
+  mlbb_server_id: string | null;
   status: string;
   note: string | null;
   created_at: string;
@@ -1606,7 +1607,20 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-white font-bold text-sm flex items-center gap-1">{order.diamonds.toLocaleString()} <img src="/diamond.png" alt="♦" style={{ width: 14, height: 14, objectFit: "contain", flexShrink: 0 }} /></span>
                           <span className="text-amber-400 text-xs font-semibold">₹{parseFloat(order.price).toFixed(0)}</span>
-                          {order.mlbb_id && <span className="text-gray-400 text-xs">ID: {order.mlbb_id}</span>}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                          {order.mlbb_id && (
+                            <span className="flex items-center gap-1">
+                              <span className="text-gray-400 text-xs">ID: {order.mlbb_id}</span>
+                              <button onClick={() => navigator.clipboard.writeText(order.mlbb_id!)} title="Copy MLBB ID" className="text-gray-500 hover:text-amber-400 transition-colors text-xs px-1 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", lineHeight: 1 }}>⎘</button>
+                            </span>
+                          )}
+                          {order.mlbb_server_id && (
+                            <span className="flex items-center gap-1">
+                              <span className="text-gray-500 text-xs">Zone: {order.mlbb_server_id}</span>
+                              <button onClick={() => navigator.clipboard.writeText(order.mlbb_server_id!)} title="Copy Zone ID" className="text-gray-500 hover:text-amber-400 transition-colors text-xs px-1 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", lineHeight: 1 }}>⎘</button>
+                            </span>
+                          )}
                         </div>
                         {order.note && <div className="text-gray-500 text-xs mt-0.5 truncate">{order.note}</div>}
                         <div className="text-gray-600 text-xs mt-0.5 flex items-center gap-2">
