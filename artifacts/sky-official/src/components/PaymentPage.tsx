@@ -53,7 +53,7 @@ function CopyBtn({ text }: { text: string }) {
   }
   return (
     <button onClick={copy} style={{ background: copied ? "rgba(34,197,94,0.12)" : "rgba(141,110,99,0.1)", border: `1px solid ${copied ? "rgba(34,197,94,0.35)" : "rgba(197,180,162,0.6)"}`, borderRadius: 6, padding: "4px 11px", color: copied ? "#22c55e" : "#8D6E63", fontWeight: 700, fontSize: 11, cursor: "pointer", transition: "all 0.2s", flexShrink: 0 }}>
-      {copied ? "✓" : "Copy"}
+      {copied ? "Copied" : "Copy"}
     </button>
   );
 }

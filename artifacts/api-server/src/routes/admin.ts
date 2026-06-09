@@ -288,8 +288,12 @@ router.delete("/orders/:id", requireAdmin, async (req, res) => {
 
 router.get("/settings/qr", requireAdmin, async (_req, res) => {
   try {
-    const { rows } = await pool.query("SELECT value FROM settings WHERE key='qr_code'");
-    res.json({ qr: rows[0]?.value || null });
+    const { rows } = await pool.query(
+      "SELECT key, value FROM settings WHERE key IN ('qr_code', 'admin_upi_id')"
+    );
+    const m: Record<string, string> = {};
+    rows.forEach((r: any) => { m[r.key] = r.value; });
+    res.json({ qr: m["qr_code"] || null, upi_id: m["admin_upi_id"] || null });
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
@@ -300,6 +304,36 @@ router.put("/settings/qr", requireAdmin, async (req, res) => {
     await pool.query(
       `INSERT INTO settings (key, value) VALUES ('qr_code', $1) ON CONFLICT (key) DO UPDATE SET value=$1`,
       [qr]
+    );
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.put("/settings/admin-upi", requireAdmin, async (req, res) => {
+  const { upi_id } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO settings (key, value) VALUES ('admin_upi_id', $1) ON CONFLICT (key) DO UPDATE SET value=$1`,
+      [upi_id || ""]
+    );
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.get("/settings/admin-status", requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT value FROM settings WHERE key='admin_status'");
+    res.json({ status: rows[0]?.value || "offline" });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.put("/settings/admin-status", requireAdmin, async (req, res) => {
+  const { status } = req.body;
+  if (!["available", "offline"].includes(status)) { res.status(400).json({ error: "invalid status" }); return; }
+  try {
+    await pool.query(
+      `INSERT INTO settings (key, value) VALUES ('admin_status', $1) ON CONFLICT (key) DO UPDATE SET value=$1`,
+      [status]
     );
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "DB error" }); }

@@ -28,14 +28,24 @@ router.get("/settings/category_popular", async (_req, res) => {
 
 router.get("/settings/qr", async (_req, res) => {
   try {
-    // Peek at the next staff in round-robin order (same logic as assignAvailableStaff,
-    // but does NOT increment the counter — so the order submission later picks the same person)
+    // Build combined pool: available staff + admin if admin_status = 'available'
     const { rows: staffList } = await pool.query(
       `SELECT id, qr_image, whatsapp, upi_id FROM recharge_staff WHERE status = 'available' ORDER BY sort_order ASC, id ASC`
     );
 
-    if (staffList.length > 0) {
-      // Read current round-robin index without touching it
+    const { rows: adminRows } = await pool.query(
+      `SELECT key, value FROM settings WHERE key IN ('admin_status', 'qr_code', 'admin_upi_id')`
+    );
+    const adminSettings: Record<string, string> = {};
+    adminRows.forEach((r: any) => { adminSettings[r.key] = r.value; });
+
+    type PoolEntry = { qr_image: string | null; upi_id: string | null; whatsapp: string | null };
+    const entries: PoolEntry[] = [...staffList];
+    if (adminSettings["admin_status"] === "available" && adminSettings["qr_code"]) {
+      entries.push({ qr_image: adminSettings["qr_code"], upi_id: adminSettings["admin_upi_id"] || null, whatsapp: null });
+    }
+
+    if (entries.length > 0) {
       await pool.query(
         `INSERT INTO settings (key, value) VALUES ('staff_rr_idx', '0') ON CONFLICT (key) DO NOTHING`
       );
@@ -43,18 +53,17 @@ router.get("/settings/qr", async (_req, res) => {
         `SELECT value FROM settings WHERE key = 'staff_rr_idx'`
       );
       const currentIdx = parseInt(idxRows[0]?.value ?? "0");
-      const peekIdx = currentIdx % staffList.length;
-      const nextStaff = staffList[peekIdx];
+      const peekIdx = currentIdx % entries.length;
+      const next = entries[peekIdx];
 
-      if (nextStaff?.qr_image) {
-        res.json({ qr: nextStaff.qr_image, upi_id: nextStaff.upi_id || null, whatsapp: nextStaff.whatsapp || null });
+      if (next?.qr_image) {
+        res.json({ qr: next.qr_image, upi_id: next.upi_id || null, whatsapp: next.whatsapp || null });
         return;
       }
     }
 
-    // Fallback to admin/owner QR if no staff available or staff has no QR uploaded
-    const { rows } = await pool.query("SELECT value FROM settings WHERE key='qr_code'");
-    res.json({ qr: rows[0]?.value || null, upi_id: null, whatsapp: null });
+    // Final fallback: admin QR + UPI regardless of availability
+    res.json({ qr: adminSettings["qr_code"] || null, upi_id: adminSettings["admin_upi_id"] || null, whatsapp: null });
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 

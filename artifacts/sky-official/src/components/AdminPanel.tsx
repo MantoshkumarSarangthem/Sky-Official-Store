@@ -91,7 +91,7 @@ interface WalletRequest {
   created_at: string;
 }
 
-type Tab = "games" | "packages" | "orders" | "wallet" | "events" | "staff" | "settings" | "banners";
+type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners";
 type NotifState = "unknown" | "loading" | "subscribed" | "denied" | "unsupported";
 
 async function registerSW(): Promise<ServiceWorkerRegistration | null> {
@@ -138,6 +138,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [qrSaving, setQrSaving] = useState(false);
   const [qrSaved, setQrSaved] = useState(false);
   const qrInputRef = useRef<HTMLInputElement>(null);
+  const [adminUpiId, setAdminUpiId] = useState("");
+  const [adminUpiSaving, setAdminUpiSaving] = useState(false);
+  const [adminUpiSaved, setAdminUpiSaved] = useState(false);
+  const [adminAvailable, setAdminAvailable] = useState(false);
+  const [adminAvailSaving, setAdminAvailSaving] = useState(false);
   const [trustpilotUrl, setTrustpilotUrl] = useState("");
   const [trustpilotEnabled, setTrustpilotEnabled] = useState(false);
   const [trustpilotSaving, setTrustpilotSaving] = useState(false);
@@ -549,8 +554,39 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (res.ok) {
       const data = await res.json();
       setQrCurrent(data.qr || null);
+      setAdminUpiId(data.upi_id || "");
     }
   }, [token]);
+
+  const fetchAdminStatus = useCallback(async () => {
+    const res = await fetch(`${API}/admin/settings/admin-status`, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      setAdminAvailable(data.status === "available");
+    }
+  }, [token]);
+
+  const saveAdminUpiId = async () => {
+    setAdminUpiSaving(true);
+    await fetch(`${API}/admin/settings/admin-upi`, {
+      method: "PUT", headers,
+      body: JSON.stringify({ upi_id: adminUpiId }),
+    });
+    setAdminUpiSaved(true);
+    setTimeout(() => setAdminUpiSaved(false), 3000);
+    setAdminUpiSaving(false);
+  };
+
+  const toggleAdminAvailable = async () => {
+    const next = adminAvailable ? "offline" : "available";
+    setAdminAvailSaving(true);
+    await fetch(`${API}/admin/settings/admin-status`, {
+      method: "PUT", headers,
+      body: JSON.stringify({ status: next }),
+    });
+    setAdminAvailable(next === "available");
+    setAdminAvailSaving(false);
+  };
 
   const fetchTrustpilot = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/trustpilot`, { headers });
@@ -703,8 +739,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
   useEffect(() => {
     if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); }
-    if (authed && tab === "events") fetchPromoEvents();
-    if (authed && tab === "staff") fetchStaff();
+    if (authed && tab === "staff") { fetchStaff(); fetchAdminStatus(); }
     if (authed && tab === "banners") fetchPromoBanners();
     if (authed && (tab === "games" || tab === "packages")) fetchGames();
   }, [authed, tab]);
@@ -1001,8 +1036,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (notifState === "subscribed") return (
       <button
         onClick={disableNotifications}
-        className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
-        style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}
+        className="flex items-center gap-1.5 text-xs font-bold transition-all"
+        style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.28)", flexShrink: 0 }}
       >
         <span>🔔</span> Notifs ON
       </button>
@@ -1010,8 +1045,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     return (
       <button
         onClick={enableNotifications}
-        className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
-        style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}
+        className="flex items-center gap-1.5 text-xs font-bold transition-all"
+        style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(245,158,11,0.10)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)", flexShrink: 0 }}
       >
         <span>🔕</span> Enable Notifs
       </button>
@@ -1068,27 +1103,29 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                 onClick={enableBio}
                 disabled={bioLoading}
                 title={bioLoading ? "Setting up…" : "Enable biometric login for this device"}
-                style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 }}
+                className="flex items-center justify-center text-xs font-bold transition-all"
+                style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(99,102,241,0.10)", border: "1px solid rgba(99,102,241,0.25)", color: "#a5b4fc", cursor: "pointer", flexShrink: 0, gap: 4 }}
               >
-                {bioLoading ? "…" : "🔑"}
+                {bioLoading ? "…" : <><span style={{ fontSize: 13 }}>🔑</span></>}
               </button>
             )}
             {authed && bioAvail && bioEnabled && (
               <button
                 onClick={disableBio}
                 title="Biometric ON — click to remove"
-                style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(99,102,241,0.12)", border: "1.5px solid rgba(99,102,241,0.35)", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0 }}
+                className="flex items-center justify-center text-xs font-bold transition-all"
+                style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.32)", color: "#a5b4fc", cursor: "pointer", flexShrink: 0 }}
               >
-                🔑
+                <span style={{ fontSize: 13 }}>🔑</span>
               </button>
             )}
             {authed && (
               <button
                 onClick={logout}
-                className="flex items-center justify-center text-xs font-semibold transition-colors"
-                style={{ color: "#6b7280", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "5px 10px", whiteSpace: "nowrap" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
-                onMouseLeave={e => (e.currentTarget.style.color = "#6b7280")}
+                className="flex items-center justify-center text-xs font-semibold transition-all"
+                style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#6b7280", whiteSpace: "nowrap", flexShrink: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.3)"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
               >
                 Sign out
               </button>
@@ -1169,7 +1206,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
-              {(["games", "packages", "orders", "wallet", "events", "staff", "banners", "settings"] as Tab[]).map((t) => {
+              {(["games", "packages", "orders", "wallet", "staff", "banners", "settings"] as Tab[]).map((t) => {
                 const pendingCount = t === "wallet" ? walletRequests.filter(r => r.status === "pending").length : 0;
                 return (
                   <button
@@ -1985,6 +2022,27 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     )}
                   </div>
 
+                  {/* Admin UPI ID */}
+                  <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="text-amber-400 text-xs font-bold uppercase tracking-wider">Admin UPI ID</div>
+                    <div className="text-gray-400 text-xs">Your UPI ID shown to customers as the fallback when no staff QR is active.</div>
+                    <input
+                      value={adminUpiId}
+                      onChange={e => setAdminUpiId(e.target.value)}
+                      placeholder="e.g. yourname@upi"
+                      className="px-3 py-2 rounded-lg text-white text-sm outline-none font-mono"
+                      style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                    />
+                    <button
+                      onClick={saveAdminUpiId}
+                      disabled={adminUpiSaving}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold text-black"
+                      style={{ background: adminUpiSaving ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
+                    >
+                      {adminUpiSaving ? "Saving…" : adminUpiSaved ? "✓ Saved!" : "Save UPI ID"}
+                    </button>
+                  </div>
+
                   {/* Trustpilot Settings */}
                   <div>
                     <div className="text-white font-bold text-sm mb-1">Trustpilot Button</div>
@@ -2067,68 +2125,27 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                 </div>
               )}
 
-              {/* ── EVENTS TAB ── */}
-              {tab === "events" && (
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white font-bold text-sm">Promo Event Panels</span>
-                    <button onClick={() => setShowAddPromo(v => !v)} className="px-4 py-2 rounded-xl text-xs font-bold text-black" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>+ New Event</button>
-                  </div>
-                  <div className="text-gray-400 text-xs">These slides appear below the hero section. Click on a slide to add linked packs to cart.</div>
-
-                  {showAddPromo && (
-                    <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.2)" }}>
-                      <div className="text-amber-400 text-sm font-bold">New Promo Panel</div>
-                      <input placeholder="Title *" value={newPromo.title} onChange={e => setNewPromo(p => ({ ...p, title: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                      <input placeholder="Description (optional)" value={newPromo.description} onChange={e => setNewPromo(p => ({ ...p, description: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                      <input placeholder="Badge text (e.g. HOT, NEW)" value={newPromo.badge} onChange={e => setNewPromo(p => ({ ...p, badge: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                      <div>
-                        <div className="text-gray-400 text-xs mb-1.5">Background Image (optional)</div>
-                        <input ref={promoImgRef} type="file" accept="image/*" className="text-gray-300 text-xs" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 10px", width: "100%" }} />
-                      </div>
-                      <div>
-                        <div className="text-gray-400 text-xs mb-1.5">Link packages (hold Ctrl/Cmd to select multiple)</div>
-                        <select multiple value={newPromo.packIds.map(String)} onChange={e => setNewPromo(p => ({ ...p, packIds: Array.from(e.target.selectedOptions).map(o => parseInt(o.value)) }))} className="px-3 py-2 rounded-lg text-white text-xs outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", height: 90 }}>
-                          {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name || `💎${pkg.diamonds}`} — ₹{parseFloat(pkg.price).toFixed(0)}</option>)}
-                        </select>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={addPromoEvent} disabled={promoSaving} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-black" style={{ background: promoSaving ? "rgba(245,158,11,0.5)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>{promoSaving ? "Saving…" : "Add Event"}</button>
-                        <button onClick={() => setShowAddPromo(false)} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-gray-300" style={{ background: "#222", border: "1px solid rgba(255,255,255,0.1)" }}>Cancel</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {promoEvents.length === 0 && !showAddPromo && (
-                    <div className="text-center text-gray-500 text-sm py-8">No promo events yet. Add your first one!</div>
-                  )}
-
-                  {promoEvents.map((ev) => (
-                    <div key={ev.id} className="rounded-xl p-4 flex flex-col gap-2" style={{ background: "#1a1a1a", border: `1px solid ${ev.active ? "rgba(245,158,11,0.25)" : "rgba(255,255,255,0.07)"}` }}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-white font-bold text-sm">{ev.title}</span>
-                            {ev.badge && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}>{ev.badge}</span>}
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${ev.active ? "text-green-400" : "text-gray-500"}`} style={{ background: ev.active ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.05)" }}>{ev.active ? "Active" : "Hidden"}</span>
-                          </div>
-                          {ev.description && <div className="text-gray-400 text-xs mt-1 truncate">{ev.description}</div>}
-                          {ev.bgImage && <div className="text-gray-600 text-xs mt-0.5 truncate">🖼 {ev.bgImage}</div>}
-                          {ev.packIds?.length > 0 && <div className="text-gray-500 text-xs mt-0.5">🔗 {ev.packIds.length} pack(s) linked</div>}
-                        </div>
-                        <div className="flex gap-1.5 flex-shrink-0">
-                          <button onClick={() => togglePromoActive(ev.id)} className="px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: ev.active ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: ev.active ? "#ef4444" : "#22c55e", border: `1px solid ${ev.active ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}` }}>{ev.active ? "Hide" : "Show"}</button>
-                          <button onClick={() => deletePromoEvent(ev.id)} className="px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}>Del</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
               {/* ── STAFF TAB ── */}
               {tab === "staff" && (
                 <div className="flex flex-col gap-4">
+                  {/* Admin availability toggle */}
+                  <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ background: "#1a1a1a", border: `1px solid ${adminAvailable ? "rgba(34,197,94,0.35)" : "rgba(255,255,255,0.07)"}` }}>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-white font-bold text-sm">👑 Admin (You)</span>
+                      <span className="text-xs" style={{ color: adminAvailable ? "#22c55e" : "rgba(255,255,255,0.3)" }}>
+                        {adminAvailable ? "● In round-robin — your QR shown to customers" : "○ Not in round-robin (offline)"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={toggleAdminAvailable}
+                      disabled={adminAvailSaving}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold flex-shrink-0"
+                      style={{ background: adminAvailable ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: adminAvailable ? "#ef4444" : "#22c55e", border: `1px solid ${adminAvailable ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}` }}
+                    >
+                      {adminAvailSaving ? "…" : adminAvailable ? "Set Offline" : "Set Available"}
+                    </button>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold text-sm">Recharge Staff</span>
                     <button onClick={() => setShowAddStaff(v => !v)} className="px-4 py-2 rounded-xl text-xs font-bold text-black" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>+ Add Staff</button>

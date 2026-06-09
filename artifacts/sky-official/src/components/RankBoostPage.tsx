@@ -248,21 +248,22 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
               key={type}
               onClick={() => setService(type)}
               style={{
-                background: service === type ? "rgba(168,148,130,0.1)" : "rgba(61,43,31,0.03)",
-                border: service === type ? "1.5px solid rgba(168,148,130,0.65)" : "1.5px solid rgba(197,180,162,0.35)",
+                background: service === type ? "rgba(139,92,246,0.09)" : "rgba(61,43,31,0.03)",
+                border: service === type ? "1.5px solid rgba(139,92,246,0.65)" : "1.5px solid rgba(197,180,162,0.35)",
+                boxShadow: service === type ? "0 0 0 3px rgba(139,92,246,0.14), 0 4px 18px rgba(139,92,246,0.18)" : "none",
                 borderRadius: 12, padding: "16px 14px", cursor: "pointer",
                 textAlign: "left", fontFamily: "inherit",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                transition: "border-color 0.15s, background 0.15s",
+                transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s",
               }}
             >
               <span style={{ fontSize: 22, display: "block", marginBottom: 8 }}>
                 {type === "urgent" ? "⚡" : "🕐"}
               </span>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: service === type ? "#A89482" : "#3D2B1F" }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: service === type ? "#8b5cf6" : "#3D2B1F" }}>
                 {type === "urgent" ? "Urgent (+20%)" : "Not Urgent"}
               </span>
-              <span style={{ display: "block", fontSize: 11, color: "rgba(61,43,31,0.45)", marginTop: 3 }}>
+              <span style={{ display: "block", fontSize: 12, color: service === type ? "rgba(61,43,31,0.65)" : "rgba(61,43,31,0.5)", marginTop: 3 }}>
                 {type === "urgent" ? "Completed as soon as possible" : "Standard delivery time"}
               </span>
             </button>
@@ -437,7 +438,7 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
         border: submitted ? "1px solid rgba(34,197,94,0.3)" : "none",
         boxShadow: submitted ? "none" : "0 0 24px rgba(245,158,11,0.28)",
       }}>
-        {submitted ? "✅ Order Details Sent" : "Send Order Details 🚀"}
+        {submitted ? "✅ Order Sent!" : "Order Now 🚀"}
       </button>
 
       <p style={{ textAlign: "center", fontSize: 12, color: "rgba(61,43,31,0.3)", marginTop: 16, lineHeight: 1.6 }}>
