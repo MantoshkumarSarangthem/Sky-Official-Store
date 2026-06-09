@@ -294,7 +294,7 @@ function Navbar() {
         )}
         {isLoaded && (
           user ? (
-            <div style={{ position: "relative" }} ref={profileMenuRef}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }} ref={profileMenuRef}>
               <button
                 onClick={() => setShowProfileMenu(v => !v)}
                 style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: "50%", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
@@ -509,12 +509,20 @@ const GAME_SKELETON_COUNT = 6;
 function GameSelectSection() {
   const [games, setGames] = useState<GameItem[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
+  const [catAvailability, setCatAvailability] = useState<Record<string, string>>({});
   const { navigateTo } = usePageNav();
 
   const fetchGames = useCallback((forceRefresh = false) => {
-    fetch(`${API}/games`, forceRefresh ? { cache: "no-store" } : {})
-      .then(r => r.ok ? r.json() : [])
-      .then(d => { setGames(Array.isArray(d) ? d : []); setGamesLoading(false); })
+    const opts = forceRefresh ? { cache: "no-store" as RequestCache } : {};
+    Promise.all([
+      fetch(`${API}/games`, opts).then(r => r.ok ? r.json() : []),
+      fetch(`${API}/settings/category_availability`, opts).then(r => r.ok ? r.json() : {}),
+    ])
+      .then(([d, avail]) => {
+        setGames(Array.isArray(d) ? d : []);
+        setCatAvailability(avail && typeof avail === "object" ? avail : {});
+        setGamesLoading(false);
+      })
       .catch(() => setGamesLoading(false));
   }, []);
 
@@ -573,10 +581,13 @@ function GameSelectSection() {
           const c = PANEL_GLOW;
           const isRankBoost = game.name.toLowerCase().includes("rank") || game.name.toLowerCase().includes("boost");
           const needsMarquee = game.name.length > 16;
+          const isUnavailable = catAvailability[String(game.id)] === "out_of_stock";
           return (
             <button
               key={game.id}
+              disabled={isUnavailable}
               onClick={() => {
+                if (isUnavailable) return;
                 if (isRankBoost) {
                   navigateTo("/rank-boost", "forward");
                 } else {
@@ -587,9 +598,9 @@ function GameSelectSection() {
                 background: "#FFFFFF",
                 backdropFilter: "blur(14px)",
                 WebkitBackdropFilter: "blur(14px)",
-                border: "1px solid rgba(197,180,162,0.4)",
+                border: isUnavailable ? "1px solid rgba(220,38,38,0.25)" : "1px solid rgba(197,180,162,0.4)",
                 borderRadius: 16,
-                cursor: "pointer",
+                cursor: isUnavailable ? "default" : "pointer",
                 padding: 0,
                 overflow: "hidden",
                 display: "flex",
@@ -598,19 +609,20 @@ function GameSelectSection() {
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
                 transition: "transform 0.15s ease, box-shadow 0.2s ease",
+                opacity: isUnavailable ? 0.72 : 1,
               }}
-              onTouchStart={e => (e.currentTarget.style.transform = "scale(0.96)")}
+              onTouchStart={e => { if (!isUnavailable) e.currentTarget.style.transform = "scale(0.96)"; }}
               onTouchEnd={e => (e.currentTarget.style.transform = "scale(1)")}
             >
               <div style={{ width: "100%", aspectRatio: "1/1", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
                 {game.image ? (
-                  <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: game.status === "out_of_stock" ? "grayscale(60%) brightness(0.75)" : "none" }} />
+                  <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: isUnavailable ? "grayscale(55%) brightness(0.8)" : "none" }} />
                 ) : (
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
                 )}
-                {game.status === "out_of_stock" && (
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(220,38,38,0.88)", padding: "4px 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ color: "#FFFFFF", fontSize: 8, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>Out of Stock</span>
+                {isUnavailable && (
+                  <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(220,38,38,0.92)", borderRadius: 6, padding: "2px 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 6px rgba(220,38,38,0.35)" }}>
+                    <span style={{ color: "#FFFFFF", fontSize: 7.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>Unavailable</span>
                   </div>
                 )}
               </div>

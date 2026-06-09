@@ -26,6 +26,13 @@ router.get("/settings/category_popular", async (_req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+router.get("/settings/category_availability", async (_req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT value FROM settings WHERE key='category_availability'");
+    res.json(JSON.parse(rows[0]?.value || "{}"));
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 router.get("/settings/qr", async (_req, res) => {
   try {
     // Build combined pool: available staff + admin if admin_status = 'available'
