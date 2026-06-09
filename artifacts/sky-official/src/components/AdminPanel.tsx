@@ -170,6 +170,18 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [newGame, setNewGame] = useState({ name: "", sort_order: "0", region: "" });
   const [gamesSaving, setGamesSaving] = useState(false);
   const gameImgRef = useRef<HTMLInputElement>(null);
+  const adminCurrLabel = (gameId: number | null) => {
+    const gName = games.find(g => g.id === gameId)?.name || "";
+    const n = gName.toLowerCase();
+    if (n.includes("pubg") || n.includes("bgmi") || n.includes("battleground")) return "UC";
+    if (n.includes("free fire") || n.includes("freefire")) return "Diamonds";
+    if (n.includes("clash") || n.includes("royale")) return "Gems";
+    if (n.includes("valorant")) return "VP";
+    if (n.includes("cod") || n.includes("call of duty")) return "CP";
+    if (n.includes("genshin") || n.includes("honkai")) return "Crystals";
+    if (n.includes("fortnite")) return "V-Bucks";
+    return "Diamonds";
+  };
   const [updatingGameId, setUpdatingGameId] = useState<number | null>(null);
   const gameUpdateImgRef = useRef<HTMLInputElement>(null);
   const [editingGameMeta, setEditingGameMeta] = useState<{id: number; name: string; region: string} | null>(null);
@@ -1475,17 +1487,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         <div className="flex flex-col gap-3">
                           <div className="grid grid-cols-2 gap-2">
                             <div className="col-span-2">
-                              <div className="text-xs text-gray-400 mb-1">Category</div>
-                              <select value={editingPkg.category || "small"} onChange={(e) => setEditingPkg(p => p ? { ...p, category: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.35)" }}>
-                                <option value="small">Small Pack</option>
-                                <option value="normal">Normal Pack</option>
-                                <option value="double">Double Diamond</option>
-                                <option value="passes">Passes &amp; Bundles</option>
-                                <option value="starlight">Starlight Cards</option>
-                                <option value="rank">Rank Boosting</option>
-                              </select>
-                            </div>
-                            <div className="col-span-2">
                               <div className="text-xs text-gray-400 mb-1">Name</div>
                               <input placeholder='e.g. "Starter Pack"' value={editingPkg.name || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, name: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
                             </div>
@@ -1566,8 +1567,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             </div>
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-white font-bold text-sm">{pkg.name || `${pkg.diamonds.toLocaleString()} Diamonds`}</span>
-                                {pkg.category && <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(255,255,255,0.08)", color: "#9ca3af" }}>{pkg.category}</span>}
+                                <span className="text-white font-bold text-sm">{pkg.name || `${pkg.diamonds.toLocaleString()} ${adminCurrLabel(pkg.game_id)}`}</span>
                               </div>
                               <div className="text-amber-400 text-xs font-semibold mt-0.5 flex items-center gap-1">
                                 {pkg.image ? <img src={pkg.image} alt="icon" style={{ width: 12, height: 12, objectFit: "cover", flexShrink: 0, borderRadius: 3 }} /> : <img src="/diamond.png" alt="♦" style={{ width: 12, height: 12, objectFit: "contain", flexShrink: 0 }} />} {pkg.diamonds.toLocaleString()}{pkg.bonus_diamonds > 0 ? <span className="text-green-400"> +{pkg.bonus_diamonds.toLocaleString()} bonus</span> : null}
@@ -2080,47 +2080,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     </button>
                   </div>
 
-                  {/* Offer Banners */}
-                  <div>
-                    <div className="text-white font-bold text-sm mb-1">Offer Banners</div>
-                    <div className="text-gray-400 text-xs">Promotional banners shown on the store homepage. Add up to 5 banners — they auto-rotate every 6 seconds.</div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {banners.length === 0 && !showAddBanner && (
-                      <div className="text-center text-gray-500 text-sm py-3">No banners yet.</div>
-                    )}
-                    {banners.map((banner) => (
-                      <div key={banner.id} className="rounded-xl p-3 flex items-center gap-3" style={{ background: banner.bgGradient || "linear-gradient(135deg,#1a0a2e,#2d1b69)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                        {banner.emoji && <span style={{ fontSize: 22, lineHeight: 1 }}>{banner.emoji}</span>}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-white font-bold text-sm truncate">{banner.title}</div>
-                          {banner.subtitle && <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }} className="truncate">{banner.subtitle}</div>}
-                        </div>
-                        <button onClick={() => deleteBanner(banner.id)} disabled={bannersSaving} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-500/15 text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>🗑️</button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => setShowAddBanner(v => !v)}
-                      className="w-full py-2 rounded-xl text-xs font-bold text-black"
-                      style={{ background: showAddBanner ? "#555" : "linear-gradient(135deg,#fbbf24,#f59e0b)", color: showAddBanner ? "#fff" : "#000" }}
-                    >
-                      {showAddBanner ? "Cancel" : "+ Add Banner"}
-                    </button>
-                    {showAddBanner && (
-                      <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.18)" }}>
-                        <div className="text-amber-400 text-xs font-bold mb-1">New Banner</div>
-                        <input placeholder="Emoji (e.g. 🎮)" value={newBanner.emoji} onChange={e => setNewBanner(b => ({ ...b, emoji: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="Title *" value={newBanner.title} onChange={e => setNewBanner(b => ({ ...b, title: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="Subtitle (optional)" value={newBanner.subtitle} onChange={e => setNewBanner(b => ({ ...b, subtitle: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="Background CSS e.g. linear-gradient(135deg,#1a0a2e,#c23)" value={newBanner.bgGradient} onChange={e => setNewBanner(b => ({ ...b, bgGradient: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="CTA Button Text (optional)" value={newBanner.ctaText} onChange={e => setNewBanner(b => ({ ...b, ctaText: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="CTA Link (optional, e.g. /packages)" value={newBanner.ctaLink} onChange={e => setNewBanner(b => ({ ...b, ctaLink: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <button onClick={addBanner} disabled={bannersSaving} className="w-full py-2.5 rounded-xl text-sm font-bold text-black mt-1" style={{ background: bannersSaving ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>
-                          {bannersSaving ? "Saving…" : "Save Banner"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
 
 
                 </div>
@@ -2345,7 +2304,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
               {/* ── BANNERS TAB ── */}
               {tab === "banners" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingBottom: 40 }}>
                   <div>
                     <div className="text-amber-400 text-sm font-bold mb-1">Promo Banners</div>
                     <div className="text-gray-500 text-xs mb-4">Upload up to 5 promotional images (21:9 ratio recommended, e.g. 1280×549 px). Shown as a carousel at the top of the homepage.</div>

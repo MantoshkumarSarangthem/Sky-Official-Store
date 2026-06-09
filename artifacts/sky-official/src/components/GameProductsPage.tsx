@@ -389,10 +389,10 @@ export default function GameProductsPage() {
                       background: isSelected ? "rgba(139,92,246,0.07)" : "#FFFFFF",
                       border: isSelected ? "2px solid #8b5cf6" : "1px solid rgba(197,180,162,0.35)",
                       borderRadius: 16,
-                      padding: "10px 10px 8px",
+                      padding: "7px 8px 6px",
                       display: "flex",
                       flexDirection: "column",
-                      gap: 6,
+                      gap: 4,
                       animation: `gpCardIn 0.3s ease ${idx * 0.04}s both`,
                       position: "relative",
                       overflow: "hidden",
@@ -431,7 +431,7 @@ export default function GameProductsPage() {
                     {/* Name + currency */}
                     <div>
                       <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 12, lineHeight: 1.3, marginBottom: 2 }}>
-                        {pkg.name || `${pkg.diamonds.toLocaleString()} ${currencyLabel}`}
+                        {pkg.name || `${total.toLocaleString()} ${currencyLabel}`}
                       </div>
                       <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 10 }}>
                         {pkg.diamonds.toLocaleString()} {currencyLabel}

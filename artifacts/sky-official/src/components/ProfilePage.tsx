@@ -376,7 +376,7 @@ export default function ProfilePage() {
 
         {/* Avatar + name */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 24, paddingBottom: 28, animation: "profIn 0.5s ease both" }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", border: "3px solid #A89482", boxShadow: "0 0 20px rgba(168,148,130,0.3)", overflow: "hidden", marginBottom: 12 }}>
+          <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", marginBottom: 12 }}>
             <img src={user.imageUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 20, letterSpacing: "-0.01em" }}>{displayName}</div>
@@ -394,8 +394,8 @@ export default function ProfilePage() {
               { label: "Spent", value: `₹${stats.total_spent.toFixed(0)}` },
             ].map(s => (
               <div key={s.label} style={{ background: "#FFFFFF", borderRadius: 14, border: "1px solid rgba(197,180,162,0.35)", padding: "14px 10px", textAlign: "center", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
-                <div style={{ color: "#A89482", fontWeight: 800, fontSize: 20 }}>{s.value}</div>
-                <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 11, marginTop: 3 }}>{s.label}</div>
+                <div style={{ color: "#6D4C41", fontWeight: 800, fontSize: 20 }}>{s.value}</div>
+                <div style={{ color: "rgba(61,43,31,0.65)", fontSize: 11, marginTop: 3 }}>{s.label}</div>
               </div>
             ))}
           </div>

@@ -271,7 +271,7 @@ function Navbar() {
         className="flex items-center gap-2"
         style={{ background: "none", border: "none", cursor: "pointer", padding: 0, touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
       >
-        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: "#FAF9F6", border: "1.5px solid #A89482", boxShadow: "0 0 6px 1px rgba(168,148,130,0.3)" }}>
+        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: "#FAF9F6", border: "1.5px solid #7F00FF", boxShadow: "0 0 7px 2px rgba(127,0,255,0.35)" }}>
           <img src="/logo.webp" alt="Sky Official" className="w-full h-full object-cover" />
         </div>
         <div className="flex items-center gap-1.5">
@@ -299,7 +299,7 @@ function Navbar() {
                 onClick={() => setShowProfileMenu(v => !v)}
                 style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: "50%", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
               >
-                <div className="rounded-full overflow-hidden border flex-shrink-0" style={{ width: 34, height: 34, borderColor: "#A89482", boxShadow: showProfileMenu ? "0 0 0 2px rgba(141,110,99,0.4)" : "none", transition: "box-shadow 0.15s" }}>
+                <div className="rounded-full overflow-hidden flex-shrink-0" style={{ width: 34, height: 34, boxShadow: showProfileMenu ? "0 0 0 2px rgba(141,110,99,0.4)" : "none", transition: "box-shadow 0.15s" }}>
                   <img src={user.imageUrl} alt={user.firstName ?? "User"} className="w-full h-full object-cover" />
                 </div>
               </button>
@@ -450,7 +450,7 @@ function PromoBannerSlider() {
     const currentBanner = banners[activeIdx];
     const isVid = currentBanner && (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(currentBanner.image) || currentBanner.image?.startsWith("data:video/"));
     if (isVid) return;
-    timerRef.current = setInterval(advanceSlide, 3500);
+    timerRef.current = setInterval(advanceSlide, 6000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [banners.length, activeIdx, advanceSlide]);
 
@@ -892,7 +892,7 @@ function Footer() {
   return (
     <footer className="py-7 px-5 text-center" style={{ background: "#000000", borderTop: "1px solid rgba(255,255,255,0.08)", position: "relative", zIndex: 1 }}>
       <div className="flex flex-col items-center gap-2.5 max-w-sm mx-auto">
-        <div className="w-10 h-10 rounded-full overflow-hidden" style={{ background: "#FAF9F6", border: "1.5px solid #A89482", boxShadow: "0 0 6px 1px rgba(168,148,130,0.3)" }}>
+        <div className="w-10 h-10 rounded-full overflow-hidden" style={{ background: "#FAF9F6", border: "1.5px solid #4ade80", boxShadow: "0 0 8px 2px rgba(74,222,128,0.35)" }}>
           <img src="/logo.webp" alt="Sky Official" className="w-full h-full object-cover" />
         </div>
         <div>

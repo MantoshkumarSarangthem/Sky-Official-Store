@@ -65,7 +65,12 @@ router.get("/my", requireAuth, async (req: any, res): Promise<void> => {
   const userId = req.clerkUserId as string;
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM orders WHERE clerk_user_id = $1 ORDER BY created_at DESC",
+      `SELECT o.*, p.image AS pack_image, p.name AS pack_name, g.name AS game_name
+       FROM orders o
+       LEFT JOIN packages p ON o.package_id = p.id
+       LEFT JOIN games g ON p.game_id = g.id
+       WHERE o.clerk_user_id = $1
+       ORDER BY o.created_at DESC`,
       [userId]
     );
     res.json(rows);

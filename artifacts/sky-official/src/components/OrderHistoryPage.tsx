@@ -13,6 +13,22 @@ interface Order {
   status: string;
   note: string | null;
   created_at: string;
+  pack_image?: string | null;
+  pack_name?: string | null;
+  game_name?: string | null;
+}
+
+function getCurrencyLabel(gameName?: string | null) {
+  const n = gameName?.toLowerCase() || "";
+  if (n.includes("pubg") || n.includes("bgmi") || n.includes("battleground")) return "UC";
+  if (n.includes("free fire") || n.includes("freefire")) return "Diamonds";
+  if (n.includes("clash") || n.includes("royale")) return "Gems";
+  if (n.includes("valorant")) return "VP";
+  if (n.includes("cod") || n.includes("call of duty")) return "CP";
+  if (n.includes("genshin")) return "Crystals";
+  if (n.includes("honkai")) return "Crystals";
+  if (n.includes("fortnite")) return "V-Bucks";
+  return "Diamonds";
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -31,20 +47,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function DiamondIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 20">
-      <defs>
-        <linearGradient id="dg-oh" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#93c5fd" />
-          <stop offset="100%" stopColor="#3b82f6" />
-        </linearGradient>
-      </defs>
-      <polygon points="10,1 18,8 10,19 2,8" fill="url(#dg-oh)" />
-      <polygon points="10,1 14,6 10,8 6,6" fill="rgba(255,255,255,0.4)" />
-    </svg>
-  );
-}
 
 function EmptyState() {
   return (
@@ -138,12 +140,12 @@ export default function OrderHistoryPage() {
           <div style={{ display: "flex", gap: 10, marginBottom: 20, animation: "oh-fadeIn 0.5s ease both" }}>
             {[
               { label: "Total Orders", value: orders.length },
-              { label: "Diamonds Bought", value: orders.reduce((s, o) => s + o.diamonds, 0).toLocaleString() + " ♦" },
+              { label: "Products Purchased", value: orders.reduce((s, o) => s + o.diamonds, 0).toLocaleString() },
               { label: "Total Spent", value: "₹" + orders.reduce((s, o) => s + parseFloat(o.price), 0).toFixed(0) },
             ].map((stat) => (
               <div key={stat.label} style={{ flex: 1, background: "#FFFFFF", borderRadius: 12, padding: "12px 10px", border: "1px solid rgba(197,180,162,0.35)", textAlign: "center", boxShadow: "0 2px 6px rgba(61,43,31,0.04)" }}>
-                <div style={{ color: "#A89482", fontWeight: 800, fontSize: 15 }}>{stat.value}</div>
-                <div style={{ color: "rgba(61,43,31,0.45)", fontSize: 10, marginTop: 2 }}>{stat.label}</div>
+                <div style={{ color: "#6D4C41", fontWeight: 800, fontSize: 15 }}>{stat.value}</div>
+                <div style={{ color: "rgba(61,43,31,0.65)", fontSize: 10, marginTop: 2 }}>{stat.label}</div>
               </div>
             ))}
           </div>
@@ -170,12 +172,15 @@ export default function OrderHistoryPage() {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <DiamondIcon size={18} />
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: order.pack_image ? "transparent" : "rgba(168,148,130,0.1)", border: order.pack_image ? "none" : "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      {order.pack_image
+                        ? <img src={order.pack_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                      }
                     </div>
                     <div>
                       <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
-                        {order.diamonds.toLocaleString()} Diamonds
+                        {order.pack_name || `${order.diamonds.toLocaleString()} ${getCurrencyLabel(order.game_name)}`}
                       </div>
                       <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 11, marginTop: 2 }}>
                         #{formatOrderId(order.id)}
