@@ -483,8 +483,9 @@ function PromoBannerSlider() {
       >
         {banners.map((b, i) => {
           const isVid = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) || b.image.startsWith("data:video/");
+          const shouldLoop = isVid && banners.length === 1;
           return isVid ? (
-            <video key={b.id} src={b.image} autoPlay muted playsInline onEnded={advanceSlide} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
+            <video key={b.id} src={b.image} autoPlay muted playsInline loop={shouldLoop} onEnded={shouldLoop ? undefined : advanceSlide} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
           ) : (
             <img key={b.id} src={b.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
           );
@@ -609,21 +610,23 @@ function GameSelectSection() {
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
                 transition: "transform 0.15s ease, box-shadow 0.2s ease",
-                opacity: isUnavailable ? 0.72 : 1,
               }}
               onTouchStart={e => { if (!isUnavailable) e.currentTarget.style.transform = "scale(0.96)"; }}
               onTouchEnd={e => (e.currentTarget.style.transform = "scale(1)")}
             >
               <div style={{ width: "100%", aspectRatio: "1/1", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
                 {game.image ? (
-                  <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", filter: isUnavailable ? "grayscale(55%) brightness(0.8)" : "none" }} />
+                  <img src={game.image} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke={c.icon} strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke={c.icon} strokeWidth="1.5" strokeLinecap="round"/></svg>
                 )}
                 {isUnavailable && (
-                  <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(220,38,38,0.92)", borderRadius: 6, padding: "2px 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 6px rgba(220,38,38,0.35)" }}>
-                    <span style={{ color: "#FFFFFF", fontSize: 7.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>Unavailable</span>
-                  </div>
+                  <>
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.32)", pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(220,38,38,0.92)", borderRadius: 6, padding: "2px 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 6px rgba(220,38,38,0.35)" }}>
+                      <span style={{ color: "#FFFFFF", fontSize: 7.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>Unavailable</span>
+                    </div>
+                  </>
                 )}
               </div>
               <div style={{ padding: "4px 8px 6px", height: 50, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>

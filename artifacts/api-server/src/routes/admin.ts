@@ -221,7 +221,10 @@ router.delete("/packages/:id", requireAdmin, async (req, res) => {
 router.get("/orders", requireAdmin, async (_req, res) => {
   try {
     const { rows: orders } = await pool.query(
-      "SELECT * FROM orders ORDER BY created_at DESC LIMIT 100"
+      `SELECT o.*, p.image AS pack_image, p.name AS pack_name_from_pkg
+       FROM orders o
+       LEFT JOIN packages p ON p.id = o.package_id
+       ORDER BY o.created_at DESC LIMIT 100`
     );
     const { rows: stats } = await pool.query(`
       SELECT

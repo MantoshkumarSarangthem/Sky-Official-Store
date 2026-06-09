@@ -72,6 +72,7 @@ interface Order {
   status: string;
   note: string | null;
   created_at: string;
+  pack_image?: string | null;
 }
 
 interface Stats {
@@ -1642,7 +1643,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     <div key={order.id} className="rounded-xl p-4 flex items-center justify-between gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-white font-bold text-sm flex items-center gap-1">{order.diamonds.toLocaleString()} <img src="/diamond.png" alt="♦" style={{ width: 14, height: 14, objectFit: "contain", flexShrink: 0 }} /></span>
+                          <span className="text-white font-bold text-sm flex items-center gap-1">{order.diamonds.toLocaleString()} {order.pack_image ? <img src={order.pack_image} alt="icon" style={{ width: 14, height: 14, objectFit: "cover", flexShrink: 0, borderRadius: 3 }} /> : <img src="/diamond.png" alt="♦" style={{ width: 14, height: 14, objectFit: "contain", flexShrink: 0 }} />}</span>
                           <span className="text-amber-400 text-xs font-semibold">₹{parseFloat(order.price).toFixed(0)}</span>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap mt-0.5">
