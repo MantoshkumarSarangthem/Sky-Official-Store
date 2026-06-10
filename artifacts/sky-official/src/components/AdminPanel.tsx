@@ -124,6 +124,13 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   });
   const [packages, setPackages] = useState<Package[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  function copyWithFeedback(text: string, key: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 1500);
+    });
+  }
   const [stats, setStats] = useState<Stats | null>(null);
   const [editingPkg, setEditingPkg] = useState<Package | null>(null);
   const [newPkg, setNewPkg] = useState({ name: "", diamonds: "", bonus_diamonds: "", price: "", label: "", is_popular: false, category: "small", status: "available" });
@@ -1649,22 +1656,29 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-white font-bold text-sm flex items-center gap-1">{order.diamonds.toLocaleString()} {order.pack_image ? <img src={order.pack_image} alt="icon" style={{ width: 14, height: 14, objectFit: "cover", flexShrink: 0, borderRadius: 3 }} /> : <img src="/diamond.png" alt="♦" style={{ width: 14, height: 14, objectFit: "contain", flexShrink: 0 }} />}</span>
                           <span className="text-amber-400 text-xs font-semibold">₹{parseFloat(order.price).toFixed(0)}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 999, background: order.note === "Paid via wallet" ? "rgba(167,139,250,0.15)" : "rgba(52,211,153,0.12)", color: order.note === "Paid via wallet" ? "#a78bfa" : "#34d399", border: `1px solid ${order.note === "Paid via wallet" ? "rgba(167,139,250,0.3)" : "rgba(52,211,153,0.25)"}` }}>
+                            {order.note === "Paid via wallet" ? "💳 Wallet" : "📱 UPI"}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap mt-0.5">
                           {order.mlbb_id && (
                             <span className="flex items-center gap-1">
                               <span className="text-gray-400 text-xs">ID: {order.mlbb_id}</span>
-                              <button onClick={() => navigator.clipboard.writeText(order.mlbb_id!)} title="Copy MLBB ID" className="text-gray-500 hover:text-amber-400 transition-colors text-xs px-1 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", lineHeight: 1 }}>⎘</button>
+                              <button onClick={() => copyWithFeedback(order.mlbb_id!, `mlbb_${order.id}`)} title="Copy MLBB ID" className="text-xs px-1 py-0.5 rounded transition-colors" style={{ background: copiedKey === `mlbb_${order.id}` ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.05)", border: `1px solid ${copiedKey === `mlbb_${order.id}` ? "rgba(34,197,94,0.35)" : "rgba(255,255,255,0.08)"}`, color: copiedKey === `mlbb_${order.id}` ? "#22c55e" : "rgba(255,255,255,0.4)", lineHeight: 1, fontWeight: 700 }}>
+                                {copiedKey === `mlbb_${order.id}` ? "✓" : "⎘"}
+                              </button>
                             </span>
                           )}
                           {order.mlbb_server_id && (
                             <span className="flex items-center gap-1">
                               <span className="text-gray-500 text-xs">Zone: {order.mlbb_server_id}</span>
-                              <button onClick={() => navigator.clipboard.writeText(order.mlbb_server_id!)} title="Copy Zone ID" className="text-gray-500 hover:text-amber-400 transition-colors text-xs px-1 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", lineHeight: 1 }}>⎘</button>
+                              <button onClick={() => copyWithFeedback(order.mlbb_server_id!, `zone_${order.id}`)} title="Copy Zone ID" className="text-xs px-1 py-0.5 rounded transition-colors" style={{ background: copiedKey === `zone_${order.id}` ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.05)", border: `1px solid ${copiedKey === `zone_${order.id}` ? "rgba(34,197,94,0.35)" : "rgba(255,255,255,0.08)"}`, color: copiedKey === `zone_${order.id}` ? "#22c55e" : "rgba(255,255,255,0.4)", lineHeight: 1, fontWeight: 700 }}>
+                                {copiedKey === `zone_${order.id}` ? "✓" : "⎘"}
+                              </button>
                             </span>
                           )}
                         </div>
-                        {order.note && <div className="text-gray-500 text-xs mt-0.5 truncate">{order.note}</div>}
+                        {order.note && order.note !== "Paid via wallet" && <div className="text-gray-500 text-xs mt-0.5 truncate">{order.note}</div>}
                         <div className="text-gray-600 text-xs mt-0.5 flex items-center gap-2">
                           <span className="font-mono text-gray-500">#{`SKY-${String(order.id).padStart(5,"0")}`}</span>
                           <span>·</span>
