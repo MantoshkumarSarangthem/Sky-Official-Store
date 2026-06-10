@@ -112,6 +112,9 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 2 }}>
             ₹{parseFloat(order.price).toLocaleString("en-IN")}
           </div>
+          <div style={{ color: order.note === "Paid via wallet" ? "#a78bfa" : "#34d399", fontSize: 10, marginTop: 2, fontWeight: 600 }}>
+            {order.note === "Paid via wallet" ? "💳 Wallet" : "📱 UPI"}
+          </div>
         </div>
         {order.mlbb_ign && (
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -167,6 +170,12 @@ export default function StaffPortal() {
   const authHeader = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
   useEffect(() => { staffBioAvailable().then(setBioAvail); }, []);
+
+  useEffect(() => {
+    if (bioAvail && bioEnabled && !token) {
+      loginWithBio();
+    }
+  }, [bioAvail]);
 
   const loginWithBio = async () => {
     setBioLoading(true); setLoginError(""); setBioMsg("");
@@ -334,11 +343,12 @@ export default function StaffPortal() {
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
               <InfoRow label="♦ Diamonds" value={`${selectedOrder.diamonds.toLocaleString()} diamonds`} accent />
               <InfoRow label="Price" value={`₹${parseFloat(selectedOrder.price).toLocaleString("en-IN")}`} />
+              <InfoRow label="Payment" value={selectedOrder.note === "Paid via wallet" ? "Paid via Wallet" : "Paid via UPI"} />
               {selectedOrder.mlbb_id && <InfoRow label="MLBB ID" value={selectedOrder.mlbb_id} />}
               {selectedOrder.mlbb_ign && <InfoRow label="IGN" value={selectedOrder.mlbb_ign} />}
               {selectedOrder.mlbb_server_id && <InfoRow label="Server ID" value={selectedOrder.mlbb_server_id} />}
               <InfoRow label="Placed" value={new Date(selectedOrder.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} />
-              {selectedOrder.note && <InfoRow label="Note" value={selectedOrder.note} />}
+              {selectedOrder.note && selectedOrder.note !== "Paid via wallet" && <InfoRow label="Note" value={selectedOrder.note} />}
             </div>
           </div>
 

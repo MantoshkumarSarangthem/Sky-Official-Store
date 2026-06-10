@@ -117,7 +117,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [bioMsg, setBioMsg] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [showPwForm, setShowPwForm] = useState(() => !localStorage.getItem(ADMIN_BIO_CRED));
-  const [tab, setTab] = useState<Tab>("packages");
+  const [tab, setTab] = useState<Tab>(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners"];
+    return (valid.includes(p as Tab) ? p : "packages") as Tab;
+  });
   const [packages, setPackages] = useState<Package[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -2311,7 +2315,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     {promoBanners.length === 0 ? (
                       <div className="text-gray-500 text-xs py-4 text-center">No banners yet. Add one below.</div>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto", paddingRight: 2 }}>
                         {promoBanners.map((b, i) => (
                           <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
                             {/\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) ? (

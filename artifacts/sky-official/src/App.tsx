@@ -271,7 +271,7 @@ function Navbar() {
         className="flex items-center gap-2"
         style={{ background: "none", border: "none", cursor: "pointer", padding: 0, touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
       >
-        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: "#FAF9F6", border: "1.5px solid #7F00FF", boxShadow: "0 0 7px 2px rgba(127,0,255,0.35)" }}>
+        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: "#FAF9F6", border: "1.5px solid #7F00FF" }}>
           <img src="/logo.webp" alt="Sky Official" className="w-full h-full object-cover" />
         </div>
         <div className="flex items-center gap-1.5">
@@ -341,7 +341,7 @@ function Navbar() {
             <button
               onClick={() => setLocation("/sign-in")}
               className="px-4 rounded-full font-extrabold"
-              style={{ background: "#8D6E63", color: "#FFFFFF", boxShadow: "0 2px 10px rgba(141,110,99,0.4)", fontSize: 12, height: 32, letterSpacing: "0.01em" }}
+              style={{ background: "#7F00FF", color: "#FFFFFF", boxShadow: "0 2px 10px rgba(127,0,255,0.4)", fontSize: 12, height: 32, letterSpacing: "0.01em" }}
             >
               Sign In
             </button>
@@ -571,9 +571,11 @@ function GameSelectSection() {
   const PANEL_GLOW = { glow: "rgba(139,92,246,0.12)", border: "rgba(168,85,247,0.18)", icon: "rgba(168,85,247,0.5)" };
 
   return (
-    <section style={{ background: "transparent", padding: "28px 16px 28px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <section style={{ background: "#FAF9F6", padding: "28px 16px 28px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#7F00FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
         <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>Select Game</span>
       </div>
       <style>{`@keyframes nameMarquee{0%,25%{transform:translateX(0)}80%,100%{transform:translateX(-50%)}}`}</style>
@@ -800,8 +802,13 @@ function HowItWorks() {
 }
 
 // ── Live Ticker ────────────────────────────────────────────────────────────
-function maskName(name: string): string {
-  if (!name || name.length === 0) return "Player";
+const _ANON_NAMES = ["Alex","Raj","Priya","Sam","Amrit","Kiran","Ravi","Ankit","Divya","Rohan","Mia","Arjun","Neha","Kabir","Zara"];
+function maskName(name: string, createdAt?: string): string {
+  if (!name || name.length === 0) {
+    const seed = createdAt ? new Date(createdAt).getTime() % _ANON_NAMES.length : 0;
+    const fallback = _ANON_NAMES[Math.abs(seed)];
+    return fallback[0] + "***";
+  }
   return name[0].toUpperCase() + "***";
 }
 
@@ -833,7 +840,7 @@ function LiveTicker() {
               const displayName = p.pack_name || `${Number(p.diamonds).toLocaleString()} ${label}`;
               return (
                 <span key={i} className="text-gray-700 flex-shrink-0" style={{ fontSize: 13 }}>
-                  <span className="font-bold text-amber-600">{maskName(p.mlbb_ign ?? "Player")}</span>{" bought "}<span className="font-bold">{displayName}</span>
+                  <span className="font-bold text-amber-600">{maskName(p.mlbb_ign ?? "", p.created_at)}</span>{" bought "}<span className="font-bold">{displayName}</span>
                   <span className="ml-5 text-gray-300">|</span>
                 </span>
               );
@@ -1381,7 +1388,7 @@ function AuthPageShell({ children, title, subtitle }: { children: React.ReactNod
             </div>
             <div>
               <div className="text-white font-bold text-base leading-tight">Sky Official</div>
-              <div className="text-xs" style={{ color: "#f59e0b", letterSpacing: "0.12em", fontSize: 9, fontWeight: 600, textTransform: "uppercase" }}>Diamond Top‑Up Store</div>
+              <div className="text-xs" style={{ color: "#f59e0b", letterSpacing: "0.12em", fontSize: 9, fontWeight: 600, textTransform: "uppercase" }}>Recharge / Top‑Up Store</div>
             </div>
           </div>
 
@@ -1629,6 +1636,7 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -1638,6 +1646,7 @@ export default function App() {
     <WouterRouter base={basePath}>
       <CartProvider>
         <div style={{ background: "#0d0d0d", minHeight: "100vh", overflowX: "hidden" }}>
+          {loading && <LoadingScreen onDone={() => setLoading(false)} />}
           <AppRoutes />
         </div>
       </CartProvider>

@@ -2,6 +2,7 @@ import { Router } from "express";
 import pool from "../lib/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { brevoSend } from "../lib/email";
+import { sendPushToAll } from "./push";
 
 const router = Router();
 
@@ -43,6 +44,13 @@ router.post("/topup", requireAuth, async (req: any, res): Promise<void> => {
        VALUES ($1, $2, 'credit', 'pending', $3, 'Wallet top-up request')`,
       [userId, Number(amount).toFixed(2), requestId]
     );
+
+    sendPushToAll({
+      title: "💰 Wallet Top-up Request!",
+      body: `₹${Number(amount).toFixed(0)} · ${requestId}`,
+      tag: "wallet-topup",
+      url: "/admin?tab=wallet",
+    });
 
     if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {
       const ownerEmail = process.env.NOTIFY_EMAIL ?? process.env.FROM_EMAIL;

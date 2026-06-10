@@ -22,10 +22,15 @@ function getTotalStars(rank: string, sub: string) { return (RANK_BASE[rank as Ra
 
 function buildSubOptions(rank: string): SubOption[] {
   if (!rank) return [];
-  if (["mythic","mythic_honor","mythic_glory","mythic_immortal"].includes(rank)) {
-    const max = rank === "mythic_immortal" ? 100 : rank === "mythic_glory" ? 49 : 24;
-    const label = RANK_LABELS[rank as RankKey];
-    return Array.from({ length: max + 1 }, (_, s) => ({ value: String(s), label: `${label} — ${s} ★` }));
+  if (rank === "mythic_immortal") return [{ value: "0", label: "Mythic Immortal — 100 ★" }];
+  if (rank === "mythic_glory") {
+    return Array.from({ length: 50 }, (_, s) => ({ value: String(s), label: `Mythic Glory — ${s + 50} ★` }));
+  }
+  if (rank === "mythic_honor") {
+    return Array.from({ length: 25 }, (_, s) => ({ value: String(s), label: `Mythic Honor — ${s + 25} ★` }));
+  }
+  if (rank === "mythic") {
+    return Array.from({ length: 25 }, (_, s) => ({ value: String(s), label: `Mythic — ${s} ★` }));
   }
   const divCount = rank === "warrior" ? 3 : (rank === "elite" || rank === "master") ? 4 : 5;
   const starCount = divCount;
@@ -128,7 +133,7 @@ function StepHead({ n, title, sub }: { n: number; title: string; sub: string }) 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 20 }}>
       <div style={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-        background: "#A89482", color: "#FAF9F6",
+        background: "#7F00FF", color: "#FFFFFF",
         fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {n}
       </div>
@@ -157,6 +162,8 @@ export default function RankBoostPage({ onBack }: { onBack?: () => void }) {
   const [submitted,  setSubmitted]  = useState(false);
   const [error,      setError]      = useState("");
   const [staffWA,    setStaffWA]    = useState(WA_NUMBER_FALLBACK);
+  const [curImmortalStars, setCurImmortalStars] = useState(100);
+  const [tarImmortalStars, setTarImmortalStars] = useState(100);
 
   const curSubRef  = useRef<HTMLSelectElement>(null);
   const tarSubRef  = useRef<HTMLSelectElement>(null);
@@ -174,8 +181,20 @@ export default function RankBoostPage({ onBack }: { onBack?: () => void }) {
   const tarSubOpts = buildSubOptions(tarRank);
   const priceResult = calcPrice(curRank, curSub, tarRank, tarSub, service);
 
-  useEffect(() => { setCurSub(curSubOpts[0]?.value ?? "0"); }, [curRank]);
-  useEffect(() => { setTarSub(tarSubOpts[0]?.value ?? "0"); }, [tarRank]);
+  useEffect(() => {
+    if (curRank === "mythic_immortal") setCurSub(String(Math.max(0, curImmortalStars - 100)));
+    else setCurSub(curSubOpts[0]?.value ?? "0");
+  }, [curRank]);
+  useEffect(() => {
+    if (tarRank === "mythic_immortal") setTarSub(String(Math.max(0, tarImmortalStars - 100)));
+    else setTarSub(tarSubOpts[0]?.value ?? "0");
+  }, [tarRank]);
+  useEffect(() => {
+    if (curRank === "mythic_immortal") setCurSub(String(Math.max(0, curImmortalStars - 100)));
+  }, [curImmortalStars]);
+  useEffect(() => {
+    if (tarRank === "mythic_immortal") setTarSub(String(Math.max(0, tarImmortalStars - 100)));
+  }, [tarImmortalStars]);
 
   useIosSelectPoll(curRankRef, v => { if (v) setCurRank(v); });
   useIosSelectPoll(tarRankRef, v => { if (v) setTarRank(v); });
@@ -183,8 +202,8 @@ export default function RankBoostPage({ onBack }: { onBack?: () => void }) {
   useIosSelectPoll(tarSubRef,  v => { if (v) setTarSub(v);  });
 
   const buildWaMsg = () => {
-    const curLabel = curSubOpts.find(o => o.value === curSub)?.label ?? curSub;
-    const tarLabel = tarSubOpts.find(o => o.value === tarSub)?.label ?? tarSub;
+    const curLabel = curRank === "mythic_immortal" ? `Mythic Immortal — ${curImmortalStars} ★` : curSubOpts.find(o => o.value === curSub)?.label ?? curSub;
+    const tarLabel = tarRank === "mythic_immortal" ? `Mythic Immortal — ${tarImmortalStars} ★` : tarSubOpts.find(o => o.value === tarSub)?.label ?? tarSub;
     const payLabels: Record<string,string> = { upi:"UPI", bank:"Bank Transfer", crypto:"Crypto (USDT)" };
     const p = priceResult;
     return `🎮 *New MLBB Boost Order*
@@ -285,16 +304,27 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
             </select>
           </div>
           <div>
-            <label style={LBL}>Current Level / Stars</label>
-            <select ref={curSubRef} value={curSub}
-              onChange={e => setCurSub(e.target.value)}
-              disabled={!curRank}
-              style={{ ...SEL, opacity: curRank ? 1 : 0.35, cursor: curRank ? "pointer" : "not-allowed" }}
-              onFocus={focusOn as any} onBlur={focusOff as any}>
-              {curRank
-                ? curSubOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)
-                : <option value="0">— select rank first —</option>}
-            </select>
+            <label style={LBL}>Current Level</label>
+            {curRank === "mythic_immortal" ? (
+              <input
+                type="number" min={100} value={curImmortalStars}
+                onChange={e => setCurImmortalStars(Math.max(100, parseInt(e.target.value) || 100))}
+                placeholder="Stars (min 100)"
+                inputMode="numeric"
+                style={INPUT}
+                onFocus={focusOn as any} onBlur={focusOff as any}
+              />
+            ) : (
+              <select ref={curSubRef} value={curSub}
+                onChange={e => setCurSub(e.target.value)}
+                disabled={!curRank}
+                style={{ ...SEL, opacity: curRank ? 1 : 0.35, cursor: curRank ? "pointer" : "not-allowed" }}
+                onFocus={focusOn as any} onBlur={focusOff as any}>
+                {curRank
+                  ? curSubOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)
+                  : <option value="0">— select rank first —</option>}
+              </select>
+            )}
           </div>
           <div>
             <label style={LBL}>Target Rank</label>
@@ -310,16 +340,27 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
             </select>
           </div>
           <div>
-            <label style={LBL}>Target Level / Stars</label>
-            <select ref={tarSubRef} value={tarSub}
-              onChange={e => setTarSub(e.target.value)}
-              disabled={!tarRank}
-              style={{ ...SEL, opacity: tarRank ? 1 : 0.35, cursor: tarRank ? "pointer" : "not-allowed" }}
-              onFocus={focusOn as any} onBlur={focusOff as any}>
-              {tarRank
-                ? tarSubOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)
-                : <option value="0">— select rank first —</option>}
-            </select>
+            <label style={LBL}>Target Level</label>
+            {tarRank === "mythic_immortal" ? (
+              <input
+                type="number" min={100} value={tarImmortalStars}
+                onChange={e => setTarImmortalStars(Math.max(100, parseInt(e.target.value) || 100))}
+                placeholder="Stars (min 100)"
+                inputMode="numeric"
+                style={INPUT}
+                onFocus={focusOn as any} onBlur={focusOff as any}
+              />
+            ) : (
+              <select ref={tarSubRef} value={tarSub}
+                onChange={e => setTarSub(e.target.value)}
+                disabled={!tarRank}
+                style={{ ...SEL, opacity: tarRank ? 1 : 0.35, cursor: tarRank ? "pointer" : "not-allowed" }}
+                onFocus={focusOn as any} onBlur={focusOff as any}>
+                {tarRank
+                  ? tarSubOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)
+                  : <option value="0">— select rank first —</option>}
+              </select>
+            )}
           </div>
         </div>
 

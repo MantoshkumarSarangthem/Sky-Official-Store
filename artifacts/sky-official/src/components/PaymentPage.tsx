@@ -270,7 +270,7 @@ export default function PaymentPage() {
                 ? <>Your wallet top-up of <strong style={{ color: "#A89482" }}>₹{walletTopupAmt}</strong> has been submitted. Funds will be added once payment is verified.</>
                 : isCartMode
                   ? `Your cart order (${orderIds.length} order${orderIds.length !== 1 ? "s" : ""}) has been submitted. Diamonds will be delivered once payment is confirmed.`
-                  : <>Your order for <strong style={{ color: "#A89482" }}>♦ {pkg?.diamonds.toLocaleString()} {currLabel}</strong> has been submitted. {currLabel} will be delivered once payment is confirmed.</>
+                  : <>Your order for <strong style={{ color: "#A89482" }}>{pkg?.diamonds.toLocaleString()} {currLabel}</strong> has been submitted. {currLabel} will be delivered once payment is confirmed.</>
               }
             </div>
           </div>
@@ -280,14 +280,14 @@ export default function PaymentPage() {
             <InfoRow label="Reference" value={remark} mono />
             {isWalletTopup
               ? <InfoRow label="Top-up Amount" value={`₹${walletTopupAmt.toLocaleString("en-IN")}`} accent />
-              : <><InfoRow label={currLabel} value={`♦ ${pkg?.diamonds.toLocaleString()}`} accent />
+              : <><InfoRow label={currLabel} value={`${pkg?.diamonds.toLocaleString()}`} accent />
                  <InfoRow label="Amount" value={`₹${amount.toLocaleString("en-IN")}`} accent /></>
             }
-            {target && <InfoRow label={isMlbbPkg ? "MLBB Account" : "Game Account"} value={target.ign ? `${target.ign} (${target.userId})` : target.userId} />}
+            {target && <InfoRow label={(() => { const n = pkgGameName.toLowerCase(); if (n.includes("pubg") || n.includes("bgmi")) return "PUBG/BGMI Account"; if (n.includes("free fire") || n.includes("freefire")) return "Free Fire Account"; if (n.includes("clash")) return "Clash Account"; if (n.includes("cod") || n.includes("call of duty")) return "CoD Account"; if (n.includes("genshin")) return "Genshin Account"; if (n.includes("mobile legends") || n.includes("mlbb") || !pkgGameName) return "MLBB Account"; return "Game Account"; })()} value={target.ign ? `${target.ign} (${target.userId})` : target.userId} />}
             {target?.isForFriend && <InfoRow label="For" value="Friend / Relative" />}
-            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 11 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 11 }}>
               <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13 }}>Status</span>
-              <span style={{ color: "#A89482", fontWeight: 700, fontSize: 13 }}>Pending Verification</span>
+              <span style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", fontWeight: 700, fontSize: 11, padding: "3px 10px", borderRadius: 999, border: "1px solid rgba(245,158,11,0.22)" }}>Pending</span>
             </div>
           </div>
           <div style={{ width: "100%", background: "rgba(168,148,130,0.07)", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "rgba(61,43,31,0.55)", lineHeight: 1.6 }}>
@@ -296,8 +296,8 @@ export default function PaymentPage() {
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
             {isWalletTopup
               ? <button onClick={() => setLocation("/profile")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}>Back to Profile</button>
-              : <><button onClick={() => setLocation("/orders")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer" }}>View My Orders</button>
-                 <button onClick={() => setLocation("/packages")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "rgba(61,43,31,0.04)", border: "1px solid rgba(197,180,162,0.4)", color: "rgba(61,43,31,0.55)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Buy More Diamonds</button></>
+              : <><button onClick={() => setLocation("/orders")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "#7F00FF", color: "#FFFFFF", fontWeight: 800, fontSize: 15, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(127,0,255,0.35)" }}>View My Orders</button>
+                 <button onClick={() => setLocation("/packages")} style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "rgba(61,43,31,0.04)", border: "1px solid rgba(197,180,162,0.4)", color: "rgba(61,43,31,0.55)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Buy More</button></>
             }
           </div>
         </div>
