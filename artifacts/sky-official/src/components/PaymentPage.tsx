@@ -102,6 +102,15 @@ export default function PaymentPage() {
     try { return JSON.parse(raw); } catch { return null; }
   });
 
+  // When arriving from a wallet payment, jump straight to the success screen
+  useEffect(() => {
+    if (wc) {
+      setOrderId(wc.orderId);
+      setSubmitted(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pkg = _selectedPackage;
   const target = getMLBBTarget();
   const isCartMode = pkg?.id === 0;
@@ -142,49 +151,7 @@ export default function PaymentPage() {
   const refId = useMemo(() => `${Date.now()}`, []);
   const remark = useMemo(() => `SKY-${refId.slice(-8)}`, [refId]);
 
-  if (wc) {
-    const wcDiamonds = wc.diamonds.toLocaleString();
-    const wcCurrency = wc.currencyLabel || "Diamonds";
-    const wcPrice = parseFloat(wc.price).toLocaleString("en-IN");
-    return (
-      <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 48 }}>
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", padding: "10px 16px" }}>
-          <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 16 }}>Order Submitted</div>
-        </div>
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "88px 16px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(34,197,94,0.12)", border: "2px solid rgba(34,197,94,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>Order Placed!</div>
-            <div style={{ color: "rgba(61,43,31,0.55)", fontSize: 14, lineHeight: 1.6 }}>
-              Your order for <strong style={{ color: "#8D6E63" }}>♦ {wcDiamonds} {wcCurrency}</strong> has been placed via wallet. Diamonds will be delivered once confirmed.
-            </div>
-          </div>
-          <div style={{ width: "100%", background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "4px 20px", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
-            {wc.orderId && <InfoRow label="Order ID" value={`#${wc.orderId}`} />}
-            {wc.displayId && <InfoRow label="Reference" value={wc.displayId} mono />}
-            <InfoRow label={wcCurrency} value={`♦ ${wcDiamonds}`} accent />
-            <InfoRow label="Amount Paid" value={`₹${wcPrice}`} accent />
-            {wc.userId && <InfoRow label="MLBB Account" value={wc.userId} />}
-            <InfoRow label="Payment Method" value="Paid via Wallet" />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0" }}>
-              <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13 }}>Status</span>
-              <span style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", fontWeight: 700, fontSize: 12, borderRadius: 20, padding: "3px 12px" }}>Pending</span>
-            </div>
-          </div>
-          <button onClick={() => setLocation("/orders")} style={{ width: "100%", maxWidth: 480, padding: "16px 0", borderRadius: 16, background: "#8D6E63", color: "#FFFFFF", fontWeight: 800, fontSize: 16, border: "none", cursor: "pointer", boxShadow: "0 4px 20px rgba(141,110,99,0.35)" }}>
-            View My Orders
-          </button>
-          <button onClick={() => setLocation("/packages")} style={{ width: "100%", maxWidth: 480, padding: "14px 0", borderRadius: 16, background: "rgba(61,43,31,0.05)", color: "rgba(61,43,31,0.5)", fontWeight: 700, fontSize: 14, border: "1px solid rgba(197,180,162,0.4)", cursor: "pointer" }}>
-            Buy More
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!pkg && !isWalletTopup) {
+  if (!pkg && !isWalletTopup && !wc) {
     setTimeout(() => setLocation("/packages"), 0);
     return null;
   }
@@ -302,6 +269,14 @@ export default function PaymentPage() {
 
   // ── Success screen ──────────────────────────────────────────────────────
   if (submitted) {
+    // Resolve display values — wallet confirm (wc) takes priority over UPI flow
+    const successDiamonds = wc ? wc.diamonds : pkg?.diamonds;
+    const successCurrLabel = wc ? (wc.currencyLabel || "Diamonds") : currLabel;
+    const successAmount = wc ? parseFloat(wc.price) : amount;
+    const successReference = wc?.displayId ?? remark;
+    const successUserId = wc ? wc.userId : (target?.ign ? `${target.ign} (${target.userId})` : target?.userId ?? "");
+    const isWalletOrder = !!wc;
+
     return (
       <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 48 }}>
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
@@ -318,21 +293,21 @@ export default function PaymentPage() {
                 ? <>Your wallet top-up of <strong style={{ color: "#A89482" }}>₹{walletTopupAmt}</strong> has been submitted. Funds will be added once payment is verified.</>
                 : isCartMode
                   ? `Your cart order (${orderIds.length} order${orderIds.length !== 1 ? "s" : ""}) has been submitted. Diamonds will be delivered once payment is confirmed.`
-                  : <>Your order for <strong style={{ color: "#A89482" }}>{pkg?.diamonds.toLocaleString()} {currLabel}</strong> has been submitted. {currLabel} will be delivered once payment is confirmed.</>
+                  : <>Your order for <strong style={{ color: "#A89482" }}>{successDiamonds?.toLocaleString()} {successCurrLabel}</strong> has been submitted. {successCurrLabel} will be delivered once payment is confirmed.</>
               }
             </div>
           </div>
           <div style={{ width: "100%", background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "4px 20px", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
             {orderId && <InfoRow label="Order ID" value={`#${orderId}`} />}
             {orderIds.length > 0 && <InfoRow label="Order IDs" value={orderIds.map(id => `#${id}`).join(", ")} />}
-            <InfoRow label="Reference" value={remark} mono />
+            <InfoRow label="Reference" value={successReference} mono />
             {isWalletTopup
               ? <InfoRow label="Top-up Amount" value={`₹${walletTopupAmt.toLocaleString("en-IN")}`} accent />
-              : <><InfoRow label={currLabel} value={`${pkg?.diamonds.toLocaleString()}`} accent />
-                 <InfoRow label="Amount" value={`₹${amount.toLocaleString("en-IN")}`} accent /></>
+              : <><InfoRow label={successCurrLabel} value={`${successDiamonds?.toLocaleString()}`} accent />
+                 <InfoRow label="Amount" value={`₹${successAmount.toLocaleString("en-IN")}`} accent /></>
             }
-            {target && <InfoRow label={(() => { const n = pkgGameName.toLowerCase(); if (n.includes("pubg") || n.includes("bgmi")) return "PUBG/BGMI Account"; if (n.includes("free fire") || n.includes("freefire")) return "Free Fire Account"; if (n.includes("clash")) return "Clash Account"; if (n.includes("cod") || n.includes("call of duty")) return "CoD Account"; if (n.includes("genshin")) return "Genshin Account"; if (n.includes("mobile legends") || n.includes("mlbb") || !pkgGameName) return "MLBB Account"; return "Game Account"; })()} value={target.ign ? `${target.ign} (${target.userId})` : target.userId} />}
-            {target?.isForFriend && <InfoRow label="For" value="Friend / Relative" />}
+            {successUserId && !isWalletTopup && <InfoRow label={(() => { const n = pkgGameName.toLowerCase(); if (n.includes("pubg") || n.includes("bgmi")) return "PUBG/BGMI Account"; if (n.includes("free fire") || n.includes("freefire")) return "Free Fire Account"; if (n.includes("clash")) return "Clash Account"; if (n.includes("cod") || n.includes("call of duty")) return "CoD Account"; if (n.includes("genshin")) return "Genshin Account"; return "MLBB Account"; })()} value={successUserId} />}
+            {!isWalletOrder && target?.isForFriend && <InfoRow label="For" value="Friend / Relative" />}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 11 }}>
               <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13 }}>Status</span>
               <span style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", fontWeight: 700, fontSize: 11, padding: "3px 10px", borderRadius: 999, border: "1px solid rgba(245,158,11,0.22)" }}>Pending</span>
