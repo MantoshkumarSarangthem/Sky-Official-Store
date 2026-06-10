@@ -169,17 +169,14 @@ export default function StaffPortal() {
 
   const authHeader = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
-  useEffect(() => { staffBioAvailable().then(setBioAvail); }, []);
-
   useEffect(() => {
-    if (bioEnabled && !token) loginWithBio();
+    staffBioAvailable().then(avail => {
+      setBioAvail(avail);
+      if (avail && !!localStorage.getItem(STAFF_BIO_CRED) && !localStorage.getItem("staff_token")) {
+        setBioLoading(true);
+      }
+    });
   }, []);
-
-  useEffect(() => {
-    if (bioAvail && bioEnabled && !token) {
-      loginWithBio();
-    }
-  }, [bioAvail]);
 
   const loginWithBio = async () => {
     setBioLoading(true); setLoginError(""); setBioMsg("");
@@ -211,6 +208,10 @@ export default function StaffPortal() {
     localStorage.removeItem(STAFF_BIO_CRED); localStorage.removeItem(STAFF_BIO_DATA);
     setBioEnabled(false); setBioMsg("Biometric login removed.");
   };
+
+  useEffect(() => {
+    if (!token && bioEnabled) loginWithBio();
+  }, [bioEnabled]);
 
   const fetchOrders = useCallback(async () => {
     if (!token) return;
@@ -276,22 +277,20 @@ export default function StaffPortal() {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <style>{STYLE}</style>
-        <div style={{ width: "100%", maxWidth: 380, animation: "staffFadeIn 0.4s ease both" }}>
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", margin: "0 auto 16px", border: "3px solid #f59e0b", boxShadow: "0 0 24px rgba(245,158,11,0.4)" }}>
-              <img src="/logo.webp" alt="Sky Official" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-            <div style={{ color: "#fff", fontWeight: 800, fontSize: 22 }}>Staff Portal</div>
-            <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginTop: 4 }}>Sky Official — Internal Use Only</div>
+        <div style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, animation: "staffFadeIn 0.4s ease both" }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}>🔐</div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: 18 }}>Staff Access</div>
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 4 }}>Verify your identity to continue</div>
           </div>
-          <div style={{ background: "#111", borderRadius: 20, border: "1px solid rgba(245,158,11,0.2)", padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
             {bioEnabled && !showPinForm && (
               <button
                 onClick={loginWithBio}
                 disabled={bioLoading}
-                style={{ width: "100%", padding: "16px 0", borderRadius: 14, background: "linear-gradient(135deg,#1e1b4b,#312e81)", border: "1.5px solid rgba(129,140,248,0.5)", color: "#a5b4fc", fontWeight: 800, fontSize: 16, cursor: bioLoading ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
+                style={{ width: "100%", padding: "14px 0", borderRadius: 14, background: "linear-gradient(135deg,#1e1b4b,#312e81)", border: "1.5px solid rgba(129,140,248,0.5)", color: "#a5b4fc", fontWeight: 800, fontSize: 15, cursor: bioLoading ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
               >
-                {bioLoading ? <><span style={{ fontSize: 20 }}>🔒</span> <span>Verifying identity…</span></> : <><span style={{ fontSize: 20 }}>🔑</span> Unlock with Biometrics</>}
+                {bioLoading ? <><span style={{ fontSize: 18 }}>🔒</span> <span style={{ opacity: 0.8 }}>Verifying identity…</span></> : <><span style={{ fontSize: 18 }}>🔑</span> Login with Biometrics</>}
               </button>
             )}
             {bioEnabled && !showPinForm && (
@@ -318,9 +317,7 @@ export default function StaffPortal() {
               </>
             )}
             {(loginError || bioMsg) && (
-              <div style={{ background: loginError ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.08)", border: `1px solid ${loginError ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.2)"}`, borderRadius: 8, padding: "8px 12px", color: loginError ? "#ef4444" : "#fbbf24", fontSize: 13 }}>
-                {loginError || bioMsg}
-              </div>
+              <p style={{ textAlign: "center", fontSize: 12, color: loginError ? "#f87171" : "#fbbf24", margin: 0 }}>{loginError || bioMsg}</p>
             )}
           </div>
         </div>
