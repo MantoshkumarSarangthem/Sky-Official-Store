@@ -215,6 +215,8 @@ export default function GameProductsPage() {
       setWalletResult(null);
       try {
         const token = await getToken();
+        let firstOrderId: number | null = null;
+        let firstDisplayId = "";
         for (let i = 0; i < quantity; i++) {
           const res = await fetch(`/api/orders/wallet-pay`, {
             method: "POST",
@@ -224,12 +226,23 @@ export default function GameProductsPage() {
           const data = await res.json();
           if (!res.ok) {
             setWalletResult({ ok: false, msg: data.error || "Wallet payment failed. Please try again." });
+            setWalletBuying(false);
             return;
           }
+          if (i === 0) { firstOrderId = data.id; firstDisplayId = data.displayId || ""; }
         }
         const totalDiamonds = (selectedPkg.diamonds + (selectedPkg.bonus_diamonds || 0)) * quantity;
-        setWalletResult({ ok: true, msg: `Order placed! ${totalDiamonds.toLocaleString()} ${currencyLabel} will be delivered shortly.` });
+        sessionStorage.setItem("walletConfirm", JSON.stringify({
+          orderId: firstOrderId,
+          displayId: firstDisplayId,
+          diamonds: totalDiamonds,
+          price: String(parseFloat(selectedPkg.price) * quantity),
+          userId: userId.trim(),
+          currencyLabel,
+          gameName: game?.name || "",
+        }));
         setSelectedPkgId(null);
+        setLocation("/pay");
       } catch {
         setWalletResult({ ok: false, msg: "Network error. Please try again." });
       } finally {

@@ -163,7 +163,9 @@ export default function RankBoostPage({ onBack }: { onBack?: () => void }) {
   const [error,      setError]      = useState("");
   const [staffWA,    setStaffWA]    = useState(WA_NUMBER_FALLBACK);
   const [curImmortalStars, setCurImmortalStars] = useState(100);
+  const [curImmortalRaw, setCurImmortalRaw] = useState("100");
   const [tarImmortalStars, setTarImmortalStars] = useState(100);
+  const [tarImmortalRaw, setTarImmortalRaw] = useState("100");
 
   const curSubRef  = useRef<HTMLSelectElement>(null);
   const tarSubRef  = useRef<HTMLSelectElement>(null);
@@ -307,12 +309,22 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
             <label style={LBL}>Current Level</label>
             {curRank === "mythic_immortal" ? (
               <input
-                type="number" min={100} value={curImmortalStars}
-                onChange={e => setCurImmortalStars(Math.max(100, parseInt(e.target.value) || 100))}
+                type="number" min={100} value={curImmortalRaw}
+                onChange={e => {
+                  setCurImmortalRaw(e.target.value);
+                  const n = parseInt(e.target.value);
+                  if (!isNaN(n)) setCurImmortalStars(Math.max(100, n));
+                }}
+                onBlur={e => {
+                  (focusOff as any)(e);
+                  const n = Math.max(100, parseInt(e.target.value) || 0);
+                  setCurImmortalStars(n);
+                  setCurImmortalRaw(String(n));
+                }}
                 placeholder="Stars (min 100)"
                 inputMode="numeric"
                 style={INPUT}
-                onFocus={focusOn as any} onBlur={focusOff as any}
+                onFocus={focusOn as any}
               />
             ) : (
               <select ref={curSubRef} value={curSub}
@@ -343,12 +355,22 @@ ${notes     ? `📝 *Notes:* ${notes}` : ""}
             <label style={LBL}>Target Level</label>
             {tarRank === "mythic_immortal" ? (
               <input
-                type="number" min={100} value={tarImmortalStars}
-                onChange={e => setTarImmortalStars(Math.max(100, parseInt(e.target.value) || 100))}
+                type="number" min={100} value={tarImmortalRaw}
+                onChange={e => {
+                  setTarImmortalRaw(e.target.value);
+                  const n = parseInt(e.target.value);
+                  if (!isNaN(n)) setTarImmortalStars(Math.max(100, n));
+                }}
+                onBlur={e => {
+                  (focusOff as any)(e);
+                  const n = Math.max(100, parseInt(e.target.value) || 0);
+                  setTarImmortalStars(n);
+                  setTarImmortalRaw(String(n));
+                }}
                 placeholder="Stars (min 100)"
                 inputMode="numeric"
                 style={INPUT}
-                onFocus={focusOn as any} onBlur={focusOff as any}
+                onFocus={focusOn as any}
               />
             ) : (
               <select ref={tarSubRef} value={tarSub}

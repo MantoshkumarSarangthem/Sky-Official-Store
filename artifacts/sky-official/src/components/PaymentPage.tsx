@@ -95,6 +95,12 @@ export default function PaymentPage() {
   const [upiId, setUpiId] = useState(UPI_ID_FALLBACK);
   const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIMEOUT);
   const [expired, setExpired] = useState(false);
+  const [wc] = useState<{ orderId: number | null; displayId: string; diamonds: number; price: string; userId: string; currencyLabel: string; gameName: string } | null>(() => {
+    const raw = sessionStorage.getItem("walletConfirm");
+    if (!raw) return null;
+    sessionStorage.removeItem("walletConfirm");
+    try { return JSON.parse(raw); } catch { return null; }
+  });
 
   const pkg = _selectedPackage;
   const target = getMLBBTarget();
@@ -135,6 +141,48 @@ export default function PaymentPage() {
 
   const refId = useMemo(() => `${Date.now()}`, []);
   const remark = useMemo(() => `SKY-${refId.slice(-8)}`, [refId]);
+
+  if (wc) {
+    const wcDiamonds = wc.diamonds.toLocaleString();
+    const wcCurrency = wc.currencyLabel || "Diamonds";
+    const wcPrice = parseFloat(wc.price).toLocaleString("en-IN");
+    return (
+      <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 48 }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", padding: "10px 16px" }}>
+          <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 16 }}>Order Submitted</div>
+        </div>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "88px 16px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(34,197,94,0.12)", border: "2px solid rgba(34,197,94,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>Order Placed!</div>
+            <div style={{ color: "rgba(61,43,31,0.55)", fontSize: 14, lineHeight: 1.6 }}>
+              Your order for <strong style={{ color: "#8D6E63" }}>♦ {wcDiamonds} {wcCurrency}</strong> has been placed via wallet. Diamonds will be delivered once confirmed.
+            </div>
+          </div>
+          <div style={{ width: "100%", background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "4px 20px", boxShadow: "0 2px 8px rgba(61,43,31,0.04)" }}>
+            {wc.orderId && <InfoRow label="Order ID" value={`#${wc.orderId}`} />}
+            {wc.displayId && <InfoRow label="Reference" value={wc.displayId} mono />}
+            <InfoRow label={wcCurrency} value={`♦ ${wcDiamonds}`} accent />
+            <InfoRow label="Amount Paid" value={`₹${wcPrice}`} accent />
+            {wc.userId && <InfoRow label="MLBB Account" value={wc.userId} />}
+            <InfoRow label="Payment Method" value="Paid via Wallet" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0" }}>
+              <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13 }}>Status</span>
+              <span style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", fontWeight: 700, fontSize: 12, borderRadius: 20, padding: "3px 12px" }}>Pending</span>
+            </div>
+          </div>
+          <button onClick={() => setLocation("/orders")} style={{ width: "100%", maxWidth: 480, padding: "16px 0", borderRadius: 16, background: "#8D6E63", color: "#FFFFFF", fontWeight: 800, fontSize: 16, border: "none", cursor: "pointer", boxShadow: "0 4px 20px rgba(141,110,99,0.35)" }}>
+            View My Orders
+          </button>
+          <button onClick={() => setLocation("/packages")} style={{ width: "100%", maxWidth: 480, padding: "14px 0", borderRadius: 16, background: "rgba(61,43,31,0.05)", color: "rgba(61,43,31,0.5)", fontWeight: 700, fontSize: 14, border: "1px solid rgba(197,180,162,0.4)", cursor: "pointer" }}>
+            Buy More
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!pkg && !isWalletTopup) {
     setTimeout(() => setLocation("/packages"), 0);

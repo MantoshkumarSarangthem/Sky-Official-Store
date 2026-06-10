@@ -50,8 +50,8 @@ function fireNotifications(displayId: string, orderId: number, _staffId: number 
   console.log(`[notify] NOTIFICATION_TRIGGERED — order ${displayId} (db id: ${orderId})`);
 
   sendPushToAll({
-    title: "🛒 New Order!",
-    body: `${displayId} · ${diamonds} · ₹${price}`,
+    title: "New Order",
+    body: `${displayId} · ${diamonds} diamonds · ₹${price}`,
     tag: "new-order",
     url: "/staff",
   });

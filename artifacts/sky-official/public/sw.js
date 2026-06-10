@@ -1,4 +1,4 @@
-const CACHE_NAME = "sky-official-v4";
+const CACHE_NAME = "sky-official-v5";
 const STATIC_ASSETS = ["/logo.png", "/diamond.png", "/scoin.png", "/logo.webp"];
 
 self.addEventListener("install", (event) => {
@@ -47,12 +47,9 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Sky Official";
   const options = {
     body: data.body || "You have a new notification.",
-    icon: "/pwa-icon.png",
-    badge: "/pwa-icon.png",
     tag: data.tag || "sky-official",
     data: { url: data.url || "/" },
-    vibrate: [200, 100, 200],
-    requireInteraction: true,
+    vibrate: [100, 50, 100],
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
