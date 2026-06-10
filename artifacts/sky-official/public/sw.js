@@ -1,4 +1,4 @@
-const CACHE_NAME = "sky-official-v5";
+const CACHE_NAME = "sky-official-v6";
 const STATIC_ASSETS = ["/logo.png", "/diamond.png", "/scoin.png", "/logo.webp"];
 
 self.addEventListener("install", (event) => {
@@ -21,6 +21,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/__clerk")) return;
+
+  // Network-first for HTML navigation — always fetch the latest page, never serve a stale cached version
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match("/index.html"))
+    );
+    return;
+  }
 
   const ext = url.pathname.split(".").pop().toLowerCase();
   const isStaticImage = ["png", "jpg", "jpeg", "webp", "gif", "svg", "ico"].includes(ext)

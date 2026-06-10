@@ -58,9 +58,20 @@ app.use("/api/staff", staffPortalRouter);
 if (process.env.NODE_ENV === "production") {
   const staticDir = path.join(process.cwd(), "artifacts/sky-official/dist/public");
   app.use("/uploads", express.static(path.join(process.cwd(), "artifacts/sky-official/public/uploads")));
-  app.use(express.static(staticDir));
+  app.use(express.static(staticDir, {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith(".html")) {
+        res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.set("Pragma", "no-cache");
+        res.set("Expires", "0");
+      }
+    },
+  }));
   app.get("/{*any}", (req, res, next) => {
     if (req.path.startsWith("/api")) { next(); return; }
+    res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
     res.sendFile(path.join(staticDir, "index.html"));
   });
 }
