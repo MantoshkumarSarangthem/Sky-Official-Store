@@ -2315,19 +2315,19 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     {promoBanners.length === 0 ? (
                       <div className="text-gray-500 text-xs py-4 text-center">No banners yet. Add one below.</div>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto", paddingRight: 2 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto", paddingRight: 2 }}>
                         {promoBanners.map((b, i) => (
-                          <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
+                          <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
                             {/\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) ? (
-                              <video src={b.image} muted style={{ width: 80, height: Math.round(80 / 21 * 9), objectFit: "cover", borderRadius: 8, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
+                              <video src={b.image} muted style={{ width: 56, height: Math.round(56 / 21 * 9), objectFit: "cover", borderRadius: 6, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
                             ) : (
-                              <img src={b.image} alt="" style={{ width: 80, height: Math.round(80 / 21 * 9), objectFit: "cover", borderRadius: 8, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
+                              <img src={b.image} alt="" style={{ width: 56, height: Math.round(56 / 21 * 9), objectFit: "cover", borderRadius: 6, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
                             )}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div className="text-gray-400 text-xs truncate">{b.link || "(no link)"}</div>
-                              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                                <button onClick={() => savePromoBanners(promoBanners.map((x, j) => j === i ? { ...x, active: !x.active } : x))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 8, background: b.active ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.06)", color: b.active ? "#22c55e" : "#9ca3af", border: "none", cursor: "pointer" }}>{b.active ? "Active" : "Hidden"}</button>
-                                <button onClick={() => savePromoBanners(promoBanners.filter((_, j) => j !== i))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer" }}>Delete</button>
+                              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                                <button onClick={() => savePromoBanners(promoBanners.map((x, j) => j === i ? { ...x, active: !x.active } : x))} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: b.active ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.06)", color: b.active ? "#22c55e" : "#9ca3af", border: "none", cursor: "pointer" }}>{b.active ? "Active" : "Hidden"}</button>
+                                <button onClick={() => savePromoBanners(promoBanners.filter((_, j) => j !== i))} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer" }}>Delete</button>
                               </div>
                             </div>
                           </div>
