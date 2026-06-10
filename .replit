@@ -2,7 +2,9 @@ modules = ["nodejs-20", "web", "python-3.12"]
 
   [deployment]
   router = "application"
-  deploymentTarget = "autoscale"
+deploymentTarget = "autoscale"
+run = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
+build = ["bash", "-c", "pnpm install && pnpm --filter @workspace/sky-official run build && pnpm --filter @workspace/api-server run build"]
 
   [deployment.postBuild]
   args = ["pnpm", "store", "prune"]
