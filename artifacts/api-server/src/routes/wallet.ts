@@ -50,6 +50,7 @@ router.post("/topup", requireAuth, async (req: any, res): Promise<void> => {
       body: `₹${Number(amount).toFixed(0)} · ${requestId}`,
       tag: "wallet-topup",
       url: "/admin?tab=wallet",
+      icon: "/icon-notif.png",
     });
 
     if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {

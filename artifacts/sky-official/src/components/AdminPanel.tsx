@@ -92,7 +92,7 @@ interface WalletRequest {
   created_at: string;
 }
 
-type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners";
+type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners" | "stats";
 type NotifState = "unknown" | "loading" | "subscribed" | "denied" | "unsupported";
 
 async function registerSW(): Promise<ServiceWorkerRegistration | null> {
@@ -119,7 +119,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [showPwForm, setShowPwForm] = useState(() => !localStorage.getItem(ADMIN_BIO_CRED));
   const [tab, setTab] = useState<Tab>(() => {
     const p = new URLSearchParams(window.location.search).get("tab");
-    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners"];
+    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners","stats"];
     return (valid.includes(p as Tab) ? p : "packages") as Tab;
   });
   const [packages, setPackages] = useState<Package[]>([]);
@@ -132,6 +132,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     });
   }
   const [stats, setStats] = useState<Stats | null>(null);
+  const [storeStats, setStoreStats] = useState<{ total_orders: number; total_diamonds: number; total_users: number } | null>(null);
+  const [recentOrders, setRecentOrders] = useState<{ mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null }[]>([]);
   const [editingPkg, setEditingPkg] = useState<Package | null>(null);
   const [newPkg, setNewPkg] = useState({ name: "", diamonds: "", bonus_diamonds: "", price: "", label: "", is_popular: false, category: "small", status: "available" });
   const [loading, setLoading] = useState(false);
@@ -768,6 +770,12 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (authed && (tab === "games" || tab === "packages")) fetchGames();
   }, [authed, tab]);
 
+  useEffect(() => {
+    if (!authed || tab !== "stats") return;
+    fetch(`${API}/orders/recent`, { headers }).then(r => r.ok ? r.json() : []).then(d => setRecentOrders(Array.isArray(d) ? d : [])).catch(() => {});
+    fetch(`${API}/stats`, { headers }).then(r => r.ok ? r.json() : null).then(d => { if (d) setStoreStats(d); }).catch(() => {});
+  }, [authed, tab]);
+
   const fetchPromoEvents = async () => {
     try {
       const res = await fetch(`${API}/admin/promo-events`, { headers });
@@ -1230,7 +1238,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
-              {(["games", "packages", "orders", "wallet", "staff", "banners", "settings"] as Tab[]).map((t) => {
+              {(["games", "packages", "orders", "wallet", "staff", "banners", "settings", "stats"] as Tab[]).map((t) => {
                 const pendingCount = t === "wallet" ? walletRequests.filter(r => r.status === "pending").length : 0;
                 return (
                   <button
@@ -1244,7 +1252,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         : { color: "#9ca3af" }),
                     }}
                   >
-                    {t}
+                    {t === "stats" ? "Store Stats" : t}
                     {pendingCount > 0 && (
                       <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#ef4444", color: "#fff", fontSize: 10 }}>{pendingCount}</span>
                     )}
@@ -2128,7 +2136,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     <span className="text-white font-bold text-sm">Recharge Staff</span>
                     <button onClick={() => setShowAddStaff(v => !v)} className="px-4 py-2 rounded-xl text-xs font-bold text-black" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>+ Add Staff</button>
                   </div>
-                  <div className="text-gray-400 text-xs">Set staff as "Available" to receive orders. Their QR is shown to customers on the payment page, and email alerts are only sent to available staff who have 🔔 turned on.</div>
+                  <div className="text-gray-400 text-xs">Set staff as "Available" to receive orders. Their QR is shown to customers on the payment page.</div>
 
                   {/* Order Search */}
                   <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -2204,10 +2212,15 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             {revealedStaff[s.id] ? "🔒 Hide Details" : "🔓 Reveal Details"}
                           </button>
                           {revealedStaff[s.id] && (
-                            <div className="mt-1.5 flex flex-col gap-0.5">
+                            <div className="mt-1.5 flex flex-col gap-1">
                               {s.email && <div className="text-gray-400 text-xs">✉ {s.email}</div>}
                               {s.whatsapp && <div className="text-gray-400 text-xs">📱 {s.whatsapp}</div>}
                               {s.staff_pin && <div className="text-gray-600 text-xs">🔐 Portal PIN: <span className="font-mono text-amber-600">{s.staff_pin}</span></div>}
+                              {s.qr_image && (
+                                <div className="mt-1">
+                                  <img src={s.qr_image} alt="QR" className="rounded-lg" style={{ maxWidth: 100, maxHeight: 100, objectFit: "contain" }} />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -2217,44 +2230,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         </div>
                       </div>
 
-                      {/* Notification row */}
-                      <div className="flex items-center justify-between pt-1.5 mt-0.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-semibold" style={{ color: s.notify_orders ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>🔔 Order email alerts</span>
-                          <span className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }}>{s.notify_orders ? (s.email ? `Emails sent to ${s.email}` : "No email address set!") : "Alerts off for this staff"}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {s.email && (
-                            <button
-                              onClick={() => sendStaffTestEmail(s.id)}
-                              disabled={testEmailStates[s.id] === "sending"}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold"
-                              style={{ background: testEmailStates[s.id] === "ok" ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)", color: testEmailStates[s.id] === "ok" ? "#22c55e" : "rgba(255,255,255,0.5)", border: `1px solid ${testEmailStates[s.id] === "ok" ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.1)"}` }}
-                            >
-                              {testEmailStates[s.id] === "sending" ? "Sending…" : testEmailStates[s.id] === "ok" ? "✓ Sent!" : "Test Email"}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => toggleStaffNotify(s.id, s.notify_orders)}
-                            className="relative inline-flex items-center rounded-full transition-colors"
-                            style={{ width: 40, height: 22, background: s.notify_orders ? "#f59e0b" : "rgba(255,255,255,0.1)", border: "none", cursor: "pointer", flexShrink: 0 }}
-                          >
-                            <span style={{ position: "absolute", left: s.notify_orders ? 20 : 2, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.18s", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {!s.email && (
-                        <div className="text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.07)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}>
-                          ⚠ No email saved — add one so this staff can receive order alerts.
-                        </div>
-                      )}
-
-                      {s.qr_image && (
-                        <div className="mt-1">
-                          <img src={s.qr_image} alt="QR" className="rounded-lg" style={{ maxWidth: 100, maxHeight: 100, objectFit: "contain" }} />
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -2419,6 +2394,55 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                   ) : (
                     <div className="text-gray-500 text-xs text-center py-2">Maximum 5 banners reached. Delete one to add more.</div>
                   )}
+                </div>
+              )}
+
+              {/* ── STORE STATS TAB ── */}
+              {tab === "stats" && (
+                <div className="flex flex-col gap-5">
+                  <div className="text-amber-400 text-sm font-bold">Store Statistics</div>
+
+                  {stats && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: "Total Orders", value: stats.total_orders, icon: "📦" },
+                        { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
+                        { label: "Diamonds Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: "♦️" },
+                        { label: "Happy Gamers", value: storeStats ? String(storeStats.total_users) : "—", icon: "⭐" },
+                      ].map(s => (
+                        <div key={s.label} className="rounded-xl p-4 flex flex-col items-center gap-1" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <div style={{ fontSize: 22 }}>{s.icon}</div>
+                          <div className="text-white font-bold text-xl">{s.value}</div>
+                          <div className="text-gray-400 text-xs text-center">{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="text-white font-bold text-sm mb-3">⚡ Recent Purchases</div>
+                    {recentOrders.length === 0 ? (
+                      <div className="text-gray-500 text-sm text-center py-6">No purchases yet.</div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {recentOrders.map((p, i) => {
+                          const name = p.mlbb_ign ? p.mlbb_ign[0].toUpperCase() + "***" : "A***";
+                          const label = p.currency_label || "Diamonds";
+                          const displayName = p.pack_name || `${Number(p.diamonds).toLocaleString()} ${label}`;
+                          return (
+                            <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                              <div>
+                                <span className="text-amber-400 font-bold text-sm">{name}</span>
+                                <span className="text-gray-400 text-sm"> bought </span>
+                                <span className="text-white text-sm font-semibold">{displayName}</span>
+                              </div>
+                              <div className="text-gray-500 text-xs">{new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
       </div>

@@ -54,6 +54,7 @@ function fireNotifications(displayId: string, orderId: number, _staffId: number 
     body: `${displayId} · ${diamonds} diamonds · ₹${price}`,
     tag: "new-order",
     url: "/staff",
+    icon: "/icon-notif.png",
   });
 
   sendOrderEmail({ orderId, diamonds: pkg.diamonds, price: pkg.price, mlbbId, remark }).catch((err) => {

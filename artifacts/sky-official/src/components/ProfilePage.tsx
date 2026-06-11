@@ -472,33 +472,6 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Wallet transaction history */}
-        {transactions.length > 0 && (
-          <div style={{ background: "#FFFFFF", borderRadius: 18, border: "1px solid rgba(197,180,162,0.35)", padding: "16px 14px", marginBottom: 16, animation: "profIn 0.5s ease 0.24s both", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
-            <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Wallet Transactions</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {transactions.map(tx => (
-                <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 600 }}>{tx.description ?? (tx.type === "credit" ? "Top-up" : "Debit")}</div>
-                    <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 11 }}>{new Date(tx.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
-                    {tx.upi_ref && tx.upi_ref.startsWith("TUP-") && (
-                      <div style={{ color: "rgba(61,43,31,0.25)", fontSize: 10, fontFamily: "monospace" }}>ID: {tx.upi_ref}</div>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                    <div style={{ color: tx.type === "credit" ? "#22c55e" : "#ef4444", fontWeight: 700, fontSize: 14 }}>
-                      {tx.type === "credit" ? "+" : "-"}S {parseFloat(tx.amount).toFixed(0)}
-                    </div>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: statusColor[tx.status] ?? "#aaa", background: (statusColor[tx.status] ?? "#aaa") + "18", padding: "1px 7px", borderRadius: 999 }}>
-                      {tx.status}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Favourites */}
         {favPkgIds.length > 0 && (
@@ -552,6 +525,15 @@ export default function ProfilePage() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </div>
               <span style={{ color: "#3D2B1F", fontWeight: 600, fontSize: 14 }}>Order History</span>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(61,43,31,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <button onClick={() => setLocation("/wallet-history")} style={{ background: "#FFFFFF", borderRadius: 14, border: "1px solid rgba(197,180,162,0.35)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(168,148,130,0.1)", border: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#A89482" strokeWidth="1.8" /><path d="M2 10h20" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round" /></svg>
+              </div>
+              <span style={{ color: "#3D2B1F", fontWeight: 600, fontSize: 14 }}>Wallet History</span>
             </div>
             <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(61,43,31,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>

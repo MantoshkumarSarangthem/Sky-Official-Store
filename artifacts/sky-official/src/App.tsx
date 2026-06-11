@@ -3,6 +3,7 @@ import AdminPanel from "./components/AdminPanel";
 import PackagesSection from "./components/PackagesSection";
 import OrderHistoryPage from "./components/OrderHistoryPage";
 import ProfilePage from "./components/ProfilePage";
+import WalletHistoryPage from "./components/WalletHistoryPage";
 import MLBBVerifyPage from "./components/MLBBVerifyPage";
 import MLBBTargetPage, { setAfterTargetPath } from "./components/MLBBTargetPage";
 import CartPage from "./components/CartPage";
@@ -1233,9 +1234,7 @@ function MainSite() {
           </div>
           <AnnouncementBar />
           <PromoCarousel />
-          <StatsSection />
           <WhyChooseUs />
-          <LiveTicker />
           <WhatsAppSection />
         </AnimatedPage>
       </div>
@@ -1627,6 +1626,7 @@ function AppRoutes() {
           <Route path="/game/:gameId" component={GameProductsPage} />
           <Route path="/favorites" component={FavoritesPage} />
           <Route path="/rank-boost" component={() => <RankBoostPage />} />
+          <Route path="/wallet-history" component={WalletHistoryPage} />
           <Route component={MainSite} />
         </Switch>
         </div>
@@ -1636,7 +1636,7 @@ function AppRoutes() {
 }
 
 export default function App() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
