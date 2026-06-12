@@ -59,12 +59,16 @@ router.get("/me", requireStaffAuth, async (req: any, res: any) => {
 router.get("/orders", requireStaffAuth, async (req: any, res: any) => {
   try {
     const result = await pool.query(
-      `SELECT id, display_id, diamonds, price, mlbb_id, mlbb_ign, mlbb_server_id, status, note, created_at
-       FROM orders
-       WHERE assigned_staff_id = $1
+      `SELECT o.id, o.display_id, o.diamonds, o.price, o.mlbb_id, o.mlbb_ign, o.mlbb_server_id,
+              o.status, o.note, o.created_at,
+              p.name AS pack_name, p.currency_label, g.name AS game_name
+       FROM orders o
+       LEFT JOIN packages p ON o.package_id = p.id
+       LEFT JOIN games g ON p.game_id = g.id
+       WHERE o.assigned_staff_id = $1
        ORDER BY
-         CASE WHEN status IN ('pending','processing') THEN 0 ELSE 1 END,
-         created_at DESC
+         CASE WHEN o.status IN ('pending','processing') THEN 0 ELSE 1 END,
+         o.created_at DESC
        LIMIT 50`,
       [req.staffId]
     );

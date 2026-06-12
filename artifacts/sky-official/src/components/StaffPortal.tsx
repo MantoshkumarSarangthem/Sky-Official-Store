@@ -57,6 +57,43 @@ interface StaffOrder {
   status: string;
   note: string | null;
   created_at: string;
+  game_name: string | null;
+  currency_label: string | null;
+  pack_name: string | null;
+}
+
+function resolveCurrencyLabel(order: StaffOrder): string {
+  if (order.currency_label) return order.currency_label;
+  const n = (order.game_name ?? "").toLowerCase();
+  if (n.includes("bgmi")) return "UC";
+  if (n.includes("pubg")) return "UC";
+  if (n.includes("genshin")) return "Crystals";
+  if (n.includes("honor of kings") || n.includes("hok")) return "Tokens";
+  if (n.includes("free fire") || n.includes("freefire")) return "Diamonds";
+  if (n.includes("clash") || n.includes("brawl")) return "Gems";
+  if (n.includes("valorant")) return "VP";
+  return "Diamonds";
+}
+
+function resolveOrderDisplay(order: StaffOrder): string {
+  const label = resolveCurrencyLabel(order);
+  if (order.diamonds > 0) return `${order.diamonds.toLocaleString()} ${label}`;
+  return order.pack_name || label;
+}
+
+function resolveGameIdLabel(order: StaffOrder): string {
+  const n = (order.game_name ?? "").toLowerCase();
+  if (n.includes("mobile legends") || n.includes("mlbb") || n.includes("bang bang")) return "MLBB ID";
+  if (n.includes("bgmi")) return "BGMI ID";
+  if (n.includes("pubg")) return "PUBG ID";
+  if (n.includes("honor of kings") || n.includes("hok")) return "HOK ID";
+  if (n.includes("genshin")) return "Genshin ID";
+  if (n.includes("clash of clans") || n.includes("coc")) return "COC ID";
+  if (n.includes("clash royale")) return "CR ID";
+  if (n.includes("brawl stars")) return "Brawl ID";
+  if (n.includes("free fire") || n.includes("freefire")) return "FF ID";
+  if (n.includes("valorant")) return "Valorant ID";
+  return "Player ID";
 }
 
 interface StaffInfo {
@@ -79,6 +116,31 @@ function InfoRow({ label, value, accent }: { label: string; value: string; accen
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
       <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{label}</span>
       <span style={{ color: accent ? "#f59e0b" : "#fff", fontWeight: accent ? 800 : 600, fontSize: 13, textAlign: "right" }}>{value}</span>
+    </div>
+  );
+}
+
+function CopyRow({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+      <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{label}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>{value}</span>
+        <button
+          onClick={copy}
+          style={{ background: copied ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.07)", border: `1px solid ${copied ? "rgba(34,197,94,0.35)" : "rgba(255,255,255,0.12)"}`, borderRadius: 6, width: 26, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12, transition: "all 0.2s", flexShrink: 0 }}
+          title="Copy to clipboard"
+        >
+          {copied ? "✅" : <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="rgba(255,255,255,0.5)" strokeWidth="2"/></svg>}
+        </button>
+      </div>
     </div>
   );
 }
@@ -108,7 +170,7 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>♦ {order.diamonds.toLocaleString()}</div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>♦ {resolveOrderDisplay(order)}</div>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 2 }}>
             ₹{parseFloat(order.price).toLocaleString("en-IN")}
           </div>
@@ -128,7 +190,7 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
       </div>
       {!done && order.status === "pending" && (
         <button
-          onClick={e => { e.stopPropagation(); onUpdate(order.id, "processing"); }}
+          onClick={e => { e.stopPropagation(); onUpdate(order.id, "processing"); onOpen(); }}
           disabled={updatingId === order.id}
           style={{ marginTop: 10, width: "100%", padding: "8px 0", borderRadius: 9, background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", color: "#3b82f6", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
         >
@@ -342,12 +404,12 @@ export default function StaffPortal() {
               <div style={{ background: (STATUS_COLOR[selectedOrder.status] ?? "#aaa") + "20", color: STATUS_COLOR[selectedOrder.status] ?? "#aaa", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>{selectedOrder.status}</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-              <InfoRow label="♦ Diamonds" value={`${selectedOrder.diamonds.toLocaleString()} diamonds`} accent />
+              <InfoRow label={`♦ ${resolveCurrencyLabel(selectedOrder)}`} value={resolveOrderDisplay(selectedOrder)} accent />
               <InfoRow label="Price" value={`₹${parseFloat(selectedOrder.price).toLocaleString("en-IN")}`} />
               <InfoRow label="Payment" value={selectedOrder.note === "Paid via wallet" ? "Paid via Wallet" : "Paid via UPI"} />
-              {selectedOrder.mlbb_id && <InfoRow label="MLBB ID" value={selectedOrder.mlbb_id} />}
+              {selectedOrder.mlbb_id && <CopyRow label={resolveGameIdLabel(selectedOrder)} value={selectedOrder.mlbb_id} />}
               {selectedOrder.mlbb_ign && <InfoRow label="IGN" value={selectedOrder.mlbb_ign} />}
-              {selectedOrder.mlbb_server_id && <InfoRow label="Server ID" value={selectedOrder.mlbb_server_id} />}
+              {selectedOrder.mlbb_server_id && <CopyRow label="Server ID" value={selectedOrder.mlbb_server_id} />}
               <InfoRow label="Placed" value={new Date(selectedOrder.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} />
               {selectedOrder.note && selectedOrder.note !== "Paid via wallet" && <InfoRow label="Note" value={selectedOrder.note} />}
             </div>
