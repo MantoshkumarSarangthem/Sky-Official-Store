@@ -170,7 +170,7 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>♦ {resolveOrderDisplay(order)}</div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>{resolveOrderDisplay(order)}</div>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 2 }}>
             ₹{parseFloat(order.price).toLocaleString("en-IN")}
           </div>
