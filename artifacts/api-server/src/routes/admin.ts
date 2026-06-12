@@ -462,7 +462,19 @@ router.get("/wallet-requests", requireAdmin, async (_req, res) => {
     const { rows } = await pool.query(
       `SELECT * FROM wallet_transactions ORDER BY created_at DESC LIMIT 100`
     );
-    res.json(rows);
+    const uniqueIds: string[] = [...new Set(rows.map((r: any) => r.clerk_user_id).filter(Boolean) as string[])];
+    const nameMap: Record<string, string> = {};
+    if (uniqueIds.length > 0 && process.env.CLERK_SECRET_KEY) {
+      try {
+        const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const result = await clerk.users.getUserList({ userId: uniqueIds, limit: 100 });
+        for (const u of result.data) {
+          const name = [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || u.username || null;
+          if (name) nameMap[u.id] = name;
+        }
+      } catch {}
+    }
+    res.json(rows.map((r: any) => ({ ...r, display_name: nameMap[r.clerk_user_id] || null })));
   } catch {
     res.status(500).json({ error: "DB error" });
   }

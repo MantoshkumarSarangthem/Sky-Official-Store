@@ -85,6 +85,7 @@ interface Stats {
 interface WalletRequest {
   id: number;
   clerk_user_id: string;
+  display_name: string | null;
   amount: string;
   type: string;
   status: string;
@@ -135,7 +136,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   }
   const [stats, setStats] = useState<Stats | null>(null);
   const [storeStats, setStoreStats] = useState<{ total_orders: number; total_diamonds: number; total_users: number } | null>(null);
-  const [recentOrders, setRecentOrders] = useState<{ mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null }[]>([]);
+  const [recentOrders, setRecentOrders] = useState<{ mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null; user_display_name: string | null }[]>([]);
   const [editingPkg, setEditingPkg] = useState<Package | null>(null);
   const [newPkg, setNewPkg] = useState({ name: "", diamonds: "", bonus_diamonds: "", price: "", label: "", is_popular: false, category: "small", status: "available" });
   const [loading, setLoading] = useState(false);
@@ -1282,7 +1283,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     />
                     {gamesLoading ? (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                        <style>{`@keyframes admSkel{0%,100%{opacity:0.35}50%{opacity:0.7}}`}</style>
+                        <style>{`@keyframes admSkel{0%,100%{opacity:0.35}50%{opacity:0.7}} @keyframes slideAdminName{0%,20%{transform:translateX(0)}80%,100%{transform:translateX(calc(-100% + 68px))}}`}</style>
                         {[0,1,2,3].map(i => (
                           <div key={i} style={{ borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden", animation: `admSkel 1.5s ease-in-out ${i * 0.1}s infinite` }}>
                             <div style={{ width: "100%", aspectRatio: "1/1", background: "rgba(255,255,255,0.03)" }} />
@@ -2261,7 +2262,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                               <span className="text-white font-bold text-sm">S {parseFloat(req.amount).toFixed(0)}</span>
                               <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: statusColor + "20", color: statusColor }}>{req.status}</span>
                             </div>
-                            <div className="text-gray-400 text-xs mt-1 font-mono break-all">{req.clerk_user_id}</div>
+                            <div className="text-gray-300 text-xs mt-1 font-semibold">{req.display_name || req.clerk_user_id.slice(0, 14) + "…"}</div>
                             {req.upi_ref && (
                               <div className="text-gray-300 text-xs mt-1">Request ID: <span className="font-mono font-semibold text-amber-300">{req.upi_ref}</span></div>
                             )}
@@ -2429,17 +2430,24 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     ) : (
                       <div className="flex flex-col gap-2">
                         {recentOrders.map((p, i) => {
-                          const name = p.mlbb_ign ? p.mlbb_ign[0].toUpperCase() + "***" : "A***";
+                          const rawName = p.user_display_name || (p.mlbb_ign ?? "");
+                          const name = rawName ? rawName[0].toUpperCase() + rawName.slice(1) + "***" : "A***";
+                          const shouldSlide = name.length > 7;
                           const label = p.currency_label || "Diamonds";
                           const displayName = p.pack_name || `${Number(p.diamonds).toLocaleString()} ${label}`;
                           return (
                             <div key={i} className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                              <div>
-                                <span className="text-amber-400 font-bold text-sm">{name}</span>
+                              <div className="flex items-center gap-0 min-w-0">
+                                <div style={{ width: 68, flexShrink: 0, overflow: "hidden" }}>
+                                  <span
+                                    className="text-amber-400 font-bold text-sm"
+                                    style={shouldSlide ? { display: "inline-block", whiteSpace: "nowrap", animation: "slideAdminName 3.5s ease-in-out infinite alternate" } : { display: "inline-block", whiteSpace: "nowrap" }}
+                                  >{name}</span>
+                                </div>
                                 <span className="text-gray-400 text-sm"> bought </span>
-                                <span className="text-white text-sm font-semibold">{displayName}</span>
+                                <span className="text-white text-sm font-semibold ml-1">{displayName}</span>
                               </div>
-                              <div className="text-gray-500 text-xs">{new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div>
+                              <div className="text-gray-500 text-xs ml-2 flex-shrink-0">{new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div>
                             </div>
                           );
                         })}

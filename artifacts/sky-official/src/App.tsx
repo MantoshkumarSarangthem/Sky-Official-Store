@@ -164,6 +164,10 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
+        @keyframes slideTickerName {
+          0%, 20% { transform: translateX(0); }
+          80%, 100% { transform: translateX(calc(-100% + 56px)); }
+        }
       `}</style>
     </div>
   );
@@ -897,7 +901,7 @@ function maskName(name: string, createdAt?: string): string {
   return name[0].toUpperCase() + "***";
 }
 
-interface RecentOrder { mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null; }
+interface RecentOrder { mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null; user_display_name: string | null; }
 
 function LiveTicker() {
   const [purchases, setPurchases] = useState<RecentOrder[]>([]);
@@ -924,8 +928,18 @@ function LiveTicker() {
               const label = p.currency_label || "Diamonds";
               const displayName = p.pack_name || `${Number(p.diamonds).toLocaleString()} ${label}`;
               return (
-                <span key={i} className="text-gray-700 flex-shrink-0" style={{ fontSize: 13 }}>
-                  <span className="font-bold text-amber-600">{maskName(p.mlbb_ign ?? "", p.created_at)}</span>{" bought "}<span className="font-bold">{displayName}</span>
+                <span key={i} className="text-gray-700 flex-shrink-0 inline-flex items-baseline" style={{ fontSize: 13 }}>
+                  {(() => {
+                    const rawName = p.user_display_name || (p.mlbb_ign ?? "");
+                    const masked = rawName ? rawName[0].toUpperCase() + "***" : maskName("", p.created_at);
+                    const shouldSlide = masked.length > 6;
+                    return (
+                      <span style={{ display: "inline-block", width: 56, overflow: "hidden", flexShrink: 0, verticalAlign: "baseline" }}>
+                        <span className="font-bold text-amber-600" style={shouldSlide ? { display: "inline-block", whiteSpace: "nowrap", animation: "slideTickerName 3.5s ease-in-out infinite alternate" } : { display: "inline-block", whiteSpace: "nowrap" }}>{masked}</span>
+                      </span>
+                    );
+                  })()}
+                  {" bought "}<span className="font-bold">{displayName}</span>
                   <span className="ml-5 text-gray-300">|</span>
                 </span>
               );

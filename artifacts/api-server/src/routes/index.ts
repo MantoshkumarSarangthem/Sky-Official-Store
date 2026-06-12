@@ -8,6 +8,7 @@ import verifyRouter from "./verify";
 import pushRouter from "./push";
 import pool from "../lib/db";
 import { sendInquiryEmail } from "../lib/email";
+import { createClerkClient } from "@clerk/express";
 
 const router: IRouter = Router();
 
@@ -169,14 +170,33 @@ router.get("/stats", async (_req, res) => {
 router.get("/orders/recent", async (_req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT o.mlbb_ign, o.diamonds, o.created_at, p.name AS pack_name, p.currency_label
+      SELECT o.clerk_user_id, o.mlbb_ign, o.diamonds, o.created_at, p.name AS pack_name, p.currency_label
       FROM orders o
       LEFT JOIN packages p ON p.id = o.package_id
       WHERE o.status = 'completed' AND o.diamonds > 0
       ORDER BY o.created_at DESC
       LIMIT 12
     `);
-    res.json(rows);
+    const uniqueIds: string[] = [...new Set(rows.map((r: any) => r.clerk_user_id).filter(Boolean) as string[])];
+    const nameMap: Record<string, string> = {};
+    if (uniqueIds.length > 0 && process.env.CLERK_SECRET_KEY) {
+      try {
+        const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const result = await clerk.users.getUserList({ userId: uniqueIds, limit: 100 });
+        for (const u of result.data) {
+          const name = [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || u.username || null;
+          if (name) nameMap[u.id] = name;
+        }
+      } catch {}
+    }
+    res.json(rows.map((r: any) => ({
+      mlbb_ign: r.mlbb_ign,
+      diamonds: r.diamonds,
+      created_at: r.created_at,
+      pack_name: r.pack_name,
+      currency_label: r.currency_label,
+      user_display_name: nameMap[r.clerk_user_id] || null,
+    })));
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
