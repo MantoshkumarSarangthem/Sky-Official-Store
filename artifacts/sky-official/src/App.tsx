@@ -508,7 +508,11 @@ function PromoBannerSlider() {
     return stopTimer;
   }, [activeIdx, banners, doAdvance, stopTimer]);
 
-  if (banners.length === 0) return null;
+  if (banners.length === 0) return (
+    <div style={{ background: "transparent", padding: "6px 14px 12px" }}>
+      <div style={{ width: "100%", aspectRatio: "21/9", borderRadius: 18, background: "linear-gradient(135deg,#1a1200 0%,#2a1f00 50%,#1a1200 100%)" }} />
+    </div>
+  );
   const banner = banners[activeIdx];
 
   function go(newIdx: number) {
@@ -544,6 +548,7 @@ function PromoBannerSlider() {
         {banners.map((b, i) => {
           const vid = isVidSrc(b.image);
           const singleVid = vid && banners.length === 1;
+          const isActive = i === activeIdx;
           return vid ? (
             <video
               key={b.id}
@@ -553,9 +558,10 @@ function PromoBannerSlider() {
               playsInline
               preload="auto"
               loop={singleVid}
-              autoPlay={singleVid}
+              autoPlay={isActive}
+              onCanPlay={isActive ? (e) => { (e.currentTarget as HTMLVideoElement).play().catch(() => {}); } : undefined}
               onEnded={singleVid ? undefined : doAdvance}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: isActive ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}
             />
           ) : (
             <img
