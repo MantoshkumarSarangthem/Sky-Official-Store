@@ -413,10 +413,10 @@ export default function GameProductsPage() {
                       background: isSelected ? "rgba(139,92,246,0.07)" : "#FFFFFF",
                       border: isSelected ? "2px solid #8b5cf6" : "1px solid rgba(197,180,162,0.35)",
                       borderRadius: 16,
-                      padding: "7px 8px 6px",
+                      padding: "5px 7px 4px",
                       display: "flex",
                       flexDirection: "column",
-                      gap: 4,
+                      gap: 3,
                       animation: `gpCardIn 0.3s ease ${idx * 0.04}s both`,
                       position: "relative",
                       overflow: "hidden",
@@ -434,8 +434,8 @@ export default function GameProductsPage() {
 
                     {/* Top: icon + price + heart */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={26} />}
+                      <div style={{ width: 36, height: 36, borderRadius: 9, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={22} />}
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                         <div style={{ textAlign: "right" }}>
@@ -471,7 +471,7 @@ export default function GameProductsPage() {
                         setCartAdded(pkg.id);
                         setTimeout(() => setCartAdded(null), 1800);
                       }}
-                      style={{ background: cartAdded === pkg.id ? "rgba(34,197,94,0.15)" : "rgba(139,92,246,0.1)", border: `1px solid ${cartAdded === pkg.id ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.3)"}`, borderRadius: 8, padding: "5px 8px", color: cartAdded === pkg.id ? "#4ade80" : "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", WebkitTapHighlightColor: "transparent" }}
+                      style={{ background: cartAdded === pkg.id ? "rgba(34,197,94,0.15)" : "rgba(139,92,246,0.1)", border: `1px solid ${cartAdded === pkg.id ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.3)"}`, borderRadius: 8, padding: "4px 8px", color: cartAdded === pkg.id ? "#4ade80" : "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", WebkitTapHighlightColor: "transparent" }}
                     >
                       {cartAdded === pkg.id ? "✓ Added!" : "🛒 Add to Cart"}
                     </button>
