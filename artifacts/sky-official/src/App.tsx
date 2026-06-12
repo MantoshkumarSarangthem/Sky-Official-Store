@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { getCached, cachedFetch, invalidateCache } from "./lib/apiCache";
 import AdminPanel from "./components/AdminPanel";
 import PackagesSection from "./components/PackagesSection";
 import OrderHistoryPage from "./components/OrderHistoryPage";
@@ -427,7 +428,8 @@ function isVidSrc(src: string) {
 }
 
 function PromoBannerSlider() {
-  const [banners, setBanners] = useState<PromoBannerItem[]>([]);
+  const bannerCacheKey = `${API}/settings/promo_banners`;
+  const [banners, setBanners] = useState<PromoBannerItem[]>(() => getCached<PromoBannerItem[]>(bannerCacheKey) ?? []);
   const [activeIdx, setActiveIdx] = useState(0);
   const touchStartX = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -438,17 +440,18 @@ function PromoBannerSlider() {
 
   useEffect(() => { liveRef.current = { banners, activeIdx }; }, [banners, activeIdx]);
 
-  const fetchBanners = useCallback(() => {
-    fetch(`${API}/settings/promo_banners`, { cache: "no-store" })
-      .then(r => r.ok ? r.json() : [])
+  const fetchBanners = useCallback((force = false) => {
+    if (force) invalidateCache(bannerCacheKey);
+    cachedFetch<PromoBannerItem[]>(bannerCacheKey)
       .then(d => setBanners(Array.isArray(d) ? d : []))
       .catch(() => {});
-  }, []);
+  }, [bannerCacheKey]);
 
   useEffect(() => {
     fetchBanners();
-    window.addEventListener("skyAdminUpdate", fetchBanners);
-    return () => window.removeEventListener("skyAdminUpdate", fetchBanners);
+    const onAdminUpdate = () => fetchBanners(true);
+    window.addEventListener("skyAdminUpdate", onAdminUpdate);
+    return () => window.removeEventListener("skyAdminUpdate", onAdminUpdate);
   }, [fetchBanners]);
 
   // Restart suspended video when user returns to the tab
@@ -581,16 +584,18 @@ interface GameItem { id: number; name: string; image: string | null; region?: st
 const GAME_SKELETON_COUNT = 6;
 
 function GameSelectSection() {
-  const [games, setGames] = useState<GameItem[]>([]);
-  const [gamesLoading, setGamesLoading] = useState(true);
-  const [catAvailability, setCatAvailability] = useState<Record<string, string>>({});
+  const gamesCacheKey = `${API}/games`;
+  const availCacheKey = `${API}/settings/category_availability`;
+  const [games, setGames] = useState<GameItem[]>(() => getCached<GameItem[]>(gamesCacheKey) ?? []);
+  const [gamesLoading, setGamesLoading] = useState(() => !getCached(gamesCacheKey));
+  const [catAvailability, setCatAvailability] = useState<Record<string, string>>(() => getCached<Record<string, string>>(availCacheKey) ?? {});
   const { navigateTo } = usePageNav();
 
-  const fetchGames = useCallback((forceRefresh = false) => {
-    const opts = forceRefresh ? { cache: "no-store" as RequestCache } : {};
+  const fetchGames = useCallback((force = false) => {
+    if (force) invalidateCache(gamesCacheKey, availCacheKey);
     Promise.all([
-      fetch(`${API}/games`, opts).then(r => r.ok ? r.json() : []),
-      fetch(`${API}/settings/category_availability`, opts).then(r => r.ok ? r.json() : {}),
+      cachedFetch<GameItem[]>(gamesCacheKey),
+      cachedFetch<Record<string, string>>(availCacheKey),
     ])
       .then(([d, avail]) => {
         setGames(Array.isArray(d) ? d : []);
@@ -598,7 +603,7 @@ function GameSelectSection() {
         setGamesLoading(false);
       })
       .catch(() => setGamesLoading(false));
-  }, []);
+  }, [gamesCacheKey, availCacheKey]);
 
   useEffect(() => {
     fetchGames();
@@ -813,11 +818,12 @@ function FeaturesSection() {
 
 // ── Stats ──────────────────────────────────────────────────────────────────
 function StatsSection() {
-  const [real, setReal] = useState<{ total_orders: number; total_diamonds: number; total_users: number } | null>(null);
+  type StatsData = { total_orders: number; total_diamonds: number; total_users: number };
+  const statsCacheKey = `${API}/stats`;
+  const [real, setReal] = useState<StatsData | null>(() => getCached<StatsData>(statsCacheKey) ?? null);
 
   useEffect(() => {
-    fetch(`${API}/stats`)
-      .then(r => r.ok ? r.json() : null)
+    cachedFetch<StatsData>(statsCacheKey)
       .then(d => { if (d) setReal(d); })
       .catch(() => {});
   }, []);
@@ -1180,12 +1186,10 @@ function PromoCarousel() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/promo-events`)
-      .then(r => r.ok ? r.json() : [])
+    cachedFetch<typeof events>(`${API}/promo-events`)
       .then(d => setEvents(Array.isArray(d) ? d : []))
       .catch(() => {});
-    fetch(`${API}/packages`)
-      .then(r => r.ok ? r.json() : [])
+    cachedFetch<typeof packages>(`${API}/packages`)
       .then(d => setPackages(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, []);

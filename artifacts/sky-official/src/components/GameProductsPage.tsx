@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getCached, cachedFetch, setCached } from "../lib/apiCache";
 import { useLocation } from "wouter";
 import { setMLBBTarget } from "./MLBBTargetPage";
 import { setSelectedPackage } from "./PaymentPage";
@@ -107,9 +108,16 @@ function HeartIcon({ filled }: { filled: boolean }) {
 export default function GameProductsPage() {
   const [location, setLocation] = useLocation();
   const gameId = location.split("/").filter(Boolean).pop();
-  const [game, setGame] = useState<GameInfo | null>(null);
-  const [packages, setPackages] = useState<GamePackage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const gameCacheKey = gameId ? `${API}/games/${gameId}` : null;
+  const pkgCacheKey = gameId ? `${API}/packages?game_id=${gameId}` : null;
+  const [game, setGame] = useState<GameInfo | null>(() => gameCacheKey ? getCached<GameInfo>(gameCacheKey) ?? null : null);
+  const [packages, setPackages] = useState<GamePackage[]>(() => {
+    if (!pkgCacheKey) return [];
+    const cached = getCached<GamePackage[]>(pkgCacheKey);
+    if (!cached) return [];
+    return cached.filter((p: GamePackage) => p.status !== "out_of_stock" && p.status !== "coming_soon");
+  });
+  const [loading, setLoading] = useState(() => !gameCacheKey || !getCached(gameCacheKey));
 
   const [userId, setUserId] = useState("");
   const [serverId, setServerId] = useState("");
@@ -131,17 +139,20 @@ export default function GameProductsPage() {
   useEffect(() => { setQuantity(1); setWalletResult(null); }, [selectedPkgId]);
 
   useEffect(() => {
-    if (!gameId) return;
-    setLoading(true);
-    setGame(null);
-    setPackages([]);
+    if (!gameId || !gameCacheKey || !pkgCacheKey) return;
+    const alreadyCached = !!getCached(gameCacheKey);
+    if (!alreadyCached) {
+      setLoading(true);
+      setGame(null);
+      setPackages([]);
+    }
     setUserId("");
     setServerId("");
     setIdError("");
     setSelectedPkgId(null);
     Promise.all([
-      fetch(`${API}/games/${gameId}`).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`${API}/packages?game_id=${gameId}`).then(r => r.ok ? r.json() : []).catch(() => []),
+      cachedFetch<GameInfo | null>(gameCacheKey).catch(() => null),
+      cachedFetch<GamePackage[]>(pkgCacheKey).catch(() => []),
     ]).then(([gameData, pkgs]) => {
       setGame(gameData);
       const active = Array.isArray(pkgs)
@@ -155,7 +166,7 @@ export default function GameProductsPage() {
         if (active.find((p: GamePackage) => p.id === pkgId)) setSelectedPkgId(pkgId);
       }
     }).finally(() => setLoading(false));
-  }, [gameId]);
+  }, [gameId, gameCacheKey, pkgCacheKey]);
 
   const currencyLabel = game ? getCurrencyLabel(game.name) : "Currency";
   const isMLBB = game ? isMlbbGame(game.name) : false;

@@ -2449,6 +2449,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
             </div>
           </>
         )}
+      </div>
     </div>
   );
 }
