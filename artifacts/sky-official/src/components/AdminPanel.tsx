@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useLocation } from "wouter";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
@@ -108,6 +109,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function AdminPanel({ onClose, fullPage = false }: { onClose: () => void; fullPage?: boolean }) {
+  const [, setLocation] = useLocation();
   const [authed, setAuthed] = useState(() => !!sessionStorage.getItem("admin_token"));
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -2114,23 +2116,23 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               {/* ── STAFF TAB ── */}
               {tab === "staff" && (
                 <div className="flex flex-col gap-4">
-                  {/* Admin availability toggle */}
-                  <div className="rounded-xl p-3 flex items-center justify-between gap-3" style={{ background: "#1a1a1a", border: `1px solid ${adminAvailable ? "rgba(34,197,94,0.35)" : "rgba(255,255,255,0.07)"}` }}>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-white font-bold text-sm">👑 Admin (You)</span>
-                      <span className="text-xs" style={{ color: adminAvailable ? "#22c55e" : "rgba(255,255,255,0.3)" }}>
-                        {adminAvailable ? "● In round-robin — your QR shown to customers" : "○ Not in round-robin (offline)"}
-                      </span>
+                  {/* Staff Portal shortcut */}
+                  <button
+                    onClick={() => { onClose(); setLocation("/staff"); }}
+                    className="w-full rounded-xl p-3 flex items-center justify-between gap-3 text-left"
+                    style={{ background: "#1a1a1a", border: "1px solid rgba(99,102,241,0.35)", cursor: "pointer" }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center rounded-lg flex-shrink-0" style={{ width: 36, height: 36, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)" }}>
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#a5b4fc" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="7" r="4" stroke="#a5b4fc" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-white font-bold text-sm">Open Staff Portal</span>
+                        <span className="text-xs" style={{ color: "rgba(165,180,252,0.7)" }}>View & fulfil orders as staff</span>
+                      </div>
                     </div>
-                    <button
-                      onClick={toggleAdminAvailable}
-                      disabled={adminAvailSaving}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold flex-shrink-0"
-                      style={{ background: adminAvailable ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: adminAvailable ? "#ef4444" : "#22c55e", border: `1px solid ${adminAvailable ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}` }}
-                    >
-                      {adminAvailSaving ? "…" : adminAvailable ? "Set Offline" : "Set Available"}
-                    </button>
-                  </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}><path d="M9 18l6-6-6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
 
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold text-sm">Recharge Staff</span>
