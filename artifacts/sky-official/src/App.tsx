@@ -422,12 +422,21 @@ function AnimatedBackground() {
 // ── Promo Banner Slider ─────────────────────────────────────────────────────
 interface PromoBannerItem { id: string; image: string; link?: string; active?: boolean; }
 
+function isVidSrc(src: string) {
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(src) || src.startsWith("data:video/");
+}
+
 function PromoBannerSlider() {
   const [banners, setBanners] = useState<PromoBannerItem[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const touchStartX = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
+  // Stable ref so callbacks always read latest state without stale closures
+  const liveRef = useRef({ banners: [] as PromoBannerItem[], activeIdx: 0 });
   const [, setLocation] = useLocation();
+
+  useEffect(() => { liveRef.current = { banners, activeIdx }; }, [banners, activeIdx]);
 
   const fetchBanners = useCallback(() => {
     fetch(`${API}/settings/promo_banners`, { cache: "no-store" })
@@ -442,25 +451,72 @@ function PromoBannerSlider() {
     return () => window.removeEventListener("skyAdminUpdate", fetchBanners);
   }, [fetchBanners]);
 
-  const advanceSlide = useCallback(() => {
-    setActiveIdx(i => (i + 1) % banners.length);
-  }, [banners.length]);
-
+  // Restart suspended video when user returns to the tab
   useEffect(() => {
-    if (banners.length < 2) return;
-    const currentBanner = banners[activeIdx];
-    const isVid = currentBanner && (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(currentBanner.image) || currentBanner.image?.startsWith("data:video/"));
-    if (isVid) return;
-    timerRef.current = setInterval(advanceSlide, 6000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [banners.length, activeIdx, advanceSlide]);
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchBanners();
+      const { banners: bs, activeIdx: idx } = liveRef.current;
+      const cur = bs[idx];
+      if (cur && isVidSrc(cur.image)) {
+        const v = videoRefs.current.get(cur.id);
+        if (v && v.paused) { v.currentTime = 0; v.play().catch(() => {}); }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [fetchBanners]);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+  }, []);
+
+  // Called both by onEnded (video) and setTimeout (image)
+  const doAdvance = useCallback(() => {
+    const { banners: bs, activeIdx: idx } = liveRef.current;
+    if (bs.length < 2) return;
+    // Pause & rewind the outgoing video so it's ready for its next appearance
+    const cur = bs[idx];
+    if (cur && isVidSrc(cur.image)) {
+      const v = videoRefs.current.get(cur.id);
+      if (v) { v.pause(); v.currentTime = 0; }
+    }
+    setActiveIdx((idx + 1) % bs.length);
+  }, []);
+
+  // Drive the slideshow whenever the active slide changes
+  useEffect(() => {
+    if (banners.length === 0) return;
+    stopTimer();
+    const banner = banners[activeIdx];
+    if (!banner) return;
+
+    if (isVidSrc(banner.image)) {
+      if (banners.length === 1) return; // single video — loop attribute handles it
+      // Reset & play the video; onEnded will call doAdvance
+      const v = videoRefs.current.get(banner.id);
+      if (v) { v.currentTime = 0; v.play().catch(() => {}); }
+    } else {
+      // Image slide — advance after 6 s
+      if (banners.length > 1) {
+        timerRef.current = setTimeout(doAdvance, 6000);
+      }
+    }
+    return stopTimer;
+  }, [activeIdx, banners, doAdvance, stopTimer]);
 
   if (banners.length === 0) return null;
   const banner = banners[activeIdx];
 
-  function go(dir: 1 | -1) {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setActiveIdx(i => (i + dir + banners.length) % banners.length);
+  function go(newIdx: number) {
+    stopTimer();
+    const { banners: bs, activeIdx: idx } = liveRef.current;
+    const cur = bs[idx];
+    if (cur && isVidSrc(cur.image)) {
+      const v = videoRefs.current.get(cur.id);
+      if (v) { v.pause(); v.currentTime = 0; }
+    }
+    setActiveIdx(newIdx);
   }
 
   return (
@@ -468,7 +524,7 @@ function PromoBannerSlider() {
       <div
         style={{ position: "relative", width: "100%", aspectRatio: "21/9", overflow: "hidden", cursor: banner.link ? "pointer" : "default", borderRadius: 18, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }}
         onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
-        onTouchEnd={e => { const dx = e.changedTouches[0].clientX - touchStartX.current; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); }}
+        onTouchEnd={e => { const dx = e.changedTouches[0].clientX - touchStartX.current; if (Math.abs(dx) > 40) go((activeIdx + (dx < 0 ? 1 : -1) + banners.length) % banners.length); }}
         onClick={() => {
           if (!banner.link) return;
           if (banner.link.startsWith("cart:")) {
@@ -483,18 +539,34 @@ function PromoBannerSlider() {
         }}
       >
         {banners.map((b, i) => {
-          const isVid = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) || b.image.startsWith("data:video/");
-          const shouldLoop = isVid && banners.length === 1;
-          return isVid ? (
-            <video key={b.id} src={b.image} autoPlay muted playsInline loop={shouldLoop} onEnded={shouldLoop ? undefined : advanceSlide} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
+          const vid = isVidSrc(b.image);
+          const singleVid = vid && banners.length === 1;
+          return vid ? (
+            <video
+              key={b.id}
+              ref={el => { if (el) videoRefs.current.set(b.id, el); else videoRefs.current.delete(b.id); }}
+              src={b.image}
+              muted
+              playsInline
+              preload="auto"
+              loop={singleVid}
+              autoPlay={singleVid}
+              onEnded={singleVid ? undefined : doAdvance}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}
+            />
           ) : (
-            <img key={b.id} src={b.image} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }} />
+            <img
+              key={b.id}
+              src={b.image}
+              alt=""
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: i === activeIdx ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}
+            />
           );
         })}
         {banners.length > 1 && (
           <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 5, zIndex: 5 }}>
             {banners.map((_, i) => (
-              <div key={i} onClick={e => { e.stopPropagation(); if (timerRef.current) clearInterval(timerRef.current); setActiveIdx(i); }} style={{ width: i === activeIdx ? 20 : 6, height: 6, borderRadius: 999, background: i === activeIdx ? "#f59e0b" : "rgba(255,255,255,0.4)", transition: "all 0.3s ease", cursor: "pointer" }} />
+              <div key={i} onClick={e => { e.stopPropagation(); go(i); }} style={{ width: i === activeIdx ? 20 : 6, height: 6, borderRadius: 999, background: i === activeIdx ? "#f59e0b" : "rgba(255,255,255,0.4)", transition: "all 0.3s ease", cursor: "pointer" }} />
             ))}
           </div>
         )}
