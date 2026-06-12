@@ -2291,62 +2291,35 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                   })}
                 </div>
               )}
-            </div>
-          </>
-        )}
 
               {/* ── BANNERS TAB ── */}
               {tab === "banners" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingBottom: 40 }}>
-                  <div>
-                    <div className="text-amber-400 text-sm font-bold mb-1">Promo Banners</div>
-                    <div className="text-gray-500 text-xs mb-4">Upload up to 5 promotional images (21:9 ratio recommended, e.g. 1280×549 px). Shown as a carousel at the top of the homepage.</div>
-                    {promoBanners.length === 0 ? (
-                      <div className="text-gray-500 text-xs py-4 text-center">No banners yet. Add one below.</div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto", paddingRight: 2 }}>
-                        {promoBanners.map((b, i) => (
-                          <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
-                            {/\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) ? (
-                              <video src={b.image} muted style={{ width: 56, height: Math.round(56 / 21 * 9), objectFit: "cover", borderRadius: 6, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
-                            ) : (
-                              <img src={b.image} alt="" style={{ width: 56, height: Math.round(56 / 21 * 9), objectFit: "cover", borderRadius: 6, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
-                            )}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div className="text-gray-400 text-xs truncate">{b.link || "(no link)"}</div>
-                              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                                <button onClick={() => savePromoBanners(promoBanners.map((x, j) => j === i ? { ...x, active: !x.active } : x))} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: b.active ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.06)", color: b.active ? "#22c55e" : "#9ca3af", border: "none", cursor: "pointer" }}>{b.active ? "Active" : "Hidden"}</button>
-                                <button onClick={() => savePromoBanners(promoBanners.filter((_, j) => j !== i))} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer" }}>Delete</button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
+
+                  {/* Add New Banner — always on top */}
                   {promoBanners.length < 5 ? (
-                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "18px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                      <div className="text-amber-400 text-sm font-bold mb-4">Add New Banner ({promoBanners.length}/5)</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: "20px 18px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div className="text-amber-400 text-sm font-bold mb-5">Add New Banner ({promoBanners.length}/5)</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div>
-                          <div className="text-gray-400 text-xs mb-1.5">Media type</div>
-                          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                          <div className="text-gray-400 text-xs mb-2">Media type</div>
+                          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                             {(["file", "url"] as const).map(t => (
-                              <button key={t} onClick={() => setBannerMediaType(t)} style={{ flex: 1, padding: "7px 0", borderRadius: 8, background: bannerMediaType === t ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)", border: bannerMediaType === t ? "1px solid rgba(245,158,11,0.4)" : "1px solid rgba(255,255,255,0.1)", color: bannerMediaType === t ? "#f59e0b" : "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                              <button key={t} onClick={() => setBannerMediaType(t)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, background: bannerMediaType === t ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)", border: bannerMediaType === t ? "1px solid rgba(245,158,11,0.4)" : "1px solid rgba(255,255,255,0.1)", color: bannerMediaType === t ? "#f59e0b" : "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                                 {t === "file" ? "Upload File" : "Paste URL"}
                               </button>
                             ))}
                           </div>
                           {bannerMediaType === "file" ? (
                             <>
-                              <div className="text-gray-400 text-xs mb-1.5">Image or video file (21:9 ratio recommended, e.g. 1280×549 px)</div>
+                              <div className="text-gray-400 text-xs mb-2">Image or video file (21:9 ratio recommended, e.g. 1280×549 px)</div>
                               <label style={{ display: "block", cursor: "pointer" }}>
-                                <div style={{ background: "rgba(255,255,255,0.05)", border: "1.5px dashed rgba(255,255,255,0.18)", borderRadius: 10, padding: "14px 12px", textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
-                                  <div style={{ fontSize: 22, marginBottom: 4 }}>📁</div>
-                                  <div style={{ fontWeight: 600, marginBottom: 2 }}>Tap to choose a file</div>
+                                <div style={{ background: "rgba(255,255,255,0.05)", border: "1.5px dashed rgba(255,255,255,0.18)", borderRadius: 12, padding: "18px 16px", textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+                                  <div style={{ fontSize: 24, marginBottom: 6 }}>📁</div>
+                                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Tap to choose a file</div>
                                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Images: JPG, PNG, WebP · Videos: MP4, WebM, MOV</div>
                                   {bannerFileName && (
-                                    <div style={{ marginTop: 8, color: "#f59e0b", fontWeight: 600, fontSize: 12 }}>
+                                    <div style={{ marginTop: 10, color: "#f59e0b", fontWeight: 600, fontSize: 12 }}>
                                       ✓ {bannerFileName}
                                     </div>
                                   )}
@@ -2356,23 +2329,23 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             </>
                           ) : (
                             <>
-                              <div className="text-gray-400 text-xs mb-1.5">Paste a direct image or video URL (.jpg, .png, .mp4, .webm…)</div>
-                              <input value={bannerMediaUrl} onChange={e => setBannerMediaUrl(e.target.value)} placeholder="https://cdn.example.com/banner.mp4" className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                              <div className="text-gray-400 text-xs mb-2">Paste a direct image or video URL (.jpg, .png, .mp4, .webm…)</div>
+                              <input value={bannerMediaUrl} onChange={e => setBannerMediaUrl(e.target.value)} placeholder="https://cdn.example.com/banner.mp4" className="px-3 py-2.5 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
                             </>
                           )}
                         </div>
                         <div>
-                          <div className="text-gray-400 text-xs mb-1.5">Link when tapped (optional)</div>
-                          <select value={bannerLinkType} onChange={e => setBannerLinkType(e.target.value as "url"|"game"|"packages")} className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full mb-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+                          <div className="text-gray-400 text-xs mb-2">Link when tapped (optional)</div>
+                          <select value={bannerLinkType} onChange={e => setBannerLinkType(e.target.value as "url"|"game"|"packages")} className="px-3 py-2.5 rounded-lg text-white text-sm outline-none w-full mb-2.5" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
                             <option value="url">Custom URL</option>
                             <option value="game">Specific Game Page</option>
                             <option value="packages">Browse Packages Page</option>
                           </select>
                           {bannerLinkType === "url" && (
-                            <input value={newBannerLink} onChange={e => setNewBannerLink(e.target.value)} placeholder="e.g. /packages or https://..." className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                            <input value={newBannerLink} onChange={e => setNewBannerLink(e.target.value)} placeholder="e.g. /packages or https://..." className="px-3 py-2.5 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
                           )}
                           {bannerLinkType === "game" && (
-                            <select value={bannerLinkGameId} onChange={e => setBannerLinkGameId(e.target.value)} className="px-3 py-2 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+                            <select value={bannerLinkGameId} onChange={e => setBannerLinkGameId(e.target.value)} className="px-3 py-2.5 rounded-lg text-white text-sm outline-none w-full" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
                               <option value="">Select a game…</option>
                               {games.map(g => <option key={g.id} value={String(g.id)}>{g.name}</option>)}
                             </select>
@@ -2386,20 +2359,48 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             <div style={{ height: "100%", background: "linear-gradient(90deg,#6366f1,#a5b4fc)", width: `${uploadProgress}%`, transition: "width 0.3s ease", borderRadius: 8 }} />
                           </div>
                         )}
-                        <button onClick={addPromoBanner} disabled={promoBannersSaving || uploadProgress !== null} className="py-2.5 rounded-xl text-sm font-bold text-black" style={{ background: (promoBannersSaving || uploadProgress !== null) ? "rgba(245,158,11,0.5)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>
+                        <button onClick={addPromoBanner} disabled={promoBannersSaving || uploadProgress !== null} className="py-3 rounded-xl text-sm font-bold text-black" style={{ background: (promoBannersSaving || uploadProgress !== null) ? "rgba(245,158,11,0.5)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>
                           {uploadProgress !== null ? `Uploading ${uploadProgress}%…` : promoBannersSaving ? "Saving…" : "Upload & Add Banner"}
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-gray-500 text-xs text-center py-2">Maximum 5 banners reached. Delete one to add more.</div>
+                    <div className="text-gray-500 text-xs text-center py-3" style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>Maximum 5 banners reached. Delete one to add more.</div>
                   )}
+
+                  {/* Promo Banners list — below the form */}
+                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: "18px 18px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div className="text-amber-400 text-sm font-bold mb-1">Promo Banners</div>
+                    <div className="text-gray-500 text-xs mb-4">Upload up to 5 promotional images (21:9 ratio recommended, e.g. 1280×549 px). Shown as a carousel at the top of the homepage.</div>
+                    {promoBanners.length === 0 ? (
+                      <div className="text-gray-500 text-xs py-4 text-center">No banners yet. Add one above.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {promoBanners.map((b, i) => (
+                          <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
+                            {/\.(mp4|webm|ogg|mov)(\?|$)/i.test(b.image) ? (
+                              <video src={b.image} muted style={{ width: 60, height: Math.round(60 / 21 * 9), objectFit: "cover", borderRadius: 6, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
+                            ) : (
+                              <img src={b.image} alt="" style={{ width: 60, height: Math.round(60 / 21 * 9), objectFit: "cover", borderRadius: 6, flexShrink: 0, border: "1px solid rgba(255,255,255,0.08)" }} />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div className="text-gray-400 text-xs truncate mb-1.5">{b.link || "(no link)"}</div>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button onClick={() => savePromoBanners(promoBanners.map((x, j) => j === i ? { ...x, active: !x.active } : x))} style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, background: b.active ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.06)", color: b.active ? "#22c55e" : "#9ca3af", border: "none", cursor: "pointer" }}>{b.active ? "Active" : "Hidden"}</button>
+                                <button onClick={() => savePromoBanners(promoBanners.filter((_, j) => j !== i))} style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer" }}>Delete</button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* ── STORE STATS TAB ── */}
               {tab === "stats" && (
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-5 px-1">
                   <div className="text-amber-400 text-sm font-bold">Store Statistics</div>
 
                   {stats && (
@@ -2407,12 +2408,12 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       {[
                         { label: "Total Orders", value: stats.total_orders, icon: "📦" },
                         { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
-                        { label: "Diamonds Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: "♦️" },
+                        { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: "🛒" },
                         { label: "Happy Gamers", value: storeStats ? String(storeStats.total_users) : "—", icon: "⭐" },
                       ].map(s => (
-                        <div key={s.label} className="rounded-xl p-4 flex flex-col items-center gap-1" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <div style={{ fontSize: 22 }}>{s.icon}</div>
-                          <div className="text-white font-bold text-xl">{s.value}</div>
+                        <div key={s.label} className="rounded-xl p-3 flex flex-col items-center gap-1.5" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          <div style={{ fontSize: 20 }}>{s.icon}</div>
+                          <div className="text-white font-bold text-lg">{s.value}</div>
                           <div className="text-gray-400 text-xs text-center">{s.label}</div>
                         </div>
                       ))}
@@ -2445,7 +2446,9 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                   </div>
                 </div>
               )}
-      </div>
+            </div>
+          </>
+        )}
     </div>
   );
 }
