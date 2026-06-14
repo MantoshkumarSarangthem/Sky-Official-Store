@@ -164,6 +164,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [trustpilotEnabled, setTrustpilotEnabled] = useState(false);
   const [trustpilotSaving, setTrustpilotSaving] = useState(false);
   const [trustpilotSaved, setTrustpilotSaved] = useState(false);
+  const [communityWhatsapp, setCommunityWhatsapp] = useState("");
+  const [communityInstagram, setCommunityInstagram] = useState("");
+  const [communitySaving, setCommunitySaving] = useState(false);
+  const [communitySaved, setCommunitySaved] = useState(false);
   const [banners, setBanners] = useState<OfferBanner[]>([]);
   const [bannersSaving, setBannersSaving] = useState(false);
   const [showAddBanner, setShowAddBanner] = useState(false);
@@ -626,6 +630,15 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     }
   }, [token]);
 
+  const fetchCommunityLinks = useCallback(async () => {
+    const res = await fetch(`${API}/admin/settings/community_links`, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      setCommunityWhatsapp(data.whatsapp || "");
+      setCommunityInstagram(data.instagram || "");
+    }
+  }, [token]);
+
   const fetchBanners = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/offer_banners`, { headers });
     if (res.ok) setBanners(await res.json());
@@ -735,6 +748,17 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setTrustpilotSaving(false);
   };
 
+  const saveCommunityLinks = async () => {
+    setCommunitySaving(true);
+    await fetch(`${API}/admin/settings/community_links`, {
+      method: "PUT", headers,
+      body: JSON.stringify({ whatsapp: communityWhatsapp, instagram: communityInstagram }),
+    });
+    setCommunitySaved(true);
+    setTimeout(() => setCommunitySaved(false), 3000);
+    setCommunitySaving(false);
+  };
+
   const saveQr = async () => {
     if (!qrPreview) return;
     setQrSaving(true);
@@ -767,7 +791,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   }, [authed]);
 
   useEffect(() => {
-    if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); }
+    if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchCommunityLinks(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); }
     if (authed && tab === "staff") { fetchStaff(); fetchAdminStatus(); }
     if (authed && tab === "banners") fetchPromoBanners();
     if (authed && (tab === "games" || tab === "packages")) fetchGames();
@@ -1265,10 +1289,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               })}
             </div>
 
-            <div className="overflow-y-auto flex-1 p-5">
+            <div className="flex-1 flex flex-col" style={{ overflow: "hidden" }}>
               {/* ── GAMES TAB ── */}
               {tab === "games" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1, overflowY: "auto", padding: 20 }}>
                   <div>
                     <div className="text-amber-400 text-sm font-bold mb-1">Game Selection Panels</div>
                     <div className="text-gray-500 text-xs mb-4">These panels appear on the Home page under "Select Game". Add as many games as you want. Each panel shows the game image and name.</div>
@@ -1374,7 +1398,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
               {/* ── PACKAGES TAB ── */}
               {tab === "packages" && (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold text-sm">{packages.length} Packages</span>
                     <button
@@ -1615,54 +1639,31 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
               {/* ── ORDERS TAB ── */}
               {tab === "orders" && (
-                <div className="flex flex-col gap-4">
-                  {stats && (
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { label: "Total Orders", value: stats.total_orders, icon: "📦" },
-                        { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
-                        { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-                      ].map((s) => (
-                        <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", fontSize: 22, lineHeight: 1, marginBottom: 4, height: 26 }}>{s.icon}</div>
-                          <div className="text-white font-bold text-lg leading-tight">{s.value}</div>
-                          <div className="text-gray-400 text-xs mt-0.5">{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
+                <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+                  <div style={{ flexShrink: 0, padding: "20px 20px 12px", background: "#111", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    {stats && (
+                      <div className="grid grid-cols-3 gap-3" style={{ marginBottom: 14 }}>
+                        {[
+                          { label: "Total Orders", value: stats.total_orders, icon: "📦" },
+                          { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
+                          { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+                        ].map((s) => (
+                          <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", fontSize: 22, lineHeight: 1, marginBottom: 4, height: 26 }}>{s.icon}</div>
+                            <div className="text-white font-bold text-lg leading-tight">{s.value}</div>
+                            <div className="text-gray-400 text-xs mt-0.5">{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <span className="text-white font-bold text-sm">Recent Orders</span>
-                    <button onClick={() => setShowAddOrder(!showAddOrder)} className="px-4 py-2 rounded-xl text-xs font-bold text-black" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>+ Add Order</button>
                   </div>
+                  <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+                    {orders.length === 0 && (
+                      <div className="text-center text-gray-500 text-sm py-8">No orders yet.</div>
+                    )}
 
-                  {showAddOrder && (
-                    <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.2)" }}>
-                      <div className="text-amber-400 text-sm font-bold">New Order</div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="Diamonds" type="number" value={newOrder.diamonds} onChange={(e) => setNewOrder(o => ({ ...o, diamonds: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="Price (₹)" type="number" value={newOrder.price} onChange={(e) => setNewOrder(o => ({ ...o, price: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="MLBB ID" value={newOrder.mlbb_id} onChange={(e) => setNewOrder(o => ({ ...o, mlbb_id: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none col-span-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <input placeholder="Note" value={newOrder.note} onChange={(e) => setNewOrder(o => ({ ...o, note: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none col-span-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                        <select value={newOrder.status} onChange={(e) => setNewOrder(o => ({ ...o, status: e.target.value }))} className="col-span-2 px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
-                          <option value="pending">Pending</option>
-                          <option value="completed">Completed</option>
-                          <option value="failed">Failed</option>
-                        </select>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={addOrder} disabled={loading} className="flex-1 py-2 rounded-lg text-xs font-bold text-black" style={{ background: "#f59e0b" }}>Save</button>
-                        <button onClick={() => setShowAddOrder(false)} className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {orders.length === 0 && (
-                    <div className="text-center text-gray-500 text-sm py-8">No orders yet.</div>
-                  )}
-
-                  {orders.map((order) => (
+                    {orders.map((order) => (
                     <div key={order.id} className="rounded-xl p-4 flex items-center justify-between gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1716,6 +1717,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
 
@@ -1723,7 +1725,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
               {/* ── SETTINGS TAB ── */}
               {tab === "settings" && (
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-5" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
 
                   {/* Latest Event Popup */}
                   <div>
@@ -2110,14 +2112,48 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     </button>
                   </div>
 
-
+                  {/* Community Links */}
+                  <div>
+                    <div className="text-white font-bold text-sm mb-1">Community Links</div>
+                    <div className="text-gray-400 text-xs">Links for the WhatsApp and Instagram buttons on the home page community section.</div>
+                  </div>
+                  <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">WhatsApp Group Link</div>
+                      <input
+                        value={communityWhatsapp}
+                        onChange={(e) => setCommunityWhatsapp(e.target.value)}
+                        placeholder="https://chat.whatsapp.com/..."
+                        className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
+                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">Instagram Channel Link</div>
+                      <input
+                        value={communityInstagram}
+                        onChange={(e) => setCommunityInstagram(e.target.value)}
+                        placeholder="https://www.instagram.com/..."
+                        className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
+                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                      />
+                    </div>
+                    <button
+                      onClick={saveCommunityLinks}
+                      disabled={communitySaving}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold text-black"
+                      style={{ background: communitySaving ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
+                    >
+                      {communitySaving ? "Saving…" : communitySaved ? "✓ Saved!" : "Save Community Links"}
+                    </button>
+                  </div>
 
                 </div>
               )}
 
               {/* ── STAFF TAB ── */}
               {tab === "staff" && (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
                   {/* Staff Portal shortcut */}
                   <button
                     onClick={() => { onClose(); setLocation("/staff"); }}
@@ -2241,7 +2277,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
               {/* ── WALLET TAB ── */}
               {tab === "wallet" && (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold text-sm">Top-up Requests</span>
                     <button onClick={fetchWalletRequests} className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-300" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}>Refresh</button>
@@ -2298,7 +2334,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
               {/* ── BANNERS TAB ── */}
               {tab === "banners" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40, flex: 1, overflowY: "auto", padding: 20 }}>
 
                   {/* Add New Banner — always on top */}
                   {promoBanners.length < 5 ? (
@@ -2404,28 +2440,28 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
               {/* ── STORE STATS TAB ── */}
               {tab === "stats" && (
-                <div className="flex flex-col gap-5 px-1">
-                  <div className="text-amber-400 text-sm font-bold">Store Statistics</div>
-
-                  {stats && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: "Total Orders", value: stats.total_orders, icon: "📦" },
-                        { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
-                        { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: "🛒" },
-                        { label: "Happy Gamers", value: storeStats ? String(storeStats.total_users) : "—", icon: "⭐" },
-                      ].map(s => (
-                        <div key={s.label} className="rounded-xl p-3 flex flex-col items-center gap-1.5" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                          <div style={{ fontSize: 20 }}>{s.icon}</div>
-                          <div className="text-white font-bold text-lg">{s.value}</div>
-                          <div className="text-gray-400 text-xs text-center">{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div>
-                    <div className="text-white font-bold text-sm mb-3">⚡ Recent Purchases</div>
+                <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+                  <div style={{ flexShrink: 0, padding: "20px 20px 12px", background: "#111", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div className="text-amber-400 text-sm font-bold" style={{ marginBottom: 12 }}>Store Statistics</div>
+                    {stats && (
+                      <div className="grid grid-cols-2 gap-3" style={{ marginBottom: 16 }}>
+                        {[
+                          { label: "Total Orders", value: stats.total_orders, icon: "📦" },
+                          { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
+                          { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: "🛒" },
+                          { label: "Happy Gamers", value: storeStats ? String(storeStats.total_users) : "—", icon: "⭐" },
+                        ].map(s => (
+                          <div key={s.label} className="rounded-xl p-3 flex flex-col items-center gap-1.5" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                            <div style={{ fontSize: 20 }}>{s.icon}</div>
+                            <div className="text-white font-bold text-lg">{s.value}</div>
+                            <div className="text-gray-400 text-xs text-center">{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-white font-bold text-sm">⚡ Recent Purchases</div>
+                  </div>
+                  <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 20px" }}>
                     {recentOrders.length === 0 ? (
                       <div className="text-gray-500 text-sm text-center py-6">No purchases yet.</div>
                     ) : (

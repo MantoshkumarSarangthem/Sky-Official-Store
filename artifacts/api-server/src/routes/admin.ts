@@ -391,6 +391,24 @@ router.put("/settings/trustpilot", requireAdmin, async (req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+router.get("/settings/community_links", requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('community_whatsapp','community_instagram')");
+    const m: Record<string, string> = {};
+    rows.forEach((r: any) => { m[r.key] = r.value; });
+    res.json({ whatsapp: m["community_whatsapp"] || "", instagram: m["community_instagram"] || "" });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.put("/settings/community_links", requireAdmin, async (req, res) => {
+  const { whatsapp, instagram } = req.body;
+  try {
+    await pool.query(`INSERT INTO settings (key,value) VALUES ('community_whatsapp',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [whatsapp || ""]);
+    await pool.query(`INSERT INTO settings (key,value) VALUES ('community_instagram',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [instagram || ""]);
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 router.get("/settings/pack_images", requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query("SELECT value FROM settings WHERE key='pack_images'");
