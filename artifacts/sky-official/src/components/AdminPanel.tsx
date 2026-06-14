@@ -920,6 +920,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   };
 
   useEffect(() => { adminBioAvailable().then(setBioAvail); }, []);
+  useEffect(() => { if (!authed && bioAvail && bioEnabled) loginWithBio(); }, [bioAvail]);
 
   const login = async () => {
     setLoginError(""); setBioMsg("");

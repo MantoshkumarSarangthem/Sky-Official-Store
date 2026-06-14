@@ -21,6 +21,7 @@ export interface SelectedPackage {
   image?: string | null;
   gameName?: string;
   currencyLabel?: string;
+  gameId?: number;
 }
 
 let _selectedPackage: SelectedPackage | null = null;
@@ -365,7 +366,7 @@ export default function PaymentPage() {
 
       {/* Header */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
-        <button onClick={() => setLocation(isWalletTopup ? "/profile" : isCartMode ? "/cart" : "/packages")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+        <button onClick={() => setLocation(isWalletTopup ? "/profile" : isCartMode ? "/cart" : pkg?.gameId ? `/game/${pkg.gameId}` : "/packages")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#3D2B1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>

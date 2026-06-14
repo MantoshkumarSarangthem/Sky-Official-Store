@@ -281,6 +281,7 @@ export default function GameProductsPage() {
       image: selectedPkg.image ?? null,
       gameName: game?.name || "",
       currencyLabel,
+      gameId: gameId ? Number(gameId) : undefined,
     });
     sessionStorage.setItem("preferredPaymentMethod", paymentMethod);
     if (quantity > 1) sessionStorage.setItem("orderQuantity", String(quantity));

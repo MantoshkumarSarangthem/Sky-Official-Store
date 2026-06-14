@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
@@ -211,6 +212,7 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
 }
 
 export default function StaffPortal() {
+  const [, setLocation] = useLocation();
   const [token, setToken] = useState(() => localStorage.getItem("staff_token") || "");
   const [staff, setStaff] = useState<StaffInfo | null>(() => {
     try { return JSON.parse(localStorage.getItem("staff_info") || "null"); } catch { return null; }
@@ -339,6 +341,9 @@ export default function StaffPortal() {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <style>{STYLE}</style>
+        <button onClick={() => setLocation("/admin?tab=staff")} style={{ position: "fixed", top: 12, left: 12, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
         <div style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, animation: "staffFadeIn 0.4s ease both" }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}>🔐</div>
           <div style={{ textAlign: "center" }}>
@@ -452,6 +457,9 @@ export default function StaffPortal() {
       <style>{STYLE}</style>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(10,10,10,0.95)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => setLocation("/admin?tab=staff")} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
           <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #f59e0b" }}>
             <img src="/logo.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>

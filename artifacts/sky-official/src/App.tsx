@@ -1567,27 +1567,27 @@ function TermsPage() {
   return (
     <PolicyPage title="Terms of Service">
       <h2 style={{ color: "#f59e0b", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Terms of Service</h2>
-      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: May 2026</p>
+      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
 
       <p>By using Sky Official, you agree to the following terms. Please read them carefully before making any purchase.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>1. Services</h3>
-      <p>Sky Official provides Mobile Legends: Bang Bang diamond top-up services. We are an independent seller and are not affiliated with Moonton or Mobile Legends.</p>
+      <p>Sky Official provides in-game top-up and currency services for multiple titles including but not limited to Mobile Legends: Bang Bang, Free Fire, PUBG Mobile, and other supported games. We are an independent reseller and are not affiliated with or endorsed by any game developer or publisher.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>2. Eligibility</h3>
-      <p>You must provide a valid MLBB User ID and Server ID for us to deliver diamonds. You are responsible for entering the correct account details. We are not liable for deliveries made to incorrectly provided accounts.</p>
+      <p>You must provide a valid Player ID (and Server ID where applicable) for us to deliver your purchased currency. You are responsible for entering the correct account details. We are not liable for deliveries made to incorrectly provided accounts.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>3. Payment</h3>
-      <p>All payments are made via UPI. Payment is due before diamond delivery. Once payment is confirmed, the order will be processed. We do not store any payment card information.</p>
+      <p>All payments are made via UPI. Payment is due before in-game currency delivery. Once payment is confirmed, the order will be processed. We do not store any payment card information.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>4. Delivery</h3>
-      <p>Diamonds are typically delivered within minutes of payment confirmation. During peak hours or technical issues, delivery may take up to 24 hours. We will keep you informed via WhatsApp if there are any delays.</p>
+      <p>In-game currency is typically delivered within minutes of payment confirmation. During peak hours or technical issues, delivery may take up to 24 hours. We will keep you informed via WhatsApp if there are any delays.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>5. Account Security</h3>
-      <p>We will never ask for your MLBB account password. Never share your login credentials with anyone. We only require your MLBB User ID and Server ID for top-up.</p>
+      <p>We will never ask for your game account password or login credentials. Never share your credentials with anyone. We only require your Player ID (and Server ID where applicable) to process your order.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>6. Prohibited Activities</h3>
-      <p>You may not use our services for fraudulent transactions, chargebacks, or any activity that violates Mobile Legends' terms of service.</p>
+      <p>You may not use our services for fraudulent transactions, chargebacks, or any activity that violates the terms of service of the respective game.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>7. Changes</h3>
       <p>We reserve the right to modify these terms at any time. Continued use of our service constitutes acceptance of any changes.</p>
@@ -1601,22 +1601,22 @@ function PrivacyPage() {
   return (
     <PolicyPage title="Privacy Policy">
       <h2 style={{ color: "#f59e0b", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Privacy Policy</h2>
-      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: May 2026</p>
+      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
 
       <p>Your privacy is important to us. This policy explains how Sky Official collects and uses your information.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Information We Collect</h3>
       <p>We collect the following information when you use our service:</p>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-        <li>Your MLBB User ID and Server ID (to deliver diamonds)</li>
+        <li>Your Player ID and Server ID (where applicable) for the game you are topping up</li>
         <li>Your email address (via Clerk authentication, for order confirmations)</li>
         <li>Order history and transaction references</li>
       </ul>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>How We Use Your Information</h3>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-        <li>To process and deliver your diamond orders</li>
-        <li>To send order confirmation and status emails</li>
+        <li>To process and deliver your in-game currency orders</li>
+        <li>To send order confirmation and status notifications</li>
         <li>To provide customer support via WhatsApp</li>
         <li>To maintain order history for your reference</li>
       </ul>
@@ -1637,26 +1637,26 @@ function RefundPage() {
   return (
     <PolicyPage title="Refund Policy">
       <h2 style={{ color: "#f59e0b", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Refund Policy</h2>
-      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: May 2026</p>
+      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
 
       <p>We want you to be completely satisfied with your purchase. Please read our refund policy carefully.</p>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Eligible for Refund</h3>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-        <li><strong style={{ color: "#fff" }}>Wrong account delivery:</strong> If diamonds were delivered to a wrong MLBB account due to our error, we will issue a full refund or re-deliver.</li>
+        <li><strong style={{ color: "#fff" }}>Wrong account delivery:</strong> If in-game currency was delivered to the wrong account due to our error, we will issue a full refund or re-deliver.</li>
         <li><strong style={{ color: "#fff" }}>Duplicate payment:</strong> If you were charged twice for the same order, we will refund the extra charge.</li>
-        <li><strong style={{ color: "#fff" }}>Non-delivery:</strong> If payment was received but diamonds were not delivered within 24 hours, a full refund will be issued.</li>
+        <li><strong style={{ color: "#fff" }}>Non-delivery:</strong> If payment was received but in-game currency was not delivered within 24 hours, a full refund will be issued.</li>
       </ul>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Not Eligible for Refund</h3>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-        <li>Orders where the correct MLBB ID and Server ID were provided and diamonds were successfully delivered</li>
-        <li>Orders cancelled after diamonds have been delivered</li>
+        <li>Orders where the correct Player ID (and Server ID where applicable) were provided and in-game currency was successfully delivered</li>
+        <li>Orders cancelled after in-game currency has been delivered</li>
         <li>Wrong account details provided by the customer</li>
       </ul>
 
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>How to Request a Refund</h3>
-      <p>Contact us on WhatsApp with your Order ID and the issue. Refund requests are reviewed within 24 hours. Approved refunds are processed within 2–3 business days to your original UPI account.</p>
+      <p>Contact us on WhatsApp with your Order ID and a description of the issue. Refund requests are reviewed within 24 hours. Approved refunds are processed within 2–3 business days to your original UPI account.</p>
 
       <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 12, padding: "14px 16px", marginTop: 24 }}>
         <p style={{ color: "#4ade80", fontWeight: 700, margin: "0 0 6px", fontSize: 14 }}>Our Commitment</p>
