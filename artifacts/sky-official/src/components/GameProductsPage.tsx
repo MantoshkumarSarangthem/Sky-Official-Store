@@ -434,49 +434,47 @@ export default function GameProductsPage() {
                       </div>
                     )}
 
-                    {/* Top: icon + price + heart */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 9, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={22} />}
+                    {/* Top row: icon + name/price */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={20} />}
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                        <div style={{ textAlign: "right" }}>
-                          {hasOldPrice && <div style={{ color: "rgba(61,43,31,0.3)", fontSize: 10, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
-                          <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 11, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {pkg.name || `${total.toLocaleString()} ${currencyLabel}`}
                         </div>
-                        <button
-                          onClick={e => { e.stopPropagation(); toggleFav(pkg); }}
-                          style={{ background: isFav ? "rgba(239,68,68,0.1)" : "rgba(61,43,31,0.04)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(197,180,162,0.35)", borderRadius: 7, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
-                          title={isFav ? "Remove from favourites" : "Add to favourites"}
-                        >
-                          <HeartIcon filled={isFav} />
-                        </button>
+                        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 9.5, lineHeight: 1.2 }}>
+                          {pkg.diamonds.toLocaleString()} {currencyLabel}
+                          {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()}</span>}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        {hasOldPrice && <div style={{ color: "rgba(61,43,31,0.3)", fontSize: 9, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
+                        <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 14, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
                       </div>
                     </div>
 
-                    {/* Name + currency */}
-                    <div>
-                      <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 12, lineHeight: 1.3, marginBottom: 2 }}>
-                        {pkg.name || `${total.toLocaleString()} ${currencyLabel}`}
-                      </div>
-                      <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 10 }}>
-                        {pkg.diamonds.toLocaleString()} {currencyLabel}
-                        {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()} bonus</span>}
-                      </div>
+                    {/* Bottom row: Add to Cart + Heart */}
+                    <div style={{ display: "flex", gap: 5 }}>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          addToCart({ id: pkg.id, diamonds: pkg.diamonds, bonus_diamonds: pkg.bonus_diamonds, price: pkg.price, old_price: pkg.old_price ?? null, name: pkg.name, category: pkg.category, image: pkg.image ?? null, gameName: game?.name || "", currencyLabel });
+                          setCartAdded(pkg.id);
+                          setTimeout(() => setCartAdded(null), 1800);
+                        }}
+                        style={{ flex: 1, background: cartAdded === pkg.id ? "rgba(34,197,94,0.15)" : "rgba(139,92,246,0.1)", border: `1px solid ${cartAdded === pkg.id ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.3)"}`, borderRadius: 8, padding: "4px 6px", color: cartAdded === pkg.id ? "#4ade80" : "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", WebkitTapHighlightColor: "transparent" }}
+                      >
+                        {cartAdded === pkg.id ? "✓ Added!" : "🛒 Add to Cart"}
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleFav(pkg); }}
+                        style={{ background: isFav ? "rgba(239,68,68,0.1)" : "rgba(61,43,31,0.04)", border: isFav ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(197,180,162,0.35)", borderRadius: 8, width: 28, height: 28, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent", transition: "all 0.15s" }}
+                        title={isFav ? "Remove from favourites" : "Add to favourites"}
+                      >
+                        <HeartIcon filled={isFav} />
+                      </button>
                     </div>
-
-                    {/* Add to Cart button */}
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        addToCart({ id: pkg.id, diamonds: pkg.diamonds, bonus_diamonds: pkg.bonus_diamonds, price: pkg.price, old_price: pkg.old_price ?? null, name: pkg.name, category: pkg.category, image: pkg.image ?? null, gameName: game?.name || "", currencyLabel });
-                        setCartAdded(pkg.id);
-                        setTimeout(() => setCartAdded(null), 1800);
-                      }}
-                      style={{ background: cartAdded === pkg.id ? "rgba(34,197,94,0.15)" : "rgba(139,92,246,0.1)", border: `1px solid ${cartAdded === pkg.id ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.3)"}`, borderRadius: 8, padding: "4px 8px", color: cartAdded === pkg.id ? "#4ade80" : "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", width: "100%", transition: "all 0.2s", WebkitTapHighlightColor: "transparent" }}
-                    >
-                      {cartAdded === pkg.id ? "✓ Added!" : "🛒 Add to Cart"}
-                    </button>
                   </div>
                 );
               })}
