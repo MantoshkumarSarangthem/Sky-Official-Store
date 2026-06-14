@@ -54,7 +54,9 @@ export function getClerkProxyHost(req: {
 
 export function clerkProxyMiddleware(): RequestHandler {
   const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) {
+  const publishableKey = process.env.CLERK_PUBLISHABLE_KEY ?? "";
+  // Dev instances (pk_test_*) don't support proxying — skip middleware
+  if (!secretKey || publishableKey.startsWith("pk_test_")) {
     return (_req, _res, next) => next();
   }
 
