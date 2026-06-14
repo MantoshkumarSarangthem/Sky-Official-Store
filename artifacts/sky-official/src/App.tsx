@@ -1362,6 +1362,119 @@ function PromoCarousel() {
 }
 
 // ── Main Site Page ─────────────────────────────────────────────────────────
+// ── Daily Offer Section ───────────────────────────────────────────────────
+interface DailyOfferPkg {
+  id: number;
+  name: string | null;
+  diamonds: number;
+  bonus_diamonds: number;
+  price: string;
+  old_price: string | null;
+  image: string | null;
+  game_name: string | null;
+}
+
+function DailyOfferCard({ pkg, style }: { pkg: DailyOfferPkg; style?: React.CSSProperties }) {
+  const hasOld = !!(pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
+  const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
+  const label = pkg.name || `${total.toLocaleString()} Diamonds`;
+  return (
+    <div style={{
+      background: "#FFFFFF",
+      borderRadius: 16,
+      padding: "13px 12px 11px",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.09)",
+      display: "flex",
+      flexDirection: "column",
+      gap: 9,
+      ...style,
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.09)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {pkg.image
+            ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 9l10 13L22 9z" fill="rgba(139,92,246,0.15)" stroke="#8b5cf6" strokeWidth="1.5" strokeLinejoin="round"/><path d="M2 9h20M8 9l4-7M16 9l-4-7" stroke="#8b5cf6" strokeWidth="1.4" strokeLinejoin="round"/></svg>
+          }
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingLeft: 6, minWidth: 0 }}>
+          {hasOld && (
+            <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 9.5, textDecoration: "line-through", lineHeight: 1.3, whiteSpace: "nowrap" }}>
+              ₹{parseFloat(pkg.old_price!).toFixed(0)}
+            </div>
+          )}
+          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: 15, lineHeight: 1.1, whiteSpace: "nowrap" }}>
+            ₹{parseFloat(pkg.price).toFixed(0)}
+          </div>
+        </div>
+      </div>
+      <div style={{ color: "#1a0a2e", fontWeight: 800, fontSize: 11, lineHeight: 1.3, letterSpacing: "0.01em" }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function DailyOfferSection() {
+  const cacheKey = `${API}/settings/daily_offer_packages`;
+  const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
+
+  useEffect(() => {
+    cachedFetch<DailyOfferPkg[]>(cacheKey)
+      .then(d => setPkgs(Array.isArray(d) ? d : []))
+      .catch(() => {});
+    const onUpdate = () => {
+      invalidateCache(cacheKey);
+      cachedFetch<DailyOfferPkg[]>(cacheKey).then(d => setPkgs(Array.isArray(d) ? d : [])).catch(() => {});
+    };
+    window.addEventListener("skyAdminUpdate", onUpdate);
+    return () => window.removeEventListener("skyAdminUpdate", onUpdate);
+  }, [cacheKey]);
+
+  if (pkgs.length === 0) return null;
+
+  const isSliding = pkgs.length > 3;
+  const CARD_W = 126;
+  const GAP = 9;
+  const doubled = [...pkgs, ...pkgs];
+
+  return (
+    <section style={{ padding: "0 0 4px" }}>
+      <style>{`
+        @keyframes dailyOfferSlide {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-1 * ${pkgs.length} * (${CARD_W}px + ${GAP}px))); }
+        }
+      `}</style>
+      <div style={{ padding: "0 16px 8px", display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.01em" }}>Daily Offers</span>
+        <span style={{ background: "linear-gradient(90deg,#f59e0b,#fbbf24)", color: "#3D2B1F", fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>HOT</span>
+      </div>
+      {isSliding ? (
+        <div style={{ overflow: "hidden", padding: "2px 16px 10px" }}>
+          <div style={{
+            display: "flex",
+            gap: GAP,
+            animation: `dailyOfferSlide ${pkgs.length * 3.5}s linear infinite`,
+            width: "max-content",
+          }}>
+            {doubled.map((pkg, i) => (
+              <DailyOfferCard key={`${pkg.id}-${i}`} pkg={pkg} style={{ width: CARD_W, flexShrink: 0 }} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding: "2px 16px 10px", display: "flex", gap: GAP }}>
+          {pkgs.map((pkg, i) => (
+            <DailyOfferCard key={pkg.id} pkg={pkg} style={{ flex: i === 0 ? 1.15 : 1 }} />
+          ))}
+          {pkgs.length === 1 && <><div style={{ flex: 1 }} /><div style={{ flex: 1 }} /></>}
+          {pkgs.length === 2 && <div style={{ flex: 1 }} />}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function MainSite() {
   return (
     <div style={{ overflowX: "hidden", paddingTop: "88px", display: "flex", flexDirection: "column", minHeight: "100vh", boxSizing: "border-box" }}>
@@ -1371,6 +1484,8 @@ function MainSite() {
             <PromoBannerSlider />
           </div>
           <div style={{ height: 20 }} />
+          <DailyOfferSection />
+          <div style={{ height: 8 }} />
           <div style={{ minHeight: "500px" }}>
             <GameSelectSection />
           </div>

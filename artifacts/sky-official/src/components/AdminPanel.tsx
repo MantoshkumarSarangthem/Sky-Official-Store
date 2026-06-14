@@ -94,7 +94,7 @@ interface WalletRequest {
   created_at: string;
 }
 
-type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners" | "stats";
+type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners" | "offer-banners" | "stats";
 type NotifState = "unknown" | "loading" | "subscribed" | "denied" | "unsupported";
 
 async function registerSW(): Promise<ServiceWorkerRegistration | null> {
@@ -122,7 +122,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [showPwForm, setShowPwForm] = useState(() => !localStorage.getItem(ADMIN_BIO_CRED));
   const [tab, setTab] = useState<Tab>(() => {
     const p = new URLSearchParams(window.location.search).get("tab");
-    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners","stats"];
+    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners","offer-banners","stats"];
     return (valid.includes(p as Tab) ? p : "packages") as Tab;
   });
   const [packages, setPackages] = useState<Package[]>([]);
@@ -172,6 +172,12 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [bannersSaving, setBannersSaving] = useState(false);
   const [showAddBanner, setShowAddBanner] = useState(false);
   const [newBanner, setNewBanner] = useState({ emoji: "", title: "", subtitle: "", bgGradient: "linear-gradient(135deg,#1a0a2e,#2d1b69)", ctaText: "", ctaLink: "" });
+  const [dailyOfferIds, setDailyOfferIds] = useState<number[]>([]);
+  const [dailyOfferSaving, setDailyOfferSaving] = useState(false);
+  const [dailyOfferSaved, setDailyOfferSaved] = useState(false);
+  const [offerSelectedGameId, setOfferSelectedGameId] = useState<number | null>(null);
+  const [offerGamePkgs, setOfferGamePkgs] = useState<Package[]>([]);
+  const [offerPkgLoading, setOfferPkgLoading] = useState(false);
 
   interface PromoBannerAdmin { id: string; image: string; link: string; active: boolean; }
   const [promoBanners, setPromoBanners] = useState<PromoBannerAdmin[]>([]);
@@ -644,6 +650,36 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (res.ok) setBanners(await res.json());
   }, [token]);
 
+  const fetchDailyOfferIds = useCallback(async () => {
+    const res = await fetch(`${API}/admin/settings/daily_offer_packages`, { headers });
+    if (res.ok) setDailyOfferIds(await res.json());
+  }, [token]);
+
+  const fetchOfferGamePkgs = useCallback(async (gameId: number) => {
+    setOfferPkgLoading(true);
+    try {
+      const res = await fetch(`${API}/packages?game_id=${gameId}`);
+      if (res.ok) setOfferGamePkgs(await res.json());
+    } catch {} finally { setOfferPkgLoading(false); }
+  }, []);
+
+  const saveDailyOfferIds = async (ids: number[]) => {
+    setDailyOfferSaving(true);
+    await fetch(`${API}/admin/settings/daily_offer_packages`, { method: "PUT", headers, body: JSON.stringify(ids) });
+    setDailyOfferIds(ids);
+    window.dispatchEvent(new Event("skyAdminUpdate"));
+    setDailyOfferSaved(true);
+    setTimeout(() => setDailyOfferSaved(false), 2500);
+    setDailyOfferSaving(false);
+  };
+
+  const toggleDailyOffer = (pkgId: number) => {
+    const next = dailyOfferIds.includes(pkgId)
+      ? dailyOfferIds.filter(id => id !== pkgId)
+      : dailyOfferIds.length < 10 ? [...dailyOfferIds, pkgId] : dailyOfferIds;
+    saveDailyOfferIds(next);
+  };
+
   const fetchPackImages = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/pack_images`, { headers });
     if (res.ok) {
@@ -794,6 +830,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchCommunityLinks(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); }
     if (authed && tab === "staff") { fetchStaff(); fetchAdminStatus(); }
     if (authed && tab === "banners") fetchPromoBanners();
+    if (authed && tab === "offer-banners") { fetchDailyOfferIds(); fetchGames(); }
     if (authed && (tab === "games" || tab === "packages")) fetchGames();
   }, [authed, tab]);
 
@@ -1266,7 +1303,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
-              {(["games", "packages", "orders", "wallet", "staff", "banners", "settings", "stats"] as Tab[]).map((t) => {
+              {(["games", "packages", "orders", "wallet", "staff", "banners", "offer-banners", "settings", "stats"] as Tab[]).map((t) => {
                 const pendingCount = t === "wallet" ? walletRequests.filter(r => r.status === "pending").length : 0;
                 return (
                   <button
@@ -1280,7 +1317,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         : { color: "#9ca3af" }),
                     }}
                   >
-                    {t === "stats" ? "Store Stats" : t}
+                    {t === "stats" ? "Store Stats" : t === "offer-banners" ? "Offer Banners" : t}
                     {pendingCount > 0 && (
                       <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#ef4444", color: "#fff", fontSize: 10 }}>{pendingCount}</span>
                     )}
@@ -2439,6 +2476,100 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               )}
 
               {/* ── STORE STATS TAB ── */}
+              {tab === "offer-banners" && (
+                <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ color: "#f59e0b", fontSize: 14, fontWeight: 700 }}>Daily Offer Packages</div>
+                    <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{dailyOfferIds.length}/10 selected</div>
+                  </div>
+
+                  {dailyOfferIds.length > 0 && (
+                    <div style={{ background: "rgba(245,158,11,0.06)", borderRadius: 12, padding: "10px 14px", border: "1px solid rgba(245,158,11,0.15)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>{dailyOfferIds.length} package{dailyOfferIds.length > 1 ? "s" : ""} showing in Daily Offers</div>
+                      <button
+                        onClick={() => saveDailyOfferIds([])}
+                        style={{ padding: "4px 12px", borderRadius: 8, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)", color: "#ef4444", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+                      >Clear All</button>
+                    </div>
+                  )}
+
+                  {offerSelectedGameId === null ? (
+                    <>
+                      <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Tap a game to browse its packages:</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                        {games.map(g => (
+                          <button
+                            key={g.id}
+                            onClick={() => { setOfferSelectedGameId(g.id); fetchOfferGamePkgs(g.id); }}
+                            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "12px 6px 10px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}
+                          >
+                            {g.image
+                              ? <img src={g.image} alt="" style={{ width: 50, height: 50, borderRadius: 11, objectFit: "cover" }} />
+                              : <div style={{ width: 50, height: 50, borderRadius: 11, background: "rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="3" stroke="rgba(139,92,246,0.7)" strokeWidth="1.5"/><path d="M7 12h4m-2-2v4M15 12h2" stroke="rgba(139,92,246,0.7)" strokeWidth="1.5" strokeLinecap="round"/></svg></div>
+                            }
+                            <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 9.5, fontWeight: 700, textAlign: "center", lineHeight: 1.3 }}>{g.name}</span>
+                          </button>
+                        ))}
+                        {games.length === 0 && (
+                          <div style={{ gridColumn: "1/-1", color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", padding: 20 }}>No games found.</div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <button
+                          onClick={() => { setOfferSelectedGameId(null); setOfferGamePkgs([]); }}
+                          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "5px 12px", color: "rgba(255,255,255,0.65)", fontSize: 12, cursor: "pointer" }}
+                        >← Back</button>
+                        <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>{games.find(g => g.id === offerSelectedGameId)?.name}</span>
+                      </div>
+
+                      {offerPkgLoading ? (
+                        <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textAlign: "center", padding: 24 }}>Loading packages…</div>
+                      ) : offerGamePkgs.length === 0 ? (
+                        <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textAlign: "center", padding: 24 }}>No packages found for this game.</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {offerGamePkgs.map(pkg => {
+                            const isSelected = dailyOfferIds.includes(pkg.id);
+                            const atMax = !isSelected && dailyOfferIds.length >= 10;
+                            const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
+                            const label = pkg.name || `${total.toLocaleString()} Diamonds`;
+                            return (
+                              <div key={pkg.id} style={{ background: isSelected ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.04)", border: isSelected ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, opacity: atMax ? 0.5 : 1 }}>
+                                {pkg.image
+                                  ? <img src={pkg.image} alt="" style={{ width: 38, height: 38, borderRadius: 9, objectFit: "cover", flexShrink: 0 }} />
+                                  : <div style={{ width: 38, height: 38, borderRadius: 9, background: "rgba(139,92,246,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 9l10 13L22 9z" fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeLinejoin="round"/></svg></div>
+                                }
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ color: "#fff", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{label}</div>
+                                  <div style={{ fontSize: 10, display: "flex", gap: 5, alignItems: "center" }}>
+                                    {pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price) && (
+                                      <span style={{ color: "rgba(255,255,255,0.35)", textDecoration: "line-through" }}>₹{parseFloat(pkg.old_price).toFixed(0)}</span>
+                                    )}
+                                    <span style={{ color: "#f59e0b", fontWeight: 800 }}>₹{parseFloat(pkg.price).toFixed(0)}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  disabled={atMax || dailyOfferSaving}
+                                  onClick={() => toggleDailyOffer(pkg.id)}
+                                  style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: isSelected ? "rgba(239,68,68,0.18)" : "rgba(139,92,246,0.2)", color: isSelected ? "#f87171" : "#a78bfa", fontSize: 11, fontWeight: 800, cursor: atMax ? "not-allowed" : "pointer", flexShrink: 0 }}
+                                >{isSelected ? "Remove" : "Add"}</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {dailyOfferSaved && (
+                    <div style={{ color: "#22c55e", fontSize: 12, fontWeight: 700, textAlign: "center" }}>✓ Saved</div>
+                  )}
+                </div>
+              )}
+
               {tab === "stats" && (
                 <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
                   <div style={{ flexShrink: 0, padding: "20px 20px 12px", background: "#111", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>

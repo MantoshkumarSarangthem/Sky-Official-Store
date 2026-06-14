@@ -109,6 +109,19 @@ router.get("/settings/offer_banners", async (_req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+router.get("/settings/daily_offer_packages", async (_req, res) => {
+  try {
+    const { rows: settRows } = await pool.query("SELECT value FROM settings WHERE key='daily_offer_packages'");
+    const ids: number[] = JSON.parse(settRows[0]?.value || "[]");
+    if (ids.length === 0) return res.json([]);
+    const { rows } = await pool.query(
+      `SELECT p.*, g.name as game_name FROM packages p LEFT JOIN games g ON p.game_id = g.id WHERE p.id = ANY($1::int[]) ORDER BY array_position($1::int[], p.id)`,
+      [ids]
+    );
+    res.json(rows);
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 router.get("/settings/pack_images", async (_req, res) => {
   try {
     const { rows } = await pool.query("SELECT value FROM settings WHERE key='pack_images'");
