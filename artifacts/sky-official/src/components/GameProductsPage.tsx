@@ -128,6 +128,7 @@ export default function GameProductsPage() {
   const [favorites, setFavorites] = useState<number[]>(loadFavs);
   const [walletBuying, setWalletBuying] = useState(false);
   const [walletResult, setWalletResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [showWalletConfirm, setShowWalletConfirm] = useState(false);
   const [cartAdded, setCartAdded] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
 
@@ -557,9 +558,33 @@ export default function GameProductsPage() {
               </div>
             )}
 
+            {/* Wallet Confirmation Dialog */}
+            {showWalletConfirm && selectedPkg && (
+              <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+                <div style={{ background: "#FFFFFF", borderRadius: 18, padding: "24px 22px 20px", maxWidth: 320, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}>
+                  <div style={{ fontSize: 36, textAlign: "center", marginBottom: 12 }}>💳</div>
+                  <div style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 16, textAlign: "center", marginBottom: 8 }}>Confirm Payment</div>
+                  <div style={{ color: "rgba(61,43,31,0.65)", fontSize: 14, lineHeight: 1.65, marginBottom: 22, textAlign: "center" }}>
+                    <span style={{ fontWeight: 800, color: "#7c3aed", fontSize: 18 }}>₹{(parseFloat(selectedPkg.price) * quantity).toFixed(0)}</span><br />
+                    will be deducted from your wallet balance. Continue?
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={() => setShowWalletConfirm(false)} style={{ flex: 1, padding: "11px 0", borderRadius: 11, border: "1px solid rgba(139,92,246,0.3)", background: "none", color: "#7c3aed", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>No</button>
+                    <button onClick={() => { setShowWalletConfirm(false); handleBuy(); }} style={{ flex: 1, padding: "11px 0", borderRadius: 11, background: "linear-gradient(135deg,#8b5cf6,#7c3aed)", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Yes</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Buy Button */}
             <button
-              onClick={() => isStarlight ? handleStarlightBuy() : handleBuy()}
+              onClick={() => {
+                if (paymentMethod === "wallet" && !isStarlight && selectedPkg && userId.trim()) {
+                  setShowWalletConfirm(true);
+                  return;
+                }
+                isStarlight ? handleStarlightBuy() : handleBuy();
+              }}
               disabled={!userId.trim() || walletBuying}
               style={{ width: "100%", padding: "14px 0", borderRadius: 12, background: (userId.trim() && !walletBuying) ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "rgba(139,92,246,0.12)", color: (userId.trim() && !walletBuying) ? "#fff" : "rgba(139,92,246,0.45)", border: (userId.trim() && !walletBuying) ? "none" : "1px solid rgba(139,92,246,0.18)", fontWeight: 800, fontSize: 15, cursor: (userId.trim() && !walletBuying) ? "pointer" : "not-allowed", transition: "all 0.2s", boxShadow: (userId.trim() && !walletBuying) ? "0 4px 20px rgba(139,92,246,0.3)" : "none", WebkitTapHighlightColor: "transparent" }}
             >

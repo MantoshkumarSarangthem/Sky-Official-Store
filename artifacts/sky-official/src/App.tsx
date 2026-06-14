@@ -197,6 +197,7 @@ function Navbar() {
   const [visible, setVisible] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [location, setLocation] = useLocation();
   const { user, isLoaded } = useUser();
@@ -234,6 +235,7 @@ function Navbar() {
   }, [showProfileMenu]);
 
   return (
+  <>
     <nav
       className="fixed z-40 flex items-center justify-between px-3"
       style={{
@@ -331,7 +333,7 @@ function Navbar() {
                     </button>
                   ))}
                   <button
-                    onClick={() => { signOut(() => setLocation("/")); setShowProfileMenu(false); }}
+                    onClick={() => { setShowSignOutConfirm(true); setShowProfileMenu(false); }}
                     className="flex items-center gap-2.5 w-full"
                     style={{ padding: "10px 14px", background: "none", border: "none", color: "#ef4444", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "left" }}
                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
@@ -355,6 +357,14 @@ function Navbar() {
         )}
       </div>
     </nav>
+    {showSignOutConfirm && (
+      <ConfirmDialog
+        message="You are about to sign out from your current Sky Official account. Continue?"
+        onConfirm={() => { signOut(() => setLocation("/")); setShowSignOutConfirm(false); }}
+        onCancel={() => setShowSignOutConfirm(false)}
+      />
+    )}
+  </>
   );
 }
 
@@ -404,10 +414,25 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   return (
     <div ref={containerRef} style={{ animation: anim, willChange: "opacity", position: "relative", zIndex: 1 }}>
       <style>{`
-        @keyframes pgFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pgFadeIn  { from { opacity: 0.75; } to { opacity: 1; } }
         @keyframes pgFadeOut { from { opacity: 1; } to { opacity: 0; } }
       `}</style>
       {children}
+    </div>
+  );
+}
+
+// ── Confirm Dialog ─────────────────────────────────────────────────────────────
+function ConfirmDialog({ message, onConfirm, onCancel }: { message: React.ReactNode; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: "#FFFFFF", borderRadius: 18, padding: "24px 22px 20px", maxWidth: 320, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.25)", animation: "pgFadeIn 0.18s ease both" }}>
+        <div style={{ color: "rgba(61,43,31,0.7)", fontSize: 14, lineHeight: 1.65, marginBottom: 22, textAlign: "center" }}>{message}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: "11px 0", borderRadius: 11, border: "1px solid rgba(197,180,162,0.6)", background: "none", color: "#3D2B1F", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>No</button>
+          <button onClick={onConfirm} style={{ flex: 1, padding: "11px 0", borderRadius: 11, background: "#ef4444", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Yes</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1547,15 +1572,15 @@ function SignUpPage() {
 function PolicyPage({ title, children }: { title: string; children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   return (
-    <div style={{ background: "#0a0a0a", minHeight: "100vh", paddingBottom: 48 }}>
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(10,10,10,0.95)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
-        <button onClick={() => setLocation("/")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 48 }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 40, background: "rgba(230,222,211,0.97)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderBottom: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px" }}>
+        <button onClick={() => setLocation("/")} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 5l-7 7 7 7" stroke="#3D2B1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{title}</div>
+        <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15 }}>{title}</div>
       </div>
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "72px 20px 0" }}>
-        <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 1.8 }}>
+        <div style={{ color: "rgba(61,43,31,0.75)", fontSize: 14, lineHeight: 1.8 }}>
           {children}
         </div>
       </div>
@@ -1566,33 +1591,33 @@ function PolicyPage({ title, children }: { title: string; children: React.ReactN
 function TermsPage() {
   return (
     <PolicyPage title="Terms of Service">
-      <h2 style={{ color: "#f59e0b", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Terms of Service</h2>
-      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
+      <h2 style={{ color: "#A89482", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Terms of Service</h2>
+      <p style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
 
       <p>By using Sky Official, you agree to the following terms. Please read them carefully before making any purchase.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>1. Services</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>1. Services</h3>
       <p>Sky Official provides in-game top-up and currency services for multiple titles including but not limited to Mobile Legends: Bang Bang, Free Fire, PUBG Mobile, and other supported games. We are an independent reseller and are not affiliated with or endorsed by any game developer or publisher.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>2. Eligibility</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>2. Eligibility</h3>
       <p>You must provide a valid Player ID (and Server ID where applicable) for us to deliver your purchased currency. You are responsible for entering the correct account details. We are not liable for deliveries made to incorrectly provided accounts.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>3. Payment</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>3. Payment</h3>
       <p>All payments are made via UPI. Payment is due before in-game currency delivery. Once payment is confirmed, the order will be processed. We do not store any payment card information.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>4. Delivery</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>4. Delivery</h3>
       <p>In-game currency is typically delivered within minutes of payment confirmation. During peak hours or technical issues, delivery may take up to 24 hours. We will keep you informed via WhatsApp if there are any delays.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>5. Account Security</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>5. Account Security</h3>
       <p>We will never ask for your game account password or login credentials. Never share your credentials with anyone. We only require your Player ID (and Server ID where applicable) to process your order.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>6. Prohibited Activities</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>6. Prohibited Activities</h3>
       <p>You may not use our services for fraudulent transactions, chargebacks, or any activity that violates the terms of service of the respective game.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>7. Changes</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>7. Changes</h3>
       <p>We reserve the right to modify these terms at any time. Continued use of our service constitutes acceptance of any changes.</p>
 
-      <p style={{ marginTop: 24, color: "rgba(255,255,255,0.4)", fontSize: 12 }}>For questions, contact us on WhatsApp.</p>
+      <p style={{ marginTop: 24, color: "rgba(61,43,31,0.4)", fontSize: 12 }}>For questions, contact us on WhatsApp.</p>
     </PolicyPage>
   );
 }
@@ -1600,12 +1625,12 @@ function TermsPage() {
 function PrivacyPage() {
   return (
     <PolicyPage title="Privacy Policy">
-      <h2 style={{ color: "#f59e0b", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Privacy Policy</h2>
-      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
+      <h2 style={{ color: "#A89482", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Privacy Policy</h2>
+      <p style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
 
       <p>Your privacy is important to us. This policy explains how Sky Official collects and uses your information.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Information We Collect</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Information We Collect</h3>
       <p>We collect the following information when you use our service:</p>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
         <li>Your Player ID and Server ID (where applicable) for the game you are topping up</li>
@@ -1613,7 +1638,7 @@ function PrivacyPage() {
         <li>Order history and transaction references</li>
       </ul>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>How We Use Your Information</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>How We Use Your Information</h3>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
         <li>To process and deliver your in-game currency orders</li>
         <li>To send order confirmation and status notifications</li>
@@ -1621,13 +1646,13 @@ function PrivacyPage() {
         <li>To maintain order history for your reference</li>
       </ul>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Data Security</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Data Security</h3>
       <p>We take data security seriously. We do not store payment card information. We do not sell or share your personal data with third parties. Authentication is handled by Clerk, a secure identity platform.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Cookies</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Cookies</h3>
       <p>We use minimal cookies for authentication and session management. No tracking or advertising cookies are used.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Contact</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Contact</h3>
       <p>If you have questions about your data or this policy, contact us on WhatsApp.</p>
     </PolicyPage>
   );
@@ -1636,31 +1661,31 @@ function PrivacyPage() {
 function RefundPage() {
   return (
     <PolicyPage title="Refund Policy">
-      <h2 style={{ color: "#f59e0b", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Refund Policy</h2>
-      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
+      <h2 style={{ color: "#A89482", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Refund Policy</h2>
+      <p style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
 
       <p>We want you to be completely satisfied with your purchase. Please read our refund policy carefully.</p>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Eligible for Refund</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Eligible for Refund</h3>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-        <li><strong style={{ color: "#fff" }}>Wrong account delivery:</strong> If in-game currency was delivered to the wrong account due to our error, we will issue a full refund or re-deliver.</li>
-        <li><strong style={{ color: "#fff" }}>Duplicate payment:</strong> If you were charged twice for the same order, we will refund the extra charge.</li>
-        <li><strong style={{ color: "#fff" }}>Non-delivery:</strong> If payment was received but in-game currency was not delivered within 24 hours, a full refund will be issued.</li>
+        <li><strong style={{ color: "#3D2B1F" }}>Wrong account delivery:</strong> If in-game currency was delivered to the wrong account due to our error, we will issue a full refund or re-deliver.</li>
+        <li><strong style={{ color: "#3D2B1F" }}>Duplicate payment:</strong> If you were charged twice for the same order, we will refund the extra charge.</li>
+        <li><strong style={{ color: "#3D2B1F" }}>Non-delivery:</strong> If payment was received but in-game currency was not delivered within 24 hours, a full refund will be issued.</li>
       </ul>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Not Eligible for Refund</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>Not Eligible for Refund</h3>
       <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
         <li>Orders where the correct Player ID (and Server ID where applicable) were provided and in-game currency was successfully delivered</li>
         <li>Orders cancelled after in-game currency has been delivered</li>
         <li>Wrong account details provided by the customer</li>
       </ul>
 
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>How to Request a Refund</h3>
+      <h3 style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 15, margin: "20px 0 8px" }}>How to Request a Refund</h3>
       <p>Contact us on WhatsApp with your Order ID and a description of the issue. Refund requests are reviewed within 24 hours. Approved refunds are processed within 2–3 business days to your original UPI account.</p>
 
-      <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 12, padding: "14px 16px", marginTop: 24 }}>
-        <p style={{ color: "#4ade80", fontWeight: 700, margin: "0 0 6px", fontSize: 14 }}>Our Commitment</p>
-        <p style={{ color: "rgba(255,255,255,0.6)", margin: 0, fontSize: 13 }}>We stand behind every transaction. If something goes wrong on our end, we will make it right. Customer satisfaction is our top priority.</p>
+      <div style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 12, padding: "14px 16px", marginTop: 24 }}>
+        <p style={{ color: "#16a34a", fontWeight: 700, margin: "0 0 6px", fontSize: 14 }}>Our Commitment</p>
+        <p style={{ color: "rgba(61,43,31,0.6)", margin: 0, fontSize: 13 }}>We stand behind every transaction. If something goes wrong on our end, we will make it right. Customer satisfaction is our top priority.</p>
       </div>
     </PolicyPage>
   );
@@ -1669,7 +1694,7 @@ function RefundPage() {
 // ── Persistent Navbar (outside page transitions so it never moves) ───────────
 function PersistentNavbar() {
   const [location] = useLocation();
-  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/profile") || location.startsWith("/support") || location === "/pay") return null;
+  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/profile") || location.startsWith("/support") || location === "/pay" || location === "/terms" || location === "/privacy" || location === "/refund") return null;
   return <Navbar />;
 }
 
