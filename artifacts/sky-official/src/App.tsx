@@ -1378,19 +1378,19 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
   const hasOld = !!(pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
   const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
   const label = pkg.name || `${total.toLocaleString()} Diamonds`;
-  const iconSize = featured ? 52 : 42;
+  const iconSize = featured ? 46 : 40;
   return (
     <div style={{
       background: "#FFFFFF",
-      borderRadius: featured ? 18 : 16,
-      padding: "12px 11px 11px",
+      borderRadius: 16,
+      padding: "11px 10px 11px",
       display: "flex",
       flexDirection: "column",
-      gap: 8,
+      gap: 7,
       width: "100%",
       boxSizing: "border-box",
     }}>
-      <div style={{ display: "flex", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{
           width: iconSize, height: iconSize,
           borderRadius: Math.round(iconSize * 0.27),
@@ -1400,7 +1400,7 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
         }}>
           {pkg.image
             ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <svg width={featured ? 28 : 22} height={featured ? 28 : 22} viewBox="0 0 24 24" fill="none">
+            : <svg width={featured ? 25 : 21} height={featured ? 25 : 21} viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L2 9l10 13L22 9z" fill="rgba(139,92,246,0.15)" stroke="#8b5cf6" strokeWidth="1.5" strokeLinejoin="round"/>
                 <path d="M2 9h20M8 9l4-7M16 9l-4-7" stroke="#8b5cf6" strokeWidth="1.4" strokeLinejoin="round"/>
               </svg>
@@ -1412,12 +1412,12 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
               ₹{parseFloat(pkg.old_price!).toFixed(0)}
             </div>
           )}
-          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: featured ? 16 : 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
+          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: featured ? 15 : 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
             ₹{parseFloat(pkg.price).toFixed(0)}
           </div>
         </div>
       </div>
-      <div style={{ color: "#1a0a2e", fontWeight: 800, fontSize: featured ? 11.5 : 10, lineHeight: 1.3, letterSpacing: "0.01em" }}>
+      <div style={{ color: "#1a0a2e", fontWeight: 800, fontSize: featured ? 11 : 9.5, lineHeight: 1.2, letterSpacing: "0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {label}
       </div>
     </div>
