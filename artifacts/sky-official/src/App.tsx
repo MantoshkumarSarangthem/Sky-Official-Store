@@ -1492,11 +1492,10 @@ function DailyOfferSection() {
     if (phase === "reset") {
       return { transform: "translateX(0)", transition: "none" };
     }
-    if (i === 0) return { boxShadow: "0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)" };
     return {};
   };
 
-  const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: 96 }} />;
+  const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, aspectRatio: "5/4" }} />;
 
   return (
     <section style={{ padding: "0 0 4px" }}>
