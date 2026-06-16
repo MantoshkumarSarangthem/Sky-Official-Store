@@ -1374,40 +1374,49 @@ interface DailyOfferPkg {
   game_name: string | null;
 }
 
-function DailyOfferCard({ pkg, style }: { pkg: DailyOfferPkg; style?: React.CSSProperties }) {
+function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; featured?: boolean }) {
   const hasOld = !!(pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
   const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
   const label = pkg.name || `${total.toLocaleString()} Diamonds`;
+  const iconSize = featured ? 52 : 42;
   return (
     <div style={{
       background: "#FFFFFF",
       borderRadius: 16,
-      padding: "13px 12px 11px",
-      boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.09)",
+      padding: featured ? "14px 13px 12px" : "11px 10px 10px",
       display: "flex",
       flexDirection: "column",
-      gap: 9,
-      ...style,
+      gap: 8,
+      width: "100%",
     }}>
       <div style={{ display: "flex", alignItems: "flex-start" }}>
-        <div style={{ width: 48, height: 48, borderRadius: 12, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.09)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{
+          width: iconSize, height: iconSize,
+          borderRadius: featured ? 13 : 11,
+          overflow: "hidden", flexShrink: 0,
+          background: pkg.image ? "transparent" : "rgba(139,92,246,0.09)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
           {pkg.image
             ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 9l10 13L22 9z" fill="rgba(139,92,246,0.15)" stroke="#8b5cf6" strokeWidth="1.5" strokeLinejoin="round"/><path d="M2 9h20M8 9l4-7M16 9l-4-7" stroke="#8b5cf6" strokeWidth="1.4" strokeLinejoin="round"/></svg>
+            : <svg width={featured ? 28 : 22} height={featured ? 28 : 22} viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 9l10 13L22 9z" fill="rgba(139,92,246,0.15)" stroke="#8b5cf6" strokeWidth="1.5" strokeLinejoin="round"/>
+                <path d="M2 9h20M8 9l4-7M16 9l-4-7" stroke="#8b5cf6" strokeWidth="1.4" strokeLinejoin="round"/>
+              </svg>
           }
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingLeft: 6, minWidth: 0 }}>
+        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingLeft: 5, minWidth: 0 }}>
           {hasOld && (
-            <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 9.5, textDecoration: "line-through", lineHeight: 1.3, whiteSpace: "nowrap" }}>
+            <div style={{ color: "rgba(61,43,31,0.35)", fontSize: featured ? 10 : 9, textDecoration: "line-through", lineHeight: 1.3, whiteSpace: "nowrap" }}>
               ₹{parseFloat(pkg.old_price!).toFixed(0)}
             </div>
           )}
-          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: 15, lineHeight: 1.1, whiteSpace: "nowrap" }}>
+          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: featured ? 16 : 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
             ₹{parseFloat(pkg.price).toFixed(0)}
           </div>
         </div>
       </div>
-      <div style={{ color: "#1a0a2e", fontWeight: 800, fontSize: 11, lineHeight: 1.3, letterSpacing: "0.01em" }}>
+      <div style={{ color: "#1a0a2e", fontWeight: 800, fontSize: featured ? 11.5 : 10, lineHeight: 1.3, letterSpacing: "0.01em" }}>
         {label}
       </div>
     </div>
@@ -1417,6 +1426,8 @@ function DailyOfferCard({ pkg, style }: { pkg: DailyOfferPkg; style?: React.CSSP
 function DailyOfferSection() {
   const cacheKey = `${API}/settings/daily_offer_packages`;
   const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
+  const [headIdx, setHeadIdx] = useState(0);
+  const [phase, setPhase] = useState<"idle" | "exit">("idle");
 
   useEffect(() => {
     cachedFetch<DailyOfferPkg[]>(cacheKey)
@@ -1430,47 +1441,67 @@ function DailyOfferSection() {
     return () => window.removeEventListener("skyAdminUpdate", onUpdate);
   }, [cacheKey]);
 
+  useEffect(() => {
+    const n = pkgs.length;
+    if (n < 2) return;
+    let t0: ReturnType<typeof setTimeout>;
+    let t1: ReturnType<typeof setTimeout>;
+    const cycle = () => {
+      t0 = setTimeout(() => {
+        setPhase("exit");
+        t1 = setTimeout(() => {
+          setHeadIdx(i => (i + 1) % n);
+          setPhase("idle");
+          cycle();
+        }, 340);
+      }, 4000);
+    };
+    cycle();
+    return () => { clearTimeout(t0); clearTimeout(t1); };
+  }, [pkgs.length]);
+
   if (pkgs.length === 0) return null;
 
-  const isSliding = pkgs.length > 3;
-  const CARD_W = 126;
-  const GAP = 9;
-  const doubled = [...pkgs, ...pkgs];
+  const n = pkgs.length;
+  const slots: (DailyOfferPkg | null)[] = [
+    pkgs[headIdx % n],
+    n > 1 ? pkgs[(headIdx + 1) % n] : null,
+    n > 2 ? pkgs[(headIdx + 2) % n] : null,
+  ];
+
+  const EASE = "cubic-bezier(0.25,0.46,0.45,0.94)";
+  const TR = `transform 0.34s ${EASE}, opacity 0.28s ease, box-shadow 0.34s ease`;
+
+  const slotStyle = (i: number): React.CSSProperties => {
+    if (phase === "exit") {
+      if (i === 0) return { transform: "translateX(-18px) translateY(-4px) scale(0.88)", opacity: 0.1, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
+      if (i === 1) return { transform: "translateX(-12px) translateY(-2px) scale(1.06)", opacity: 0.72, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
+      return  { transform: "translateX(-8px) translateY(-12px) scale(1.02)", opacity: 0.72, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
+    }
+    // idle
+    if (i === 0) return { transform: "translateY(0px)", opacity: 1, boxShadow: "0 10px 32px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.10)", transition: TR, willChange: "transform,opacity,box-shadow" };
+    if (i === 1) return { transform: "translateY(-10px)", opacity: 1, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
+    return   { transform: "translateY(-20px)", opacity: 0.92, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
+  };
 
   return (
     <section style={{ padding: "0 0 4px" }}>
-      <style>{`
-        @keyframes dailyOfferSlide {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-1 * ${pkgs.length} * (${CARD_W}px + ${GAP}px))); }
-        }
-      `}</style>
       <div style={{ padding: "0 16px 8px", display: "flex", alignItems: "center", gap: 7 }}>
         <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.01em" }}>Daily Offers</span>
         <span style={{ background: "linear-gradient(90deg,#f59e0b,#fbbf24)", color: "#3D2B1F", fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>HOT</span>
       </div>
-      {isSliding ? (
-        <div style={{ overflow: "hidden", padding: "2px 16px 10px" }}>
-          <div style={{
-            display: "flex",
-            gap: GAP,
-            animation: `dailyOfferSlide ${pkgs.length * 3.5}s linear infinite`,
-            width: "max-content",
-          }}>
-            {doubled.map((pkg, i) => (
-              <DailyOfferCard key={`${pkg.id}-${i}`} pkg={pkg} style={{ width: CARD_W, flexShrink: 0 }} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div style={{ padding: "2px 16px 10px", display: "flex", gap: GAP }}>
-          {pkgs.map((pkg, i) => (
-            <DailyOfferCard key={pkg.id} pkg={pkg} style={{ flex: i === 0 ? 1.15 : 1 }} />
+      <div style={{ padding: "4px 16px 16px" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          {slots.map((pkg, i) => (
+            <div key={i} style={{ flex: i === 0 ? 1.15 : 1, ...slotStyle(i) }}>
+              {pkg
+                ? <DailyOfferCard pkg={pkg} featured={i === 0} />
+                : <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, minHeight: 90 }} />
+              }
+            </div>
           ))}
-          {pkgs.length === 1 && <><div style={{ flex: 1 }} /><div style={{ flex: 1 }} /></>}
-          {pkgs.length === 2 && <div style={{ flex: 1 }} />}
         </div>
-      )}
+      </div>
     </section>
   );
 }
