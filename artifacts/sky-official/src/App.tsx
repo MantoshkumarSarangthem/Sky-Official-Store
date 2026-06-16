@@ -1382,17 +1382,18 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
   return (
     <div style={{
       background: "#FFFFFF",
-      borderRadius: 16,
-      padding: featured ? "14px 13px 12px" : "11px 10px 10px",
+      borderRadius: featured ? 18 : 16,
+      padding: "12px 11px 11px",
       display: "flex",
       flexDirection: "column",
       gap: 8,
       width: "100%",
+      boxSizing: "border-box",
     }}>
       <div style={{ display: "flex", alignItems: "flex-start" }}>
         <div style={{
           width: iconSize, height: iconSize,
-          borderRadius: featured ? 13 : 11,
+          borderRadius: Math.round(iconSize * 0.27),
           overflow: "hidden", flexShrink: 0,
           background: pkg.image ? "transparent" : "rgba(139,92,246,0.09)",
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -1427,7 +1428,9 @@ function DailyOfferSection() {
   const cacheKey = `${API}/settings/daily_offer_packages`;
   const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
   const [headIdx, setHeadIdx] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "exit">("idle");
+  const [phase, setPhase] = useState<"idle" | "sliding" | "reset">("idle");
+  const rowRef = useRef<HTMLDivElement>(null);
+  const slideRef = useRef<[number, number, number]>([220, 130, 112]);
 
   useEffect(() => {
     cachedFetch<DailyOfferPkg[]>(cacheKey)
@@ -1448,12 +1451,19 @@ function DailyOfferSection() {
     let t1: ReturnType<typeof setTimeout>;
     const cycle = () => {
       t0 = setTimeout(() => {
-        setPhase("exit");
+        if (rowRef.current) {
+          const c = rowRef.current.children;
+          const w0 = (c[0] as HTMLElement)?.offsetWidth ?? 120;
+          const w1 = (c[1] as HTMLElement)?.offsetWidth ?? 104;
+          slideRef.current = [rowRef.current.offsetWidth + 20, w0 + 8, w1 + 8];
+        }
+        setPhase("sliding");
         t1 = setTimeout(() => {
+          setPhase("reset");
           setHeadIdx(i => (i + 1) % n);
-          setPhase("idle");
+          requestAnimationFrame(() => requestAnimationFrame(() => setPhase("idle")));
           cycle();
-        }, 340);
+        }, 440);
       }, 4000);
     };
     cycle();
@@ -1469,37 +1479,44 @@ function DailyOfferSection() {
     n > 2 ? pkgs[(headIdx + 2) % n] : null,
   ];
 
-  const EASE = "cubic-bezier(0.25,0.46,0.45,0.94)";
-  const TR = `transform 0.34s ${EASE}, opacity 0.28s ease, box-shadow 0.34s ease`;
+  const [d0, d1, d2] = slideRef.current;
+  const SLIDE_TR = "transform 0.44s cubic-bezier(0.4,0,0.2,1)";
 
   const slotStyle = (i: number): React.CSSProperties => {
-    if (phase === "exit") {
-      if (i === 0) return { transform: "translateX(-18px) translateY(-4px) scale(0.88)", opacity: 0.1, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
-      if (i === 1) return { transform: "translateX(-12px) translateY(-2px) scale(1.06)", opacity: 0.72, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
-      return  { transform: "translateX(-8px) translateY(-12px) scale(1.02)", opacity: 0.72, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
+    if (phase === "sliding") {
+      const dist = i === 0 ? d0 : i === 1 ? d1 : d2;
+      return { transform: `translateX(-${dist}px)`, transition: SLIDE_TR, willChange: "transform" };
     }
-    // idle
-    if (i === 0) return { transform: "translateY(0px)", opacity: 1, boxShadow: "0 10px 32px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.10)", transition: TR, willChange: "transform,opacity,box-shadow" };
-    if (i === 1) return { transform: "translateY(-10px)", opacity: 1, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
-    return   { transform: "translateY(-20px)", opacity: 0.92, boxShadow: "none", transition: TR, willChange: "transform,opacity,box-shadow" };
+    if (phase === "reset") {
+      return { transform: "translateX(0)", transition: "none" };
+    }
+    if (i === 0) return { boxShadow: "0 10px 32px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.10)" };
+    return {};
   };
+
+  const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: 96 }} />;
 
   return (
     <section style={{ padding: "0 0 4px" }}>
+      <style>{`
+        @keyframes doFadeIn { from { opacity: 0 } to { opacity: 1 } }
+        .daily-s2-enter { animation: doFadeIn 0.42s ease forwards; }
+      `}</style>
       <div style={{ padding: "0 16px 8px", display: "flex", alignItems: "center", gap: 7 }}>
         <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.01em" }}>Daily Offers</span>
         <span style={{ background: "linear-gradient(90deg,#f59e0b,#fbbf24)", color: "#3D2B1F", fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>HOT</span>
       </div>
-      <div style={{ padding: "4px 16px 16px" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          {slots.map((pkg, i) => (
-            <div key={i} style={{ flex: i === 0 ? 1.15 : 1, ...slotStyle(i) }}>
-              {pkg
-                ? <DailyOfferCard pkg={pkg} featured={i === 0} />
-                : <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, minHeight: 90 }} />
-              }
-            </div>
-          ))}
+      <div style={{ overflowX: "hidden", padding: "4px 16px 20px" }}>
+        <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <div style={{ flex: 1.15, ...slotStyle(0) }}>
+            {slots[0] ? <DailyOfferCard pkg={slots[0]} featured /> : placeholder}
+          </div>
+          <div style={{ flex: 1, ...slotStyle(1) }}>
+            {slots[1] ? <DailyOfferCard pkg={slots[1]} /> : placeholder}
+          </div>
+          <div key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, ...slotStyle(2) }}>
+            {slots[2] ? <DailyOfferCard pkg={slots[2]} /> : placeholder}
+          </div>
         </div>
       </div>
     </section>
