@@ -1484,26 +1484,25 @@ function DailyOfferSection() {
 
   const [d0, d1, d2] = slideRef.current;
   const EASE = "cubic-bezier(0.4,0,0.2,1)";
-  const SYNC_TR = `transform 0.44s ${EASE}, flex 0.44s ${EASE}`;
-
-  // Each slot's flex AND transform animate together with identical timing.
-  // Slot 0: featured (1.15) at rest → shrinks to 1 while sliding off.
-  // Slot 1: normal (1) at rest → grows to 1.15 while sliding into featured spot.
-  // Slot 2: always 1, just translates.
+  const TR = `transform 0.44s ${EASE}`;
+  // flex is NEVER changed — only transform (translateX + scaleX) animates.
+  // Both are part of the same CSS `transform` property → single GPU compositor
+  // thread → guaranteed frame-perfect sync between slide and size change.
+  // scaleX ratio = 1.15 because slot0 is flex:1.15 and slot1 is flex:1.
   const slot0Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1,    transform: `translateX(-${d0}px)`, transition: SYNC_TR, willChange: "transform, flex" }
+    ? { flex: 1.15, transformOrigin: "left center", transform: `translateX(-${d0}px) scaleX(${1/1.15})`, transition: TR, willChange: "transform" }
     : phase === "reset"
-    ? { flex: 1.15, transform: "translateX(0)", transition: "none" }
+    ? { flex: 1.15, transform: "translateX(0) scaleX(1)", transition: "none" }
     : { flex: 1.15 };
 
   const slot1Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1.15, transform: `translateX(-${d1}px)`, transition: SYNC_TR, willChange: "transform, flex" }
+    ? { flex: 1, transformOrigin: "left center", transform: `translateX(-${d1}px) scaleX(1.15)`, transition: TR, willChange: "transform" }
     : phase === "reset"
-    ? { flex: 1,    transform: "translateX(0)", transition: "none" }
+    ? { flex: 1, transform: "translateX(0) scaleX(1)", transition: "none" }
     : { flex: 1 };
 
   const slot2Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1, transform: `translateX(-${d2}px)`, transition: SYNC_TR, willChange: "transform" }
+    ? { flex: 1, transform: `translateX(-${d2}px)`, transition: TR, willChange: "transform" }
     : phase === "reset"
     ? { flex: 1, transform: "translateX(0)", transition: "none" }
     : { flex: 1 };
