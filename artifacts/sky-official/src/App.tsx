@@ -1485,27 +1485,27 @@ function DailyOfferSection() {
   const [d0, d1, d2] = slideRef.current;
   const EASE = "cubic-bezier(0.4,0,0.2,1)";
   const TR = `transform 0.44s ${EASE}`;
-  // flex is NEVER changed — only transform (translateX + scaleX) animates.
-  // Both are part of the same CSS `transform` property → single GPU compositor
-  // thread → guaranteed frame-perfect sync between slide and size change.
-  // scaleX ratio = 1.15 because slot0 is flex:1.15 and slot1 is flex:1.
+  // transition: TR is kept in ALL non-reset phases so it is already active
+  // when values change idle→sliding. This guarantees translateX and scaleX
+  // (both part of the same `transform` property) animate in the same frame.
+  const IDLE0: React.CSSProperties  = { flex: 1.15, transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: TR };
+  const IDLE1: React.CSSProperties  = { flex: 1,    transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: TR };
+  const IDLE2: React.CSSProperties  = { flex: 1,                                    transform: "translateX(0px)",               transition: TR };
+  const RESET0: React.CSSProperties = { flex: 1.15, transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: "none" };
+  const RESET1: React.CSSProperties = { flex: 1,    transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: "none" };
+  const RESET2: React.CSSProperties = { flex: 1,                                    transform: "translateX(0px)",               transition: "none" };
+
   const slot0Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1.15, transformOrigin: "left center", transform: `translateX(-${d0}px) scaleX(${1/1.15})`, transition: TR, willChange: "transform" }
-    : phase === "reset"
-    ? { flex: 1.15, transform: "translateX(0) scaleX(1)", transition: "none" }
-    : { flex: 1.15 };
+    ? { flex: 1.15, transformOrigin: "left center", transform: `translateX(-${d0}px) scaleX(${(1/1.15).toFixed(6)})`, transition: TR, willChange: "transform" }
+    : phase === "reset" ? RESET0 : IDLE0;
 
   const slot1Style: React.CSSProperties = phase === "sliding"
     ? { flex: 1, transformOrigin: "left center", transform: `translateX(-${d1}px) scaleX(1.15)`, transition: TR, willChange: "transform" }
-    : phase === "reset"
-    ? { flex: 1, transform: "translateX(0) scaleX(1)", transition: "none" }
-    : { flex: 1 };
+    : phase === "reset" ? RESET1 : IDLE1;
 
   const slot2Style: React.CSSProperties = phase === "sliding"
     ? { flex: 1, transform: `translateX(-${d2}px)`, transition: TR, willChange: "transform" }
-    : phase === "reset"
-    ? { flex: 1, transform: "translateX(0)", transition: "none" }
-    : { flex: 1 };
+    : phase === "reset" ? RESET2 : IDLE2;
 
   const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: "100%", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
 
