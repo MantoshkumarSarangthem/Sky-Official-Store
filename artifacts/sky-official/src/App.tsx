@@ -1388,7 +1388,7 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
       flexDirection: "column",
       gap: 6,
       width: "100%",
-      aspectRatio: "5/4",
+      height: "100%",
       overflow: "hidden",
       boxSizing: "border-box",
       boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)",
@@ -1431,7 +1431,7 @@ function DailyOfferSection() {
   const cacheKey = `${API}/settings/daily_offer_packages`;
   const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
   const [headIdx, setHeadIdx] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "sliding" | "reset">("idle");
+  const [phase, setPhase] = useState<"idle" | "shrinking" | "sliding" | "reset">("idle");
   const [isGrowing, setIsGrowing] = useState(true);
   const rowRef = useRef<HTMLDivElement>(null);
   const slideRef = useRef<[number, number, number]>([220, 130, 112]);
@@ -1455,23 +1455,29 @@ function DailyOfferSection() {
     let t1: ReturnType<typeof setTimeout>;
     const cycle = () => {
       t0 = setTimeout(() => {
-        if (rowRef.current) {
-          const c = rowRef.current.children;
-          const w0 = (c[0] as HTMLElement)?.offsetWidth ?? 120;
-          const w1 = (c[1] as HTMLElement)?.offsetWidth ?? 104;
-          slideRef.current = [rowRef.current.offsetWidth + 20, w0 + 8, w1 + 8];
-        }
-        setPhase("sliding");
+        // Phase 1: shrink featured card back to normal size before sliding
+        setIsGrowing(false);
+        setPhase("shrinking");
         t1 = setTimeout(() => {
-          setIsGrowing(false);
-          setPhase("reset");
-          setHeadIdx(i => (i + 1) % n);
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            setPhase("idle");
-            requestAnimationFrame(() => setIsGrowing(true));
-          }));
-          cycle();
-        }, 440);
+          // Phase 2: slide all cards off left
+          if (rowRef.current) {
+            const c = rowRef.current.children;
+            const w0 = (c[0] as HTMLElement)?.offsetWidth ?? 120;
+            const w1 = (c[1] as HTMLElement)?.offsetWidth ?? 104;
+            slideRef.current = [rowRef.current.offsetWidth + 20, w0 + 8, w1 + 8];
+          }
+          setPhase("sliding");
+          t1 = setTimeout(() => {
+            // Phase 3: snap back, advance index
+            setPhase("reset");
+            setHeadIdx(i => (i + 1) % n);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+              setPhase("idle");
+              requestAnimationFrame(() => setIsGrowing(true));
+            }));
+            cycle();
+          }, 440);
+        }, 360);
       }, 4000);
     };
     cycle();
@@ -1501,7 +1507,7 @@ function DailyOfferSection() {
     return {};
   };
 
-  const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, aspectRatio: "5/4", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
+  const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: "100%", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
 
   return (
     <section style={{ padding: "4px 0 4px" }}>
@@ -1514,7 +1520,7 @@ function DailyOfferSection() {
         <span style={{ background: "linear-gradient(90deg,#f59e0b,#fbbf24)", color: "#3D2B1F", fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>HOT</span>
       </div>
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
-        <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center", height: 84 }}>
           <div style={{ flex: isGrowing ? 1.15 : 1, transition: phase === "reset" ? "none" : "flex 0.44s cubic-bezier(0.4,0,0.2,1)", ...slotStyle(0) }}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} featured /> : placeholder}
           </div>
