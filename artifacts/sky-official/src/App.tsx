@@ -1383,11 +1383,13 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
     <div style={{
       background: "#FFFFFF",
       borderRadius: 16,
-      padding: "11px 10px 11px",
+      padding: "10px",
       display: "flex",
       flexDirection: "column",
-      gap: 7,
+      gap: 6,
       width: "100%",
+      aspectRatio: "5/4",
+      overflow: "hidden",
       boxSizing: "border-box",
     }}>
       <div style={{ display: "flex", alignItems: "center" }}>
@@ -1490,7 +1492,7 @@ function DailyOfferSection() {
     if (phase === "reset") {
       return { transform: "translateX(0)", transition: "none" };
     }
-    if (i === 0) return { boxShadow: "0 10px 32px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.10)" };
+    if (i === 0) return { boxShadow: "0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)" };
     return {};
   };
 
