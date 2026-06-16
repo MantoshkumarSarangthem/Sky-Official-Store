@@ -1432,6 +1432,7 @@ function DailyOfferSection() {
   const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
   const [headIdx, setHeadIdx] = useState(0);
   const [phase, setPhase] = useState<"idle" | "sliding" | "reset">("idle");
+  const [isGrowing, setIsGrowing] = useState(true);
   const rowRef = useRef<HTMLDivElement>(null);
   const slideRef = useRef<[number, number, number]>([220, 130, 112]);
 
@@ -1462,9 +1463,13 @@ function DailyOfferSection() {
         }
         setPhase("sliding");
         t1 = setTimeout(() => {
+          setIsGrowing(false);
           setPhase("reset");
           setHeadIdx(i => (i + 1) % n);
-          requestAnimationFrame(() => requestAnimationFrame(() => setPhase("idle")));
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            setPhase("idle");
+            requestAnimationFrame(() => setIsGrowing(true));
+          }));
           cycle();
         }, 440);
       }, 4000);
@@ -1510,7 +1515,7 @@ function DailyOfferSection() {
       </div>
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
         <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ flex: 1.15, ...slotStyle(0) }}>
+          <div style={{ flex: isGrowing ? 1.15 : 1, transition: phase === "reset" ? "none" : "flex 0.44s cubic-bezier(0.4,0,0.2,1)", ...slotStyle(0) }}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} featured /> : placeholder}
           </div>
           <div style={{ flex: 1, ...slotStyle(1) }}>
