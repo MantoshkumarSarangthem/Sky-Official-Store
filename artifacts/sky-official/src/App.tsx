@@ -1374,11 +1374,10 @@ interface DailyOfferPkg {
   game_name: string | null;
 }
 
-function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; featured?: boolean }) {
+function DailyOfferCard({ pkg }: { pkg: DailyOfferPkg }) {
   const hasOld = !!(pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
   const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
   const label = pkg.name || `${total.toLocaleString()} Diamonds`;
-  const iconSize = featured ? 46 : 40;
   return (
     <div style={{
       background: "#FFFFFF",
@@ -1395,15 +1394,15 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
     }}>
       <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{
-          width: iconSize, height: iconSize,
-          borderRadius: Math.round(iconSize * 0.27),
+          width: 40, height: 40,
+          borderRadius: 11,
           overflow: "hidden", flexShrink: 0,
           background: pkg.image ? "transparent" : "rgba(139,92,246,0.09)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           {pkg.image
             ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <svg width={featured ? 25 : 21} height={featured ? 25 : 21} viewBox="0 0 24 24" fill="none">
+            : <svg width={21} height={21} viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L2 9l10 13L22 9z" fill="rgba(139,92,246,0.15)" stroke="#8b5cf6" strokeWidth="1.5" strokeLinejoin="round"/>
                 <path d="M2 9h20M8 9l4-7M16 9l-4-7" stroke="#8b5cf6" strokeWidth="1.4" strokeLinejoin="round"/>
               </svg>
@@ -1411,16 +1410,16 @@ function DailyOfferCard({ pkg, featured = false }: { pkg: DailyOfferPkg; feature
         </div>
         <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingLeft: 5, minWidth: 0 }}>
           {hasOld && (
-            <div style={{ color: "rgba(61,43,31,0.35)", fontSize: featured ? 10 : 9, textDecoration: "line-through", lineHeight: 1.3, whiteSpace: "nowrap" }}>
+            <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 9, textDecoration: "line-through", lineHeight: 1.3, whiteSpace: "nowrap" }}>
               ₹{parseFloat(pkg.old_price!).toFixed(0)}
             </div>
           )}
-          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: featured ? 15 : 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
+          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
             ₹{parseFloat(pkg.price).toFixed(0)}
           </div>
         </div>
       </div>
-      <div style={{ color: "#1a0a2e", fontWeight: 800, fontSize: featured ? 11 : 9.5, lineHeight: 1.2, letterSpacing: "0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <div style={{ color: "#1a0a2e", fontWeight: 800, fontSize: 9.5, lineHeight: 1.2, letterSpacing: "0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {label}
       </div>
     </div>
@@ -1522,7 +1521,7 @@ function DailyOfferSection() {
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
         <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center", height: 84 }}>
           <div style={slot0Style}>
-            {slots[0] ? <DailyOfferCard pkg={slots[0]} featured /> : placeholder}
+            {slots[0] ? <DailyOfferCard pkg={slots[0]} /> : placeholder}
           </div>
           <div style={slot1Style}>
             {slots[1] ? <DailyOfferCard pkg={slots[1]} /> : placeholder}
