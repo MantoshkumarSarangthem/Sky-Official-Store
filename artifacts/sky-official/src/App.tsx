@@ -1499,7 +1499,7 @@ function DailyOfferSection() {
   const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, aspectRatio: "5/4", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
 
   return (
-    <section style={{ padding: "10px 0 4px" }}>
+    <section style={{ padding: "4px 0 4px" }}>
       <style>{`
         @keyframes doFadeIn { from { opacity: 0 } to { opacity: 1 } }
         .daily-s2-enter { animation: doFadeIn 0.42s ease forwards; }
@@ -1509,7 +1509,7 @@ function DailyOfferSection() {
         <span style={{ background: "linear-gradient(90deg,#f59e0b,#fbbf24)", color: "#3D2B1F", fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>HOT</span>
       </div>
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
-        <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <div style={{ flex: 1.15, ...slotStyle(0) }}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} featured /> : placeholder}
           </div>
@@ -1533,7 +1533,7 @@ function MainSite() {
           <div style={{ minHeight: "220px" }}>
             <PromoBannerSlider />
           </div>
-          <div style={{ height: 20 }} />
+          <div style={{ height: 8 }} />
           <DailyOfferSection />
           <div style={{ height: 8 }} />
           <div style={{ minHeight: "500px" }}>
