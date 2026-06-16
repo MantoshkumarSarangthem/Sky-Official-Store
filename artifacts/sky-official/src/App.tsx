@@ -1431,8 +1431,7 @@ function DailyOfferSection() {
   const cacheKey = `${API}/settings/daily_offer_packages`;
   const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
   const [headIdx, setHeadIdx] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "shrinking" | "sliding" | "reset">("idle");
-  const [isGrowing, setIsGrowing] = useState(true);
+  const [phase, setPhase] = useState<"idle" | "sliding" | "reset">("idle");
   const rowRef = useRef<HTMLDivElement>(null);
   const slideRef = useRef<[number, number, number]>([220, 130, 112]);
 
@@ -1455,29 +1454,19 @@ function DailyOfferSection() {
     let t1: ReturnType<typeof setTimeout>;
     const cycle = () => {
       t0 = setTimeout(() => {
-        // Phase 1: shrink featured card back to normal size before sliding
-        setIsGrowing(false);
-        setPhase("shrinking");
+        if (rowRef.current) {
+          const c = rowRef.current.children;
+          const w0 = (c[0] as HTMLElement)?.offsetWidth ?? 120;
+          const w1 = (c[1] as HTMLElement)?.offsetWidth ?? 104;
+          slideRef.current = [rowRef.current.offsetWidth + 20, w0 + 8, w1 + 8];
+        }
+        setPhase("sliding");
         t1 = setTimeout(() => {
-          // Phase 2: slide all cards off left
-          if (rowRef.current) {
-            const c = rowRef.current.children;
-            const w0 = (c[0] as HTMLElement)?.offsetWidth ?? 120;
-            const w1 = (c[1] as HTMLElement)?.offsetWidth ?? 104;
-            slideRef.current = [rowRef.current.offsetWidth + 20, w0 + 8, w1 + 8];
-          }
-          setPhase("sliding");
-          t1 = setTimeout(() => {
-            // Phase 3: snap back, advance index
-            setPhase("reset");
-            setHeadIdx(i => (i + 1) % n);
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-              setPhase("idle");
-              requestAnimationFrame(() => setIsGrowing(true));
-            }));
-            cycle();
-          }, 440);
-        }, 360);
+          setPhase("reset");
+          setHeadIdx(i => (i + 1) % n);
+          requestAnimationFrame(() => requestAnimationFrame(() => setPhase("idle")));
+          cycle();
+        }, 440);
       }, 4000);
     };
     cycle();
@@ -1494,18 +1483,30 @@ function DailyOfferSection() {
   ];
 
   const [d0, d1, d2] = slideRef.current;
-  const SLIDE_TR = "transform 0.44s cubic-bezier(0.4,0,0.2,1)";
+  const EASE = "cubic-bezier(0.4,0,0.2,1)";
+  const SYNC_TR = `transform 0.44s ${EASE}, flex 0.44s ${EASE}`;
 
-  const slotStyle = (i: number): React.CSSProperties => {
-    if (phase === "sliding") {
-      const dist = i === 0 ? d0 : i === 1 ? d1 : d2;
-      return { transform: `translateX(-${dist}px)`, transition: SLIDE_TR, willChange: "transform" };
-    }
-    if (phase === "reset") {
-      return { transform: "translateX(0)", transition: "none" };
-    }
-    return {};
-  };
+  // Each slot's flex AND transform animate together with identical timing.
+  // Slot 0: featured (1.15) at rest → shrinks to 1 while sliding off.
+  // Slot 1: normal (1) at rest → grows to 1.15 while sliding into featured spot.
+  // Slot 2: always 1, just translates.
+  const slot0Style: React.CSSProperties = phase === "sliding"
+    ? { flex: 1,    transform: `translateX(-${d0}px)`, transition: SYNC_TR, willChange: "transform, flex" }
+    : phase === "reset"
+    ? { flex: 1.15, transform: "translateX(0)", transition: "none" }
+    : { flex: 1.15 };
+
+  const slot1Style: React.CSSProperties = phase === "sliding"
+    ? { flex: 1.15, transform: `translateX(-${d1}px)`, transition: SYNC_TR, willChange: "transform, flex" }
+    : phase === "reset"
+    ? { flex: 1,    transform: "translateX(0)", transition: "none" }
+    : { flex: 1 };
+
+  const slot2Style: React.CSSProperties = phase === "sliding"
+    ? { flex: 1, transform: `translateX(-${d2}px)`, transition: SYNC_TR, willChange: "transform" }
+    : phase === "reset"
+    ? { flex: 1, transform: "translateX(0)", transition: "none" }
+    : { flex: 1 };
 
   const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: "100%", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
 
@@ -1521,13 +1522,13 @@ function DailyOfferSection() {
       </div>
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
         <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center", height: 84 }}>
-          <div style={{ flex: isGrowing ? 1.15 : 1, transition: phase === "reset" ? "none" : "flex 0.44s cubic-bezier(0.4,0,0.2,1)", ...slotStyle(0) }}>
+          <div style={slot0Style}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} featured /> : placeholder}
           </div>
-          <div style={{ flex: 1, ...slotStyle(1) }}>
+          <div style={slot1Style}>
             {slots[1] ? <DailyOfferCard pkg={slots[1]} /> : placeholder}
           </div>
-          <div key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, ...slotStyle(2) }}>
+          <div key={`s2-${headIdx}`} className="daily-s2-enter" style={slot2Style}>
             {slots[2] ? <DailyOfferCard pkg={slots[2]} /> : placeholder}
           </div>
         </div>
