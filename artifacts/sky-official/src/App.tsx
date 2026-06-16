@@ -1484,26 +1484,32 @@ function DailyOfferSection() {
   const [d0, d1, d2] = slideRef.current;
   const EASE = "cubic-bezier(0.4,0,0.2,1)";
   const TR = `transform 0.44s ${EASE}`;
-  // transition: TR is kept in ALL non-reset phases so it is already active
-  // when values change idle→sliding. This guarantees translateX and scaleX
-  // (both part of the same `transform` property) animate in the same frame.
-  const IDLE0: React.CSSProperties  = { flex: 1.15, transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: TR };
-  const IDLE1: React.CSSProperties  = { flex: 1,    transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: TR };
-  const IDLE2: React.CSSProperties  = { flex: 1,                                    transform: "translateX(0px)",               transition: TR };
-  const RESET0: React.CSSProperties = { flex: 1.15, transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: "none" };
-  const RESET1: React.CSSProperties = { flex: 1,    transformOrigin: "left center", transform: "translateX(0px) scaleX(1)",    transition: "none" };
-  const RESET2: React.CSSProperties = { flex: 1,                                    transform: "translateX(0px)",               transition: "none" };
+  // H0 = featured height, H1 = normal height. H0 = H1 * 1.15 exactly so that
+  // slot1 at scale(1.15) visually matches slot0 at scale(1) — zero snap at reset.
+  // Using scale() (not scaleX) so card content grows uniformly as one object.
+  // transition:TR is pre-set in idle so the browser has an active transition the
+  // moment transform values change — no "add transition + change value" race.
+  // willChange is NOT added mid-flight to avoid GPU layer re-promotion stutter.
+  const H0 = 97, H1 = 84;
+  const S_SHRINK = (H1 / H0).toFixed(6); // ≈ 0.865979 (slot0 shrinks to normal)
+
+  const IDLE0: React.CSSProperties  = { flex: 1.15, height: H0, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: TR };
+  const IDLE1: React.CSSProperties  = { flex: 1,    height: H1, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: TR };
+  const IDLE2: React.CSSProperties  = { flex: 1,    height: H1,                                  transform: "translateX(0px) scale(1)",         transition: TR };
+  const RESET0: React.CSSProperties = { flex: 1.15, height: H0, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: "none" };
+  const RESET1: React.CSSProperties = { flex: 1,    height: H1, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: "none" };
+  const RESET2: React.CSSProperties = { flex: 1,    height: H1,                                  transform: "translateX(0px) scale(1)",         transition: "none" };
 
   const slot0Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1.15, transformOrigin: "left center", transform: `translateX(-${d0}px) scaleX(${(1/1.15).toFixed(6)})`, transition: TR, willChange: "transform" }
+    ? { flex: 1.15, height: H0, transformOrigin: "left center", transform: `translateX(-${d0}px) scale(${S_SHRINK})`, transition: TR }
     : phase === "reset" ? RESET0 : IDLE0;
 
   const slot1Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1, transformOrigin: "left center", transform: `translateX(-${d1}px) scaleX(1.15)`, transition: TR, willChange: "transform" }
+    ? { flex: 1, height: H1, transformOrigin: "left center", transform: `translateX(-${d1}px) scale(${(H0/H1).toFixed(6)})`, transition: TR }
     : phase === "reset" ? RESET1 : IDLE1;
 
   const slot2Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1, transform: `translateX(-${d2}px)`, transition: TR, willChange: "transform" }
+    ? { flex: 1, height: H1, transform: `translateX(-${d2}px) scale(1)`, transition: TR }
     : phase === "reset" ? RESET2 : IDLE2;
 
   const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: "100%", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
@@ -1519,7 +1525,7 @@ function DailyOfferSection() {
         <span style={{ background: "linear-gradient(90deg,#f59e0b,#fbbf24)", color: "#3D2B1F", fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>HOT</span>
       </div>
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
-        <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center", height: 84 }}>
+        <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <div style={slot0Style}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} /> : placeholder}
           </div>
