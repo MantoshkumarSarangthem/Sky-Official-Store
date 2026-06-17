@@ -156,6 +156,9 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditResult, setCreditResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [clerkSearchResults, setClerkSearchResults] = useState<{ clerk_user_id: string; display_name: string | null; email: string | null }[]>([]);
+  const [clerkSearching, setClerkSearching] = useState(false);
+  const clerkSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [categoryPopular, setCategoryPopular] = useState<Record<string, boolean>>({});
   const [featuredSaving, setFeaturedSaving] = useState(false);
   const [qrCurrent, setQrCurrent] = useState<string | null>(null);
@@ -839,6 +842,19 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     fetchCategoryPopular();
     fetchStarlightImages();
   }, [authed]);
+
+  useEffect(() => {
+    if (creditUserId || !creditUserSearch.trim()) { setClerkSearchResults([]); return; }
+    if (clerkSearchTimer.current) clearTimeout(clerkSearchTimer.current);
+    clerkSearchTimer.current = setTimeout(async () => {
+      setClerkSearching(true);
+      try {
+        const res = await fetch(`${API}/admin/users/search?q=${encodeURIComponent(creditUserSearch.trim())}`, { headers });
+        if (res.ok) setClerkSearchResults(await res.json());
+      } catch {} finally { setClerkSearching(false); }
+    }, 350);
+    return () => { if (clerkSearchTimer.current) clearTimeout(clerkSearchTimer.current); };
+  }, [creditUserSearch, creditUserId]);
 
   useEffect(() => {
     if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchCommunityLinks(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); }
@@ -2376,31 +2392,27 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       {creditUserId && (
                         <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#22c55e", fontSize: 11, fontWeight: 700 }}>✓ selected</div>
                       )}
-                      {showUserDropdown && creditUserSearch && !creditUserId && (() => {
-                        const q = creditUserSearch.toLowerCase();
-                        const filtered = knownUsers.filter(u =>
-                          (u.display_name?.toLowerCase().includes(q)) || u.clerk_user_id.toLowerCase().includes(q)
-                        ).slice(0, 8);
-                        return filtered.length > 0 ? (
-                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, zIndex: 50, overflow: "hidden" }}>
-                            {filtered.map(u => (
-                              <button
-                                key={u.clerk_user_id}
-                                onClick={() => { setCreditUserId(u.clerk_user_id); setCreditUserSearch(u.display_name || u.clerk_user_id); setShowUserDropdown(false); }}
-                                className="w-full text-left px-3 py-2.5 flex flex-col gap-0.5"
-                                style={{ background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
-                              >
-                                <span className="text-white text-xs font-semibold">{u.display_name || "Unknown"}</span>
-                                <span className="text-gray-500 text-xs font-mono">{u.clerk_user_id.slice(0, 22)}…</span>
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, zIndex: 50, padding: "10px 12px" }}>
-                            <span className="text-gray-500 text-xs">No matching users. Paste a Clerk user ID directly.</span>
-                          </div>
-                        );
-                      })()}
+                      {showUserDropdown && creditUserSearch && !creditUserId && (
+                        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, zIndex: 50, overflow: "hidden" }}>
+                          {clerkSearching && (
+                            <div className="px-3 py-2.5 text-gray-500 text-xs">Searching…</div>
+                          )}
+                          {!clerkSearching && clerkSearchResults.length > 0 && clerkSearchResults.map(u => (
+                            <button
+                              key={u.clerk_user_id}
+                              onClick={() => { setCreditUserId(u.clerk_user_id); setCreditUserSearch(u.display_name || u.email || u.clerk_user_id); setShowUserDropdown(false); setClerkSearchResults([]); }}
+                              className="w-full text-left px-3 py-2.5 flex flex-col gap-0.5"
+                              style={{ background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+                            >
+                              <span className="text-white text-xs font-semibold">{u.display_name || "Unnamed"}</span>
+                              <span className="text-gray-500 text-xs">{u.email || u.clerk_user_id.slice(0, 26) + "…"}</span>
+                            </button>
+                          ))}
+                          {!clerkSearching && clerkSearchResults.length === 0 && creditUserSearch.trim().length >= 2 && (
+                            <div className="px-3 py-2.5 text-gray-500 text-xs">No users found. Try their email or full name.</div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Amount + Note */}

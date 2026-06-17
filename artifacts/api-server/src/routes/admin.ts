@@ -555,6 +555,24 @@ router.post("/wallet-requests/:id/reject", requireAdmin, async (req, res): Promi
   }
 });
 
+// ── User Search (Clerk) ───────────────────────────────────────────────────────
+router.get("/users/search", requireAdmin, async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  if (!q) { res.json([]); return; }
+  try {
+    if (!process.env.CLERK_SECRET_KEY) { res.json([]); return; }
+    const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    const result = await clerk.users.getUserList({ query: q, limit: 10 });
+    res.json(result.data.map(u => ({
+      clerk_user_id: u.id,
+      display_name: [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || u.username || null,
+      email: u.emailAddresses[0]?.emailAddress || null,
+    })));
+  } catch {
+    res.json([]);
+  }
+});
+
 // ── Direct Wallet Credit ──────────────────────────────────────────────────────
 router.get("/wallet/known-users", requireAdmin, async (_req, res) => {
   try {
