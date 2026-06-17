@@ -72,15 +72,15 @@ export default function WalletHistoryPage() {
               {transactions.map((tx, idx) => (
                 <div key={tx.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: idx < transactions.length - 1 ? "1px solid rgba(197,180,162,0.18)" : "none" }}>
                   <div>
-                    <div style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 600 }}>{tx.description ?? (tx.type === "credit" ? "Top-up" : "Debit")}</div>
+                    <div style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 600 }}>{tx.description ?? (tx.type === "credit" || tx.type === "admin_credit" ? "Top-up" : "Debit")}</div>
                     <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 11, marginTop: 2 }}>{new Date(tx.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
                     {tx.upi_ref && tx.upi_ref.startsWith("TUP-") && (
                       <div style={{ color: "rgba(61,43,31,0.25)", fontSize: 10, fontFamily: "monospace", marginTop: 1 }}>ID: {tx.upi_ref}</div>
                     )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                    <div style={{ color: tx.type === "credit" ? "#22c55e" : "#ef4444", fontWeight: 700, fontSize: 14 }}>
-                      {tx.type === "credit" ? "+" : "-"}S {parseFloat(tx.amount).toFixed(0)}
+                    <div style={{ color: (tx.type === "credit" || tx.type === "admin_credit") ? "#22c55e" : "#ef4444", fontWeight: 700, fontSize: 14 }}>
+                      {(tx.type === "credit" || tx.type === "admin_credit") ? "+" : "-"}S {parseFloat(tx.amount).toFixed(0)}
                     </div>
                     <div style={{ fontSize: 10, fontWeight: 600, color: statusColor[tx.status] ?? "#aaa", background: (statusColor[tx.status] ?? "#aaa") + "18", padding: "1px 7px", borderRadius: 999 }}>
                       {tx.status}
