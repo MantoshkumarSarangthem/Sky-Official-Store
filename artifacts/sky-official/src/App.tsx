@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { flushSync } from "react-dom";
 import { getCached, cachedFetch, invalidateCache } from "./lib/apiCache";
 import AdminPanel from "./components/AdminPanel";
 import PackagesSection from "./components/PackagesSection";
@@ -1449,11 +1450,13 @@ function DailyOfferCard({ pkg }: { pkg: DailyOfferPkg }) {
           }
         </div>
         <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", paddingLeft: 5, minWidth: 0 }}>
-          {hasOld && (
-            <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 9, textDecoration: "line-through", lineHeight: 1.3, whiteSpace: "nowrap" }}>
-              ₹{parseFloat(pkg.old_price!).toFixed(0)}
-            </div>
-          )}
+          <div style={{ height: 14, display: "flex", alignItems: "flex-end" }}>
+            {hasOld && (
+              <div style={{ color: "rgba(61,43,31,0.35)", fontSize: 9, textDecoration: "line-through", lineHeight: 1.3, whiteSpace: "nowrap" }}>
+                ₹{parseFloat(pkg.old_price!).toFixed(0)}
+              </div>
+            )}
+          </div>
           <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
             ₹{parseFloat(pkg.price).toFixed(0)}
           </div>
@@ -1537,9 +1540,11 @@ function DailyOfferSection() {
         );
 
         t1 = setTimeout(() => {
-          // cancel() removes the Web Animation and snaps transforms back to base style
+          // cancel() snaps transforms back to base — flushSync forces React to
+          // commit the new headIdx in the SAME js tick so the browser never
+          // paints the "old content at natural positions" intermediate frame.
           [ref0, ref1, ref2].forEach(r => r.current?.getAnimations().forEach(a => a.cancel()));
-          setHeadIdx(i => (i + 1) % n);
+          flushSync(() => setHeadIdx(i => (i + 1) % n));
           cycle();
         }, 440);
       }, 4000);
