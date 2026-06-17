@@ -555,6 +555,50 @@ router.post("/wallet-requests/:id/reject", requireAdmin, async (req, res): Promi
   }
 });
 
+// ── Direct Wallet Credit ──────────────────────────────────────────────────────
+router.get("/wallet/known-users", requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT clerk_user_id, MAX(display_name) AS display_name
+       FROM (
+         SELECT clerk_user_id, display_name FROM wallet_transactions WHERE clerk_user_id IS NOT NULL
+         UNION ALL
+         SELECT clerk_user_id, display_name FROM orders WHERE clerk_user_id IS NOT NULL
+       ) combined
+       GROUP BY clerk_user_id
+       ORDER BY MAX(display_name) NULLS LAST`
+    );
+    res.json(rows);
+  } catch {
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.post("/wallet/direct-credit", requireAdmin, async (req, res): Promise<void> => {
+  const { clerk_user_id, amount, note } = req.body;
+  if (!clerk_user_id || !amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+    res.status(400).json({ error: "Invalid clerk_user_id or amount" });
+    return;
+  }
+  try {
+    await pool.query(
+      `INSERT INTO wallets (clerk_user_id, balance, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (clerk_user_id)
+       DO UPDATE SET balance = wallets.balance + $2, updated_at = NOW()`,
+      [clerk_user_id, Number(amount)]
+    );
+    await pool.query(
+      `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description)
+       VALUES ($1, $2, 'admin_credit', 'approved', $3)`,
+      [clerk_user_id, Number(amount), note || "Admin credit"]
+    );
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
 // ── Promo Events ──────────────────────────────────────────────────────────────
 router.get("/promo-events", requireAdmin, async (_req, res) => {
   try {

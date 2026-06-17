@@ -148,6 +148,14 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [walletRequests, setWalletRequests] = useState<WalletRequest[]>([]);
   const [walletLoading, setWalletLoading] = useState<number | null>(null);
+  const [knownUsers, setKnownUsers] = useState<{ clerk_user_id: string; display_name: string | null }[]>([]);
+  const [creditUserId, setCreditUserId] = useState("");
+  const [creditUserSearch, setCreditUserSearch] = useState("");
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditNote, setCreditNote] = useState("");
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditResult, setCreditResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [categoryPopular, setCategoryPopular] = useState<Record<string, boolean>>({});
   const [featuredSaving, setFeaturedSaving] = useState(false);
   const [qrCurrent, setQrCurrent] = useState<string | null>(null);
@@ -573,6 +581,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (res.ok) setWalletRequests(await res.json());
   }, [token]);
 
+  const fetchKnownUsers = useCallback(async () => {
+    const res = await fetch(`${API}/admin/wallet/known-users`, { headers });
+    if (res.ok) setKnownUsers(await res.json());
+  }, [token]);
+
   const fetchCategoryPopular = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/category_popular`, { headers });
     if (res.ok) setCategoryPopular(await res.json());
@@ -822,6 +835,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     fetchPackages();
     fetchOrders();
     fetchWalletRequests();
+    fetchKnownUsers();
     fetchCategoryPopular();
     fetchStarlightImages();
   }, [authed]);
@@ -964,6 +978,34 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const res = await fetch(`${API}/admin/orders/search?${params}`, { headers });
       if (res.ok) setSearchResults(await res.json());
     } catch {} finally { setSearching(false); }
+  };
+
+  const directCredit = async () => {
+    if (!creditUserId || !creditAmount || Number(creditAmount) <= 0) return;
+    setCreditLoading(true);
+    setCreditResult(null);
+    try {
+      const res = await fetch(`${API}/admin/wallet/direct-credit`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ clerk_user_id: creditUserId, amount: Number(creditAmount), note: creditNote || "Admin credit" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setCreditResult({ ok: true, msg: `₹${Number(creditAmount).toFixed(0)} credited successfully.` });
+        setCreditAmount("");
+        setCreditNote("");
+        setCreditUserId("");
+        setCreditUserSearch("");
+        fetchWalletRequests();
+      } else {
+        setCreditResult({ ok: false, msg: data.error || "Failed to credit wallet." });
+      }
+    } catch {
+      setCreditResult({ ok: false, msg: "Network error." });
+    } finally {
+      setCreditLoading(false);
+    }
   };
 
   const approveWallet = async (id: number) => {
@@ -2315,6 +2357,89 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               {/* ── WALLET TAB ── */}
               {tab === "wallet" && (
                 <div className="flex flex-col gap-4" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+
+                  {/* Direct Credit Panel */}
+                  <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.2)" }}>
+                    <span className="text-amber-400 font-bold text-sm">Direct Wallet Credit</span>
+
+                    {/* User Picker */}
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="text"
+                        placeholder="Search user by name or ID…"
+                        value={creditUserSearch}
+                        onChange={e => { setCreditUserSearch(e.target.value); setCreditUserId(""); setShowUserDropdown(true); }}
+                        onFocus={() => setShowUserDropdown(true)}
+                        className="w-full text-xs text-white rounded-lg px-3 py-2.5"
+                        style={{ background: "#111", border: creditUserId ? "1px solid rgba(34,197,94,0.5)" : "1px solid rgba(255,255,255,0.1)", outline: "none" }}
+                      />
+                      {creditUserId && (
+                        <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#22c55e", fontSize: 11, fontWeight: 700 }}>✓ selected</div>
+                      )}
+                      {showUserDropdown && creditUserSearch && !creditUserId && (() => {
+                        const q = creditUserSearch.toLowerCase();
+                        const filtered = knownUsers.filter(u =>
+                          (u.display_name?.toLowerCase().includes(q)) || u.clerk_user_id.toLowerCase().includes(q)
+                        ).slice(0, 8);
+                        return filtered.length > 0 ? (
+                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, zIndex: 50, overflow: "hidden" }}>
+                            {filtered.map(u => (
+                              <button
+                                key={u.clerk_user_id}
+                                onClick={() => { setCreditUserId(u.clerk_user_id); setCreditUserSearch(u.display_name || u.clerk_user_id); setShowUserDropdown(false); }}
+                                className="w-full text-left px-3 py-2.5 flex flex-col gap-0.5"
+                                style={{ background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+                              >
+                                <span className="text-white text-xs font-semibold">{u.display_name || "Unknown"}</span>
+                                <span className="text-gray-500 text-xs font-mono">{u.clerk_user_id.slice(0, 22)}…</span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, zIndex: 50, padding: "10px 12px" }}>
+                            <span className="text-gray-500 text-xs">No matching users. Paste a Clerk user ID directly.</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Amount + Note */}
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Amount (₹)"
+                        value={creditAmount}
+                        onChange={e => setCreditAmount(e.target.value)}
+                        className="text-xs text-white rounded-lg px-3 py-2.5"
+                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", outline: "none", width: 110, flexShrink: 0 }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Note (optional)"
+                        value={creditNote}
+                        onChange={e => setCreditNote(e.target.value)}
+                        className="w-full text-xs text-white rounded-lg px-3 py-2.5"
+                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", outline: "none" }}
+                      />
+                    </div>
+
+                    <button
+                      onClick={directCredit}
+                      disabled={creditLoading || !creditUserId || !creditAmount || Number(creditAmount) <= 0}
+                      className="w-full py-2.5 rounded-lg text-xs font-bold"
+                      style={{ background: (creditLoading || !creditUserId || !creditAmount || Number(creditAmount) <= 0) ? "rgba(245,158,11,0.3)" : "#f59e0b", color: "#000", cursor: (creditLoading || !creditUserId || !creditAmount) ? "not-allowed" : "pointer" }}
+                    >
+                      {creditLoading ? "Crediting…" : "Credit Wallet"}
+                    </button>
+
+                    {creditResult && (
+                      <div className="text-xs font-semibold px-3 py-2 rounded-lg" style={{ background: creditResult.ok ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: creditResult.ok ? "#22c55e" : "#ef4444", border: `1px solid ${creditResult.ok ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}` }}>
+                        {creditResult.msg}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold text-sm">Top-up Requests</span>
                     <button onClick={fetchWalletRequests} className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-300" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}>Refresh</button>
