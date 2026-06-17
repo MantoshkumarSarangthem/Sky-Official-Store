@@ -1430,9 +1430,15 @@ function DailyOfferSection() {
   const cacheKey = `${API}/settings/daily_offer_packages`;
   const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
   const [headIdx, setHeadIdx] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "sliding" | "reset">("idle");
-  const rowRef = useRef<HTMLDivElement>(null);
-  const slideRef = useRef<[number, number, number]>([220, 130, 112]);
+  const rowRef  = useRef<HTMLDivElement>(null);
+  const ref0    = useRef<HTMLDivElement>(null);
+  const ref1    = useRef<HTMLDivElement>(null);
+  const ref2    = useRef<HTMLDivElement>(null);
+  // H0 = featured (slot0) height, H1 = normal height.
+  // scale factor = H0/H1 so slot1 at scale(H0/H1) is visually identical to slot0 at scale(1).
+  const H0 = 97, H1 = 84;
+  const SCALE_UP   = H0 / H1;   // ≈ 1.1548 — slot1 grows to featured size
+  const SCALE_DOWN = H1 / H0;   // ≈ 0.8660 — slot0 shrinks to normal size
 
   useEffect(() => {
     cachedFetch<DailyOfferPkg[]>(cacheKey)
@@ -1451,26 +1457,57 @@ function DailyOfferSection() {
     if (n < 2) return;
     let t0: ReturnType<typeof setTimeout>;
     let t1: ReturnType<typeof setTimeout>;
+
     const cycle = () => {
       t0 = setTimeout(() => {
+        // Measure live pixel distances immediately before animating
+        let d0 = 320, d1 = 108, d2 = 94;
         if (rowRef.current) {
           const c = rowRef.current.children;
-          const w0 = (c[0] as HTMLElement)?.offsetWidth ?? 120;
-          const w1 = (c[1] as HTMLElement)?.offsetWidth ?? 104;
-          slideRef.current = [rowRef.current.offsetWidth + 20, w0 + 8, w1 + 8];
+          const w0 = (c[0] as HTMLElement)?.offsetWidth ?? 99;
+          const w1 = (c[1] as HTMLElement)?.offsetWidth ?? 86;
+          d0 = rowRef.current.offsetWidth + 20;
+          d1 = w0 + 8;
+          d2 = w1 + 8;
         }
-        setPhase("sliding");
+
+        const OPT: KeyframeAnimationOptions = {
+          duration: 440,
+          easing: "cubic-bezier(0.4,0,0.2,1)",
+          fill: "forwards",
+        };
+
+        // All three .animate() calls happen in the same JS execution tick.
+        // The browser compositor batches them into the exact same frame —
+        // translateX and scale are guaranteed to start and progress together.
+        ref0.current?.animate(
+          [{ transform: "translateX(0px) scale(1)" },
+           { transform: `translateX(-${d0}px) scale(${SCALE_DOWN})` }],
+          OPT,
+        );
+        ref1.current?.animate(
+          [{ transform: "translateX(0px) scale(1)" },
+           { transform: `translateX(-${d1}px) scale(${SCALE_UP})` }],
+          OPT,
+        );
+        ref2.current?.animate(
+          [{ transform: "translateX(0px)" },
+           { transform: `translateX(-${d2}px)` }],
+          OPT,
+        );
+
         t1 = setTimeout(() => {
-          setPhase("reset");
+          // cancel() removes the Web Animation and snaps transforms back to base style
+          [ref0, ref1, ref2].forEach(r => r.current?.getAnimations().forEach(a => a.cancel()));
           setHeadIdx(i => (i + 1) % n);
-          requestAnimationFrame(() => requestAnimationFrame(() => setPhase("idle")));
           cycle();
         }, 440);
       }, 4000);
     };
+
     cycle();
     return () => { clearTimeout(t0); clearTimeout(t1); };
-  }, [pkgs.length]);
+  }, [pkgs.length, SCALE_UP, SCALE_DOWN]);
 
   if (pkgs.length === 0) return null;
 
@@ -1480,37 +1517,6 @@ function DailyOfferSection() {
     n > 1 ? pkgs[(headIdx + 1) % n] : null,
     n > 2 ? pkgs[(headIdx + 2) % n] : null,
   ];
-
-  const [d0, d1, d2] = slideRef.current;
-  const EASE = "cubic-bezier(0.4,0,0.2,1)";
-  const TR = `transform 0.44s ${EASE}`;
-  // H0 = featured height, H1 = normal height. H0 = H1 * 1.15 exactly so that
-  // slot1 at scale(1.15) visually matches slot0 at scale(1) — zero snap at reset.
-  // Using scale() (not scaleX) so card content grows uniformly as one object.
-  // transition:TR is pre-set in idle so the browser has an active transition the
-  // moment transform values change — no "add transition + change value" race.
-  // willChange is NOT added mid-flight to avoid GPU layer re-promotion stutter.
-  const H0 = 97, H1 = 84;
-  const S_SHRINK = (H1 / H0).toFixed(6); // ≈ 0.865979 (slot0 shrinks to normal)
-
-  const IDLE0: React.CSSProperties  = { flex: 1.15, height: H0, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: TR };
-  const IDLE1: React.CSSProperties  = { flex: 1,    height: H1, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: TR };
-  const IDLE2: React.CSSProperties  = { flex: 1,    height: H1,                                  transform: "translateX(0px) scale(1)",         transition: TR };
-  const RESET0: React.CSSProperties = { flex: 1.15, height: H0, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: "none" };
-  const RESET1: React.CSSProperties = { flex: 1,    height: H1, transformOrigin: "left center", transform: "translateX(0px) scale(1)",         transition: "none" };
-  const RESET2: React.CSSProperties = { flex: 1,    height: H1,                                  transform: "translateX(0px) scale(1)",         transition: "none" };
-
-  const slot0Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1.15, height: H0, transformOrigin: "left center", transform: `translateX(-${d0}px) scale(${S_SHRINK})`, transition: TR }
-    : phase === "reset" ? RESET0 : IDLE0;
-
-  const slot1Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1, height: H1, transformOrigin: "left center", transform: `translateX(-${d1}px) scale(${(H0/H1).toFixed(6)})`, transition: TR }
-    : phase === "reset" ? RESET1 : IDLE1;
-
-  const slot2Style: React.CSSProperties = phase === "sliding"
-    ? { flex: 1, height: H1, transform: `translateX(-${d2}px) scale(1)`, transition: TR }
-    : phase === "reset" ? RESET2 : IDLE2;
 
   const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: "100%", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
 
@@ -1526,13 +1532,13 @@ function DailyOfferSection() {
       </div>
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
         <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={slot0Style}>
+          <div ref={ref0} style={{ flex: 1.15, height: H0, transformOrigin: "left center" }}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} /> : placeholder}
           </div>
-          <div style={slot1Style}>
+          <div ref={ref1} style={{ flex: 1, height: H1, transformOrigin: "left center" }}>
             {slots[1] ? <DailyOfferCard pkg={slots[1]} /> : placeholder}
           </div>
-          <div key={`s2-${headIdx}`} className="daily-s2-enter" style={slot2Style}>
+          <div ref={ref2} key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, height: H1 }}>
             {slots[2] ? <DailyOfferCard pkg={slots[2]} /> : placeholder}
           </div>
         </div>
