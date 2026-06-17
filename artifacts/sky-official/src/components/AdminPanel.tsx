@@ -179,6 +179,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [communityInstagram, setCommunityInstagram] = useState("");
   const [communitySaving, setCommunitySaving] = useState(false);
   const [communitySaved, setCommunitySaved] = useState(false);
+  const [broadcastType, setBroadcastType] = useState("news");
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastBody, setBroadcastBody] = useState("");
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [banners, setBanners] = useState<OfferBanner[]>([]);
   const [bannersSaving, setBannersSaving] = useState(false);
   const [showAddBanner, setShowAddBanner] = useState(false);
@@ -2241,6 +2246,64 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     >
                       {communitySaving ? "Saving…" : communitySaved ? "✓ Saved!" : "Save Community Links"}
                     </button>
+                  </div>
+
+                  {/* ── Broadcast Notification ── */}
+                  <div>
+                    <div className="text-white font-bold text-sm mb-1">📢 Broadcast Notification</div>
+                    <div className="text-gray-400 text-xs mb-3">Send a notification to all users — maintenance alerts, news, announcements.</div>
+                    <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                      <div>
+                        <div className="text-xs text-gray-400 mb-1">Type</div>
+                        <select value={broadcastType} onChange={e => setBroadcastType(e.target.value)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+                          <option value="news">📢 News / Announcement</option>
+                          <option value="maintenance">🔧 Maintenance</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-400 mb-1">Title</div>
+                        <input value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} placeholder="e.g. Scheduled Maintenance" className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-400 mb-1">Message</div>
+                        <textarea value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} placeholder="e.g. Sky Official will be down for maintenance on June 20 from 2–4 AM IST." rows={3} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none resize-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                      </div>
+                      {broadcastResult && (
+                        <div className="text-xs rounded-lg px-3 py-2" style={{ background: broadcastResult.ok ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: broadcastResult.ok ? "#4ade80" : "#f87171", border: `1px solid ${broadcastResult.ok ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}` }}>
+                          {broadcastResult.msg}
+                        </div>
+                      )}
+                      <button
+                        disabled={broadcastSending || !broadcastTitle.trim() || !broadcastBody.trim()}
+                        onClick={async () => {
+                          setBroadcastSending(true);
+                          setBroadcastResult(null);
+                          try {
+                            const token = sessionStorage.getItem("admin_token") || "";
+                            const res = await fetch(`${API}/notifications/broadcast`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                              body: JSON.stringify({ type: broadcastType, title: broadcastTitle.trim(), body: broadcastBody.trim() }),
+                            });
+                            const data = await res.json();
+                            if (data.ok) {
+                              setBroadcastResult({ ok: true, msg: "✅ Notification sent to all users." });
+                              setBroadcastTitle("");
+                              setBroadcastBody("");
+                            } else {
+                              setBroadcastResult({ ok: false, msg: data.error || "Failed to send." });
+                            }
+                          } catch {
+                            setBroadcastResult({ ok: false, msg: "Network error. Try again." });
+                          }
+                          setBroadcastSending(false);
+                        }}
+                        className="w-full py-2.5 rounded-xl text-sm font-bold text-black"
+                        style={{ background: broadcastSending || !broadcastTitle.trim() || !broadcastBody.trim() ? "rgba(245,158,11,0.3)" : "linear-gradient(135deg,#fbbf24,#f59e0b)", cursor: broadcastSending || !broadcastTitle.trim() || !broadcastBody.trim() ? "default" : "pointer" }}
+                      >
+                        {broadcastSending ? "Sending…" : "Send to All Users"}
+                      </button>
+                    </div>
                   </div>
 
                 </div>

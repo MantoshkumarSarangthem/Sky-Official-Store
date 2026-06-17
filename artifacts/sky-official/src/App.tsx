@@ -225,6 +225,24 @@ function Navbar() {
     });
   }, [isSignedIn]);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    if (!isSignedIn) { setUnreadCount(0); return; }
+    let cancelled = false;
+    const fetchCount = () => {
+      getToken().then(token => {
+        if (!token || cancelled) return;
+        fetch(`${API}/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include" })
+          .then(r => r.json())
+          .then(data => { if (!cancelled) setUnreadCount(Number(data.count ?? 0)); })
+          .catch(() => {});
+      });
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [isSignedIn]);
+
   useEffect(() => {
     if (!showProfileMenu) return;
     const handler = (e: MouseEvent) => {
@@ -305,11 +323,16 @@ function Navbar() {
             <div style={{ position: "relative", display: "flex", alignItems: "center" }} ref={profileMenuRef}>
               <button
                 onClick={() => setShowProfileMenu(v => !v)}
-                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: "50%", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", borderRadius: "50%", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", position: "relative" }}
               >
                 <div className="rounded-full overflow-hidden flex-shrink-0" style={{ width: 34, height: 34, boxShadow: showProfileMenu ? "0 0 0 2px rgba(141,110,99,0.4)" : "none", transition: "box-shadow 0.15s" }}>
                   <img src={user.imageUrl} alt={user.firstName ?? "User"} className="w-full h-full object-cover" />
                 </div>
+                {unreadCount > 0 && (
+                  <span style={{ position: "absolute", top: -2, right: -2, minWidth: 16, height: 16, background: "#ef4444", borderRadius: 99, border: "2px solid #FAF9F6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff", lineHeight: 1, padding: "0 3px" }}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </button>
               {showProfileMenu && (
                 <div style={{ position: "absolute", right: 0, top: "calc(100% + 10px)", background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 14, boxShadow: "0 8px 30px rgba(61,43,31,0.1)", minWidth: 168, overflow: "hidden", zIndex: 999, animation: "navSlideDown 0.14s ease both" }}>
@@ -332,6 +355,23 @@ function Navbar() {
                       {item.label}
                     </button>
                   ))}
+                  <button
+                    onClick={() => { setLocation("/notifications"); setShowProfileMenu(false); setUnreadCount(0); }}
+                    className="flex items-center gap-2.5 w-full"
+                    style={{ padding: "10px 14px", background: "none", border: "none", borderBottom: "1px solid rgba(197,180,162,0.25)", color: "#3D2B1F", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "left", position: "relative" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(197,180,162,0.12)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                  >
+                    <span style={{ color: "rgba(61,43,31,0.4)", display: "flex" }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </span>
+                    Notifications
+                    {unreadCount > 0 && (
+                      <span style={{ marginLeft: "auto", minWidth: 18, height: 18, background: "#ef4444", borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", padding: "0 4px" }}>
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
                   <button
                     onClick={() => { setShowSignOutConfirm(true); setShowProfileMenu(false); }}
                     className="flex items-center gap-2.5 w-full"
@@ -1899,6 +1939,122 @@ function RefundPage() {
   );
 }
 
+// ── Notifications Page ──────────────────────────────────────────────────────
+function NotificationsPage() {
+  const { getToken, isSignedIn } = useAuth();
+  const [, setLocation] = useLocation();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const typeIcon: Record<string, string> = {
+    order_completed: "💎",
+    wallet_approved: "✅",
+    wallet_rejected: "❌",
+    wallet_credited: "💰",
+    payment_failed: "⚠️",
+    maintenance: "🔧",
+    news: "📢",
+  };
+
+  const fetchNotifications = async () => {
+    if (!isSignedIn) return;
+    const token = await getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/notifications`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include" });
+      const data = await res.json();
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch {}
+    setLoading(false);
+  };
+
+  const markAllRead = async () => {
+    const token = await getToken();
+    if (!token) return;
+    await fetch(`${API}/notifications/read-all`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, credentials: "include" });
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const markRead = async (id: number) => {
+    const token = await getToken();
+    if (!token) return;
+    await fetch(`${API}/notifications/${id}/read`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` }, credentials: "include" });
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  useEffect(() => { fetchNotifications(); }, [isSignedIn]);
+
+  const unread = notifications.filter(n => !n.read).length;
+
+  const relativeTime = (ts: string) => {
+    const diff = Date.now() - new Date(ts).getTime();
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#0d0d0d", paddingTop: 72, paddingBottom: 40 }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <button onClick={() => setLocation(-1 as any)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", padding: 4, display: "flex" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0, flex: 1 }}>Notifications</h1>
+          {unread > 0 && (
+            <button onClick={markAllRead} style={{ background: "none", border: "1px solid rgba(245,158,11,0.35)", borderRadius: 8, color: "#f59e0b", fontSize: 12, fontWeight: 700, padding: "5px 12px", cursor: "pointer" }}>
+              Mark all read
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)", fontSize: 14 }}>Loading…</div>
+        ) : notifications.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "60px 0" }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔔</div>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>No notifications yet.</p>
+            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, marginTop: 6 }}>You'll be notified about order updates, wallet credits, and more.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {notifications.map(n => (
+              <div
+                key={n.id}
+                onClick={() => { if (!n.read) markRead(n.id); }}
+                style={{
+                  background: n.read ? "rgba(255,255,255,0.03)" : "rgba(245,158,11,0.06)",
+                  border: `1px solid ${n.read ? "rgba(255,255,255,0.07)" : "rgba(245,158,11,0.2)"}`,
+                  borderRadius: 14,
+                  padding: "14px 16px",
+                  cursor: n.read ? "default" : "pointer",
+                  display: "flex",
+                  gap: 12,
+                  alignItems: "flex-start",
+                  transition: "background 0.2s",
+                }}
+              >
+                <div style={{ fontSize: 24, flexShrink: 0, lineHeight: 1, marginTop: 2 }}>
+                  {typeIcon[n.type] ?? "🔔"}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={{ color: n.read ? "rgba(255,255,255,0.8)" : "#fff", fontSize: 14, fontWeight: n.read ? 600 : 700, flex: 1 }}>{n.title}</span>
+                    {!n.read && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
+                  </div>
+                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5 }}>{n.body}</p>
+                  <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{relativeTime(n.created_at)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Persistent Navbar (outside page transitions so it never moves) ───────────
 function PersistentNavbar() {
   const [location] = useLocation();
@@ -1956,6 +2112,7 @@ function AppRoutes() {
           <Route path="/favorites" component={FavoritesPage} />
           <Route path="/rank-boost" component={() => <RankBoostPage />} />
           <Route path="/wallet-history" component={WalletHistoryPage} />
+          <Route path="/notifications" component={NotificationsPage} />
           <Route component={MainSite} />
         </Switch>
         </div>

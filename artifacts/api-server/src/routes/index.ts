@@ -6,6 +6,7 @@ import walletRouter from "./wallet";
 import profileRouter from "./profile";
 import verifyRouter from "./verify";
 import pushRouter from "./push";
+import notificationsRouter from "./notifications";
 import pool from "../lib/db";
 import { sendInquiryEmail } from "../lib/email";
 import { createClerkClient } from "@clerk/express";
@@ -19,6 +20,7 @@ router.use("/wallet", walletRouter);
 router.use("/profile", profileRouter);
 router.use("/verify", verifyRouter);
 router.use("/push", pushRouter);
+router.use("/notifications", notificationsRouter);
 
 router.get("/settings/category_popular", async (_req, res) => {
   try {

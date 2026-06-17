@@ -3,6 +3,7 @@ import pool from "../lib/db";
 import { brevoSend } from "../lib/email";
 import { createClerkClient } from "@clerk/express";
 import multer from "multer";
+import { insertNotification } from "../lib/notifications";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -251,11 +252,29 @@ router.put("/orders/:id", requireAdmin, async (req, res): Promise<void> => {
 
     // Send completion email when order is marked as completed
     if (status === "completed" && order.clerk_user_id) {
+      const orderId = order.display_id || `#${order.id}`;
+      const diamonds = Number(order.diamonds).toLocaleString("en-IN");
+      insertNotification(
+        order.clerk_user_id,
+        "order_completed",
+        "Order Delivered! 💎",
+        `Your order ${orderId} (${diamonds} diamonds) has been delivered to your account.`
+      );
       getClerkUserProfile(order.clerk_user_id).then(({ email, name }) => {
         if (email) {
           sendOrderCompletedEmail(email, order, name).catch(() => {});
         }
       }).catch(() => {});
+    }
+
+    if (status === "failed" && order.clerk_user_id) {
+      const orderId = order.display_id || `#${order.id}`;
+      insertNotification(
+        order.clerk_user_id,
+        "payment_failed",
+        "Payment Issue ⚠️",
+        `There was an issue with your order ${orderId}. Please contact support if you need help.`
+      );
     }
 
     res.json(order);
@@ -535,6 +554,13 @@ router.post("/wallet-requests/:id/approve", requireAdmin, async (req, res): Prom
       [id]
     );
 
+    insertNotification(
+      tx.clerk_user_id,
+      "wallet_approved",
+      "Wallet Topped Up ✅",
+      `Your top-up request of ₹${Number(tx.amount).toFixed(0)} has been approved and added to your wallet.`
+    );
+
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: "DB error" });
@@ -544,11 +570,26 @@ router.post("/wallet-requests/:id/approve", requireAdmin, async (req, res): Prom
 router.post("/wallet-requests/:id/reject", requireAdmin, async (req, res): Promise<void> => {
   const { id } = req.params;
   try {
+    const txRes = await pool.query(
+      "SELECT * FROM wallet_transactions WHERE id=$1 AND status='pending'",
+      [id]
+    );
+    const tx = txRes.rows[0];
     const { rowCount } = await pool.query(
       "UPDATE wallet_transactions SET status='rejected' WHERE id=$1 AND status='pending'",
       [id]
     );
     if (!rowCount) { res.status(404).json({ error: "Not found or already processed" }); return; }
+
+    if (tx) {
+      insertNotification(
+        tx.clerk_user_id,
+        "wallet_rejected",
+        "Top-up Request Rejected",
+        `Your wallet top-up request of ₹${Number(tx.amount).toFixed(0)} was not approved. Please contact support if you need help.`
+      );
+    }
+
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: "DB error" });
@@ -610,6 +651,12 @@ router.post("/wallet/direct-credit", requireAdmin, async (req, res): Promise<voi
       `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description)
        VALUES ($1, $2, 'admin_credit', 'approved', $3)`,
       [clerk_user_id, Number(amount), note || "Admin credit"]
+    );
+    insertNotification(
+      clerk_user_id,
+      "wallet_credited",
+      "Wallet Credited 💰",
+      `₹${Number(amount).toFixed(0)} has been credited to your wallet${note ? ` — ${note}` : ""}.`
     );
     res.json({ ok: true });
   } catch {
