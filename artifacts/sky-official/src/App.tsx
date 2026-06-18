@@ -2116,7 +2116,7 @@ function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const EXPANDABLE = ["wallet_credited", "order_completed"];
+  const EXPANDABLE = ["wallet_credited", "order_completed", "wallet_deducted"];
 
   const fetchNotifications = async () => {
     if (!isSignedIn) return;
@@ -2169,6 +2169,9 @@ function NotificationsPage() {
       return match ? `Note: ${match[1]}` : n.body;
     }
     if (n.type === "order_completed") {
+      return n.body;
+    }
+    if (n.type === "wallet_deducted") {
       return n.body;
     }
     return null;

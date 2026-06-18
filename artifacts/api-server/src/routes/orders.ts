@@ -3,6 +3,7 @@ import pool from "../lib/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { sendPushToAll } from "./push";
 import { sendOrderEmail } from "../lib/email";
+import { insertNotification } from "../lib/notifications";
 
 const router = Router();
 
@@ -238,7 +239,7 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
     await client.query("BEGIN");
 
     const { rows: pkgs } = await client.query(
-      "SELECT id, diamonds, price FROM packages WHERE id = $1",
+      "SELECT id, diamonds, price, name FROM packages WHERE id = $1",
       [packageId]
     );
     if (!pkgs[0]) {
@@ -297,6 +298,14 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
     const orderId = inserted[0].id;
     console.log(`[notify] WALLET_ORDER_SAVED — id: ${orderId}, displayId: ${displayId}`);
     res.json({ ok: true, id: orderId, displayId });
+
+    const pkgName = pkg.name || `${pkg.diamonds} Diamonds`;
+    insertNotification(
+      clerkUserId,
+      "wallet_deducted",
+      `Wallet Balance Deducted -₹${price.toFixed(0)}`,
+      `₹${price.toFixed(0)} was deducted from your wallet for "${pkgName}" (${pkg.diamonds} diamonds). Order ID: ${displayId}.`
+    );
 
     fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: pkg.price }, mlbbId, "Wallet payment", { serverId, ign, isForFriend: isForFriend || false });
 

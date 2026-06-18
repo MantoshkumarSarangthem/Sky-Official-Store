@@ -694,7 +694,7 @@ router.post("/wallet/direct-credit", requireAdmin, async (req, res): Promise<voi
     insertNotification(
       clerk_user_id,
       "wallet_credited",
-      "Wallet Credited 💰",
+      `Wallet Credited +₹${Number(amount).toFixed(0)}`,
       `₹${Number(amount).toFixed(0)} has been credited to your wallet${note ? ` — ${note}` : ""}.`
     );
     res.json({ ok: true });
