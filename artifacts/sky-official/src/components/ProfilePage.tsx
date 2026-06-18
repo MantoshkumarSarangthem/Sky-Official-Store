@@ -1,4 +1,4 @@
-import { useUser, useSignIn } from "@clerk/react";
+import { useUser, useSignIn, useAuth } from "@clerk/react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 
@@ -38,8 +38,10 @@ function DiamondIcon({ size = 18, color = "#f59e0b" }: { size?: number; color?: 
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const { signIn } = useSignIn();
   const [, setLocation] = useLocation();
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [transactions, setTransactions] = useState<WalletTx[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +148,17 @@ export default function ProfilePage() {
   }, [isLoaded, user]);
 
   useEffect(() => {
+    if (!user) return;
+    getToken().then(token => {
+      if (!token) return;
+      fetch(`${API}/profile/username`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include" })
+        .then(r => r.json())
+        .then(data => { if (data.username) setProfileUsername(data.username); })
+        .catch(() => {});
+    });
+  }, [user]);
+
+  useEffect(() => {
     if (isLoaded && !user) setLocation("/sign-in");
   }, [isLoaded, user]);
 
@@ -168,7 +181,7 @@ export default function ProfilePage() {
     </div>
   );
 
-  const displayName = user.firstName || user.username || user.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Player";
+  const displayName = profileUsername || user.firstName || user.username || user.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Player";
 
 
   const statusColor: Record<string, string> = {

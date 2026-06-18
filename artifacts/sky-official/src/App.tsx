@@ -463,6 +463,170 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
+// ── Username Setup Page ────────────────────────────────────────────────────────
+function UsernameSetupPage({ onDone }: { onDone: () => void }) {
+  const { getToken } = useAuth();
+  const [username, setUsername] = useState("");
+  const [status, setStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    setUsername(v);
+    setSuggestions([]);
+    setError(null);
+    if (checkTimer.current) clearTimeout(checkTimer.current);
+    if (v.length === 0) { setStatus("idle"); return; }
+    if (v.length < 3) { setStatus("invalid"); return; }
+    if (!/^[a-z0-9_]{3,20}$/.test(v)) { setStatus("invalid"); return; }
+    setStatus("checking");
+    checkTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API}/profile/username-check?username=${encodeURIComponent(v)}`);
+        const data = await res.json();
+        setStatus(data.available ? "available" : "taken");
+        setSuggestions(data.suggestions || []);
+      } catch { setStatus("idle"); }
+    }, 500);
+  };
+
+  const submit = async () => {
+    if (status !== "available" || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API}/profile/username`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        credentials: "include",
+        body: JSON.stringify({ username }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) { onDone(); }
+      else { setError(data.error || "Failed to set username."); setSubmitting(false); }
+    } catch { setError("Network error. Try again."); setSubmitting(false); }
+  };
+
+  const borderColor = status === "available" ? "#22c55e" : (status === "taken" || status === "invalid") ? "#ef4444" : "rgba(61,43,31,0.15)";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#FAF9F6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ marginBottom: 32, textAlign: "center" }}>
+        <div style={{ fontSize: 26, fontWeight: 900, color: "#3D2B1F", letterSpacing: "-0.01em" }}>Sky Official</div>
+        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginTop: 2, letterSpacing: "0.08em" }}>MLBB DIAMOND TOP-UP</div>
+      </div>
+
+      <div style={{ width: "100%", maxWidth: 360, background: "#FFFFFF", borderRadius: 20, padding: "28px 24px 32px", boxShadow: "0 8px 40px rgba(61,43,31,0.12)" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(127,0,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#7F00FF" strokeWidth="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#7F00FF" strokeWidth="2" strokeLinecap="round"/></svg>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#3D2B1F", marginBottom: 8 }}>Choose your username</div>
+          <div style={{ fontSize: 13, color: "rgba(61,43,31,0.5)", lineHeight: 1.55 }}>
+            This is your unique identity on Sky Official — used on the leaderboard and by admins to top up your wallet.
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ position: "relative" }}>
+            <input
+              value={username}
+              onChange={handleChange}
+              maxLength={20}
+              placeholder="e.g. mantosh_mlbb"
+              autoFocus
+              onKeyDown={e => { if (e.key === "Enter") submit(); }}
+              style={{ width: "100%", padding: "13px 40px 13px 14px", borderRadius: 12, border: `1.5px solid ${borderColor}`, background: "#FAF9F6", color: "#3D2B1F", fontSize: 15, fontWeight: 600, outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }}
+            />
+            <div style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: 15 }}>
+              {status === "checking" && <span style={{ color: "rgba(61,43,31,0.3)", fontSize: 13 }}>…</span>}
+              {status === "available" && <span style={{ color: "#22c55e" }}>✓</span>}
+              {(status === "taken" || status === "invalid") && <span style={{ color: "#ef4444" }}>✕</span>}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 7, minHeight: 18 }}>
+            {status === "invalid" && username.length > 0 && username.length < 3 && (
+              <div style={{ fontSize: 11.5, color: "rgba(61,43,31,0.4)" }}>At least 3 characters needed.</div>
+            )}
+            {status === "invalid" && username.length >= 3 && (
+              <div style={{ fontSize: 11.5, color: "#ef4444" }}>Only letters (a–z), numbers, underscores. Max 20 chars.</div>
+            )}
+            {status === "available" && (
+              <div style={{ fontSize: 11.5, color: "#22c55e", fontWeight: 600 }}>@{username} is available!</div>
+            )}
+            {status === "taken" && (
+              <div style={{ fontSize: 11.5, color: "#ef4444" }}>Username already taken.</div>
+            )}
+          </div>
+
+          {status === "taken" && suggestions.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 11, color: "rgba(61,43,31,0.4)", marginBottom: 7 }}>Try one of these:</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {suggestions.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => { setUsername(s); setStatus("available"); setSuggestions([]); setError(null); }}
+                    style={{ padding: "5px 11px", borderRadius: 20, background: "rgba(127,0,255,0.07)", border: "1px solid rgba(127,0,255,0.2)", color: "#7F00FF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    @{s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && <div style={{ marginTop: 8, fontSize: 11.5, color: "#ef4444" }}>{error}</div>}
+        </div>
+
+        <button
+          onClick={submit}
+          disabled={status !== "available" || submitting}
+          style={{ width: "100%", padding: "14px 0", borderRadius: 12, background: status === "available" && !submitting ? "#7F00FF" : "rgba(127,0,255,0.15)", border: "none", color: status === "available" && !submitting ? "#FFFFFF" : "rgba(127,0,255,0.4)", fontSize: 15, fontWeight: 700, cursor: status === "available" && !submitting ? "pointer" : "not-allowed", transition: "all 0.2s" }}
+        >
+          {submitting ? "Setting up…" : "Continue →"}
+        </button>
+
+        <div style={{ marginTop: 14, fontSize: 11, color: "rgba(61,43,31,0.3)", textAlign: "center" }}>
+          Letters, numbers &amp; underscores only · 3–20 characters
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Username Gate (shown after sign-in if no username set) ──────────────────
+function UsernameGate({ children }: { children: React.ReactNode }) {
+  const { isSignedIn, isLoaded, getToken } = useAuth();
+  const [location] = useLocation();
+  const [usernameStatus, setUsernameStatus] = useState<"loading" | "set" | "unset">("loading");
+
+  const isExcluded = location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/sign-");
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) { setUsernameStatus("set"); return; }
+    getToken().then(token => {
+      if (!token) { setUsernameStatus("set"); return; }
+      fetch(`${API}/profile/username`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include" })
+        .then(r => r.json())
+        .then(data => setUsernameStatus(data.username ? "set" : "unset"))
+        .catch(() => setUsernameStatus("set"));
+    });
+  }, [isLoaded, isSignedIn]);
+
+  if (usernameStatus === "loading" && isSignedIn && !isExcluded) return null;
+  if (usernameStatus === "unset" && !isExcluded) {
+    return <UsernameSetupPage onDone={() => setUsernameStatus("set")} />;
+  }
+  return <>{children}</>;
+}
+
 // ── Confirm Dialog ─────────────────────────────────────────────────────────────
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: React.ReactNode; onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -2128,6 +2292,7 @@ function AppRoutes() {
       <TransitionProvider>
         <PersistentNavbar />
         <AnimatedBackground />
+        <UsernameGate>
         <div style={{ position: "relative" }}>
         <Switch>
           <Route path="/" component={MainSite} />
@@ -2153,6 +2318,7 @@ function AppRoutes() {
           <Route component={MainSite} />
         </Switch>
         </div>
+        </UsernameGate>
       </TransitionProvider>
     </ClerkProvider>
   );

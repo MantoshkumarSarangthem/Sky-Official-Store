@@ -633,12 +633,43 @@ router.get("/wallet/known-users", requireAdmin, async (_req, res) => {
   }
 });
 
+// Search users by username for wallet credit
+router.get("/wallet/user-by-username", requireAdmin, async (req, res) => {
+  const q = String(req.query.username || "").trim().toLowerCase();
+  if (!q) { res.json([]); return; }
+  try {
+    const { rows } = await pool.query(
+      "SELECT clerk_user_id, username FROM user_profiles WHERE username ILIKE $1 LIMIT 10",
+      [`${q}%`]
+    );
+    res.json(rows);
+  } catch {
+    res.json([]);
+  }
+});
+
 router.post("/wallet/direct-credit", requireAdmin, async (req, res): Promise<void> => {
-  const { clerk_user_id, amount, note } = req.body;
+  let { clerk_user_id, username, amount, note } = req.body;
+
+  // Resolve clerk_user_id from username if only username given
+  if (!clerk_user_id && username) {
+    const { rows } = await pool.query(
+      "SELECT clerk_user_id FROM user_profiles WHERE username = $1",
+      [String(username).trim().toLowerCase()]
+    );
+    clerk_user_id = rows[0]?.clerk_user_id ?? null;
+  }
+
   if (!clerk_user_id || !amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-    res.status(400).json({ error: "Invalid clerk_user_id or amount" });
+    res.status(400).json({ error: "User not found or invalid amount" });
     return;
   }
+
+  // Fetch username for display_name storage
+  const usernameForDisplay = username
+    ? String(username).trim().toLowerCase()
+    : (await pool.query("SELECT username FROM user_profiles WHERE clerk_user_id = $1", [clerk_user_id]).catch(() => ({ rows: [] }))).rows[0]?.username ?? null;
+
   try {
     await pool.query(
       `INSERT INTO wallets (clerk_user_id, balance, updated_at)
@@ -648,10 +679,18 @@ router.post("/wallet/direct-credit", requireAdmin, async (req, res): Promise<voi
       [clerk_user_id, Number(amount)]
     );
     await pool.query(
-      `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description)
-       VALUES ($1, $2, 'admin_credit', 'approved', $3)`,
-      [clerk_user_id, Number(amount), note || "Admin credit"]
-    );
+      `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description, display_name)
+       VALUES ($1, $2, 'admin_credit', 'approved', $3, $4)
+       ON CONFLICT DO NOTHING`,
+      [clerk_user_id, Number(amount), note || "Admin credit", usernameForDisplay]
+    ).catch(async () => {
+      // display_name column might not exist on older installs — fall back without it
+      await pool.query(
+        `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description)
+         VALUES ($1, $2, 'admin_credit', 'approved', $3)`,
+        [clerk_user_id, Number(amount), note || "Admin credit"]
+      );
+    });
     insertNotification(
       clerk_user_id,
       "wallet_credited",

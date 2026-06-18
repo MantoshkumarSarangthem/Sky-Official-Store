@@ -156,7 +156,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditResult, setCreditResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [clerkSearchResults, setClerkSearchResults] = useState<{ clerk_user_id: string; display_name: string | null; email: string | null }[]>([]);
+  const [clerkSearchResults, setClerkSearchResults] = useState<{ clerk_user_id: string; username: string }[]>([]);
   const [clerkSearching, setClerkSearching] = useState(false);
   const clerkSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [categoryPopular, setCategoryPopular] = useState<Record<string, boolean>>({});
@@ -854,7 +854,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     clerkSearchTimer.current = setTimeout(async () => {
       setClerkSearching(true);
       try {
-        const res = await fetch(`${API}/admin/users/search?q=${encodeURIComponent(creditUserSearch.trim())}`, { headers });
+        const q = creditUserSearch.trim().replace(/^@/, "");
+        const res = await fetch(`${API}/admin/wallet/user-by-username?username=${encodeURIComponent(q)}`, { headers });
         if (res.ok) setClerkSearchResults(await res.json());
       } catch {} finally { setClerkSearching(false); }
     }, 350);
@@ -2445,7 +2446,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     <div style={{ position: "relative" }}>
                       <input
                         type="text"
-                        placeholder="Search user by name or ID…"
+                        placeholder="Search by username…"
                         value={creditUserSearch}
                         onChange={e => { setCreditUserSearch(e.target.value); setCreditUserId(""); setShowUserDropdown(true); }}
                         onFocus={() => setShowUserDropdown(true)}
@@ -2463,16 +2464,15 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                           {!clerkSearching && clerkSearchResults.length > 0 && clerkSearchResults.map(u => (
                             <button
                               key={u.clerk_user_id}
-                              onClick={() => { setCreditUserId(u.clerk_user_id); setCreditUserSearch(u.display_name || u.email || u.clerk_user_id); setShowUserDropdown(false); setClerkSearchResults([]); }}
-                              className="w-full text-left px-3 py-2.5 flex flex-col gap-0.5"
+                              onClick={() => { setCreditUserId(u.clerk_user_id); setCreditUserSearch(`@${u.username}`); setShowUserDropdown(false); setClerkSearchResults([]); }}
+                              className="w-full text-left px-3 py-2.5"
                               style={{ background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
                             >
-                              <span className="text-white text-xs font-semibold">{u.display_name || "Unnamed"}</span>
-                              <span className="text-gray-500 text-xs">{u.email || u.clerk_user_id.slice(0, 26) + "…"}</span>
+                              <span className="text-white text-xs font-semibold">@{u.username}</span>
                             </button>
                           ))}
-                          {!clerkSearching && clerkSearchResults.length === 0 && creditUserSearch.trim().length >= 2 && (
-                            <div className="px-3 py-2.5 text-gray-500 text-xs">No users found. Try their email or full name.</div>
+                          {!clerkSearching && clerkSearchResults.length === 0 && creditUserSearch.trim().replace(/^@/, "").length >= 2 && (
+                            <div className="px-3 py-2.5 text-gray-500 text-xs">No user found with that username.</div>
                           )}
                         </div>
                       )}
