@@ -1950,16 +1950,9 @@ function NotificationsPage() {
   const [, setLocation] = useLocation();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const typeIcon: Record<string, string> = {
-    order_completed: "💎",
-    wallet_approved: "✅",
-    wallet_rejected: "❌",
-    wallet_credited: "💰",
-    payment_failed: "⚠️",
-    maintenance: "🔧",
-    news: "📢",
-  };
+  const EXPANDABLE = ["wallet_credited", "order_completed"];
 
   const fetchNotifications = async () => {
     if (!isSignedIn) return;
@@ -1987,6 +1980,13 @@ function NotificationsPage() {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
+  const handleCardClick = (n: any) => {
+    if (!n.read) markRead(n.id);
+    if (EXPANDABLE.includes(n.type)) {
+      setExpandedId(prev => prev === n.id ? null : n.id);
+    }
+  };
+
   useEffect(() => { fetchNotifications(); }, [isSignedIn]);
 
   const unread = notifications.filter(n => !n.read).length;
@@ -1999,60 +1999,92 @@ function NotificationsPage() {
     return `${Math.floor(diff / 86400000)}d ago`;
   };
 
+  const getExpandContent = (n: any) => {
+    if (n.type === "wallet_credited") {
+      const match = n.body.match(/ — (.+?)\.?\s*$/);
+      return match ? `Note: ${match[1]}` : n.body;
+    }
+    if (n.type === "order_completed") {
+      return n.body;
+    }
+    return null;
+  };
+
   return (
-    <div style={{ minHeight: "100vh", background: "#0d0d0d", paddingTop: 72, paddingBottom: 40 }}>
+    <div style={{ minHeight: "100vh", background: "#FAF9F6", paddingTop: 72, paddingBottom: 40 }}>
       <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <button onClick={() => setLocation(-1 as any)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", padding: 4, display: "flex" }}>
+          <button onClick={() => setLocation(-1 as any)} style={{ background: "none", border: "none", color: "#1a1a1a", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0, flex: 1 }}>Notifications</h1>
+          <h1 style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 800, margin: 0, flex: 1 }}>Notifications</h1>
           {unread > 0 && (
-            <button onClick={markAllRead} style={{ background: "none", border: "1px solid rgba(245,158,11,0.35)", borderRadius: 8, color: "#f59e0b", fontSize: 12, fontWeight: 700, padding: "5px 12px", cursor: "pointer" }}>
+            <button onClick={markAllRead} style={{ background: "none", border: "1px solid rgba(127,0,255,0.3)", borderRadius: 8, color: "#7F00FF", fontSize: 12, fontWeight: 700, padding: "5px 12px", cursor: "pointer" }}>
               Mark all read
             </button>
           )}
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)", fontSize: 14 }}>Loading…</div>
+          <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(0,0,0,0.3)", fontSize: 14 }}>Loading…</div>
         ) : notifications.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔔</div>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>No notifications yet.</p>
-            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, marginTop: 6 }}>You'll be notified about order updates, wallet credits, and more.</p>
+            <p style={{ color: "rgba(0,0,0,0.4)", fontSize: 14 }}>No notifications yet.</p>
+            <p style={{ color: "rgba(0,0,0,0.3)", fontSize: 12, marginTop: 6 }}>You'll be notified about order updates, wallet credits, and more.</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {notifications.map(n => (
-              <div
-                key={n.id}
-                onClick={() => { if (!n.read) markRead(n.id); }}
-                style={{
-                  background: n.read ? "rgba(255,255,255,0.03)" : "rgba(245,158,11,0.06)",
-                  border: `1px solid ${n.read ? "rgba(255,255,255,0.07)" : "rgba(245,158,11,0.2)"}`,
-                  borderRadius: 14,
-                  padding: "14px 16px",
-                  cursor: n.read ? "default" : "pointer",
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "flex-start",
-                  transition: "background 0.2s",
-                }}
-              >
-                <div style={{ fontSize: 24, flexShrink: 0, lineHeight: 1, marginTop: 2 }}>
-                  {typeIcon[n.type] ?? "🔔"}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <span style={{ color: n.read ? "rgba(255,255,255,0.8)" : "#fff", fontSize: 14, fontWeight: n.read ? 600 : 700, flex: 1 }}>{n.title}</span>
-                    {!n.read && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
+            {notifications.map(n => {
+              const isExpandable = EXPANDABLE.includes(n.type);
+              const isExpanded = expandedId === n.id;
+              const expandContent = getExpandContent(n);
+              const showBodyInline = !isExpandable;
+
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => handleCardClick(n)}
+                  style={{
+                    background: "#fff",
+                    border: `1px solid ${n.read ? "#e8e6e0" : "rgba(127,0,255,0.2)"}`,
+                    borderRadius: 14,
+                    padding: "14px 16px",
+                    cursor: isExpandable || !n.read ? "pointer" : "default",
+                    transition: "border-color 0.2s",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: showBodyInline || isExpanded ? 6 : 4 }}>
+                        <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: n.read ? 500 : 700, flex: 1, lineHeight: 1.4 }}>{n.title}</span>
+                        {!n.read && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
+                      </div>
+
+                      {showBodyInline && (
+                        <p style={{ color: "#6b6b6b", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5 }}>{n.body}</p>
+                      )}
+
+                      {isExpandable && isExpanded && expandContent && (
+                        <div style={{ background: "#FAF9F6", borderRadius: 8, padding: "10px 12px", marginBottom: 8, borderLeft: "3px solid rgba(127,0,255,0.3)" }}>
+                          <p style={{ color: "#4a4a4a", fontSize: 13, margin: 0, lineHeight: 1.5 }}>{expandContent}</p>
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ color: "#aaa", fontSize: 11 }}>{relativeTime(n.created_at)}</span>
+                        {isExpandable && (
+                          <span style={{ color: "rgba(127,0,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: "0.01em" }}>
+                            {isExpanded ? "▲ hide" : "▼ details"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5 }}>{n.body}</p>
-                  <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{relativeTime(n.created_at)}</span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
