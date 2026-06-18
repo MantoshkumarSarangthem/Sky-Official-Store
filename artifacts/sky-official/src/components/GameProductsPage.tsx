@@ -434,16 +434,13 @@ export default function GameProductsPage() {
                       </div>
                     )}
 
-                    {/* Top row: icon + name/price */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.1)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={20} />}
-                      </div>
+                    {/* Name + price row (no icon here) */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 5, marginBottom: 6 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 11, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 11, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}>
                           {pkg.name || `${total.toLocaleString()} ${currencyLabel}`}
                         </div>
-                        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 9.5, lineHeight: 1.2 }}>
+                        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 9.5, lineHeight: 1.2, marginTop: 1 }}>
                           {pkg.diamonds.toLocaleString()} {currencyLabel}
                           {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()}</span>}
                         </div>
@@ -454,8 +451,15 @@ export default function GameProductsPage() {
                       </div>
                     </div>
 
-                    {/* Bottom row: Add to Cart + Heart */}
-                    <div style={{ display: "flex", gap: 5 }}>
+                    {/* Large icon image — centred in the free middle space */}
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1, marginBottom: 8, minHeight: 52 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: 12, overflow: "hidden", background: pkg.image ? "transparent" : "rgba(139,92,246,0.08)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={30} />}
+                      </div>
+                    </div>
+
+                    {/* Bottom row: Add to Cart + Heart — same height, bottom edge */}
+                    <div style={{ display: "flex", gap: 5, alignItems: "stretch" }}>
                       <button
                         onClick={e => {
                           e.stopPropagation();
@@ -463,7 +467,7 @@ export default function GameProductsPage() {
                           setCartAdded(pkg.id);
                           setTimeout(() => setCartAdded(null), 1800);
                         }}
-                        style={{ flex: 1, background: cartAdded === pkg.id ? "rgba(34,197,94,0.15)" : "rgba(139,92,246,0.1)", border: `1px solid ${cartAdded === pkg.id ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.3)"}`, borderRadius: 8, padding: "4px 6px", color: cartAdded === pkg.id ? "#4ade80" : "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", WebkitTapHighlightColor: "transparent" }}
+                        style={{ flex: 1, height: 28, background: cartAdded === pkg.id ? "rgba(34,197,94,0.15)" : "rgba(139,92,246,0.1)", border: `1px solid ${cartAdded === pkg.id ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.3)"}`, borderRadius: 8, color: cartAdded === pkg.id ? "#4ade80" : "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", WebkitTapHighlightColor: "transparent" }}
                       >
                         {cartAdded === pkg.id ? "✓ Added!" : "🛒 Add to Cart"}
                       </button>
