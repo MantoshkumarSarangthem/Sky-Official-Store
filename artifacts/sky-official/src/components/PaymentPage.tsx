@@ -1,8 +1,11 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@clerk/react";
-import { getMLBBTarget } from "./MLBBTargetPage";
+import { getMLBBTarget, setMLBBTarget } from "./MLBBTargetPage";
+import type { MLBBTarget } from "./MLBBTargetPage";
 import { useCart } from "../context/CartContext";
+
+const PAY_SESSION_KEY = "sky_pay_session";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 const UPI_ID_FALLBACK = "mk1108477-1@okhdfcbank";
@@ -94,8 +97,47 @@ export default function PaymentPage() {
   const [upiOpened, setUpiOpened] = useState(false);
   const [qrSrc, setQrSrc] = useState<string>(QR_FALLBACK);
   const [upiId, setUpiId] = useState(UPI_ID_FALLBACK);
-  const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIMEOUT);
-  const [expired, setExpired] = useState(false);
+  // Restore payment session from sessionStorage if page was refreshed mid-checkout
+  const [_sessionRestored] = useState<boolean>(() => {
+    if (_selectedPackage) return false; // already in memory, nothing to restore
+    const raw = sessionStorage.getItem(PAY_SESSION_KEY);
+    if (!raw) return false;
+    try {
+      const s = JSON.parse(raw) as { pkg?: SelectedPackage; target?: MLBBTarget; refId?: string; startedAt?: number };
+      if (s.pkg) setSelectedPackage(s.pkg);
+      if (s.target) setMLBBTarget(s.target);
+      return true;
+    } catch { return false; }
+  });
+
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
+    try {
+      const raw = sessionStorage.getItem(PAY_SESSION_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.startedAt) {
+          const elapsed = Math.floor((Date.now() - s.startedAt) / 1000);
+          const remaining = PAYMENT_TIMEOUT - elapsed;
+          if (remaining > 5) return remaining;
+          return 0; // already expired
+        }
+      }
+    } catch {}
+    return PAYMENT_TIMEOUT;
+  });
+  const [expired, setExpired] = useState<boolean>(() => {
+    try {
+      const raw = sessionStorage.getItem(PAY_SESSION_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.startedAt) {
+          const elapsed = Math.floor((Date.now() - s.startedAt) / 1000);
+          return elapsed >= PAYMENT_TIMEOUT;
+        }
+      }
+    } catch {}
+    return false;
+  });
   const [wc] = useState<{ orderId: number | null; displayId: string; diamonds: number; price: string; userId: string; currencyLabel: string; gameName: string } | null>(() => {
     const raw = sessionStorage.getItem("walletConfirm");
     if (!raw) return null;
@@ -149,8 +191,34 @@ export default function PaymentPage() {
     return () => clearInterval(interval);
   }, [submitted]);
 
-  const refId = useMemo(() => `${Date.now()}`, []);
+  const refId = useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem(PAY_SESSION_KEY);
+      if (raw) { const s = JSON.parse(raw); if (s.refId) return s.refId as string; }
+    } catch {}
+    return `${Date.now()}`;
+  }, []);
   const remark = useMemo(() => `SKY-${refId.slice(-8)}`, [refId]);
+
+  // Save payment session to sessionStorage so a page refresh can restore it
+  useEffect(() => {
+    const currentPkg = _selectedPackage;
+    const currentTarget = getMLBBTarget();
+    if (!currentPkg || isWalletTopup || submitted) return;
+    const existing = (() => { try { return JSON.parse(sessionStorage.getItem(PAY_SESSION_KEY) ?? "{}"); } catch { return {}; } })();
+    sessionStorage.setItem(PAY_SESSION_KEY, JSON.stringify({
+      pkg: currentPkg,
+      target: currentTarget,
+      refId,
+      startedAt: existing.startedAt ?? Date.now(),
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refId]);
+
+  // Clear session once order is submitted
+  useEffect(() => {
+    if (submitted) sessionStorage.removeItem(PAY_SESSION_KEY);
+  }, [submitted]);
 
   if (!pkg && !isWalletTopup && !wc) {
     setTimeout(() => setLocation("/packages"), 0);
