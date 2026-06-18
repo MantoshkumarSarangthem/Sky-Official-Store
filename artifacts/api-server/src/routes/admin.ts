@@ -918,7 +918,23 @@ router.put("/orders/:id/complete", requireAdmin, async (req, res): Promise<void>
       [note || null, id]
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
-    res.json(rows[0]);
+    const order = rows[0];
+
+    if (order.clerk_user_id) {
+      const orderId = order.display_id || `#${order.id}`;
+      const diamonds = Number(order.diamonds).toLocaleString("en-IN");
+      insertNotification(
+        order.clerk_user_id,
+        "order_completed",
+        "Order Delivered! 💎",
+        `Your order ${orderId} (${diamonds} diamonds) has been delivered to your account.`
+      );
+      getClerkUserProfile(order.clerk_user_id).then(({ email, name }) => {
+        if (email) sendOrderCompletedEmail(email, order, name).catch(() => {});
+      }).catch(() => {});
+    }
+
+    res.json(order);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
