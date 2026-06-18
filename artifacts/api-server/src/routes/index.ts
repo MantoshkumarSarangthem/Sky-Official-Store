@@ -7,6 +7,7 @@ import profileRouter from "./profile";
 import verifyRouter from "./verify";
 import pushRouter from "./push";
 import notificationsRouter from "./notifications";
+import leaderboardRouter from "./leaderboard";
 import pool from "../lib/db";
 import { sendInquiryEmail } from "../lib/email";
 import { createClerkClient } from "@clerk/express";
@@ -21,6 +22,7 @@ router.use("/profile", profileRouter);
 router.use("/verify", verifyRouter);
 router.use("/push", pushRouter);
 router.use("/notifications", notificationsRouter);
+router.use("/leaderboard", leaderboardRouter);
 
 router.get("/settings/category_popular", async (_req, res) => {
   try {

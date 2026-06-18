@@ -8,6 +8,7 @@ import ProfilePage from "./components/ProfilePage";
 import WalletHistoryPage from "./components/WalletHistoryPage";
 import MLBBVerifyPage from "./components/MLBBVerifyPage";
 import MLBBTargetPage, { setAfterTargetPath, setTargetGameName } from "./components/MLBBTargetPage";
+import LeaderboardPage from "./components/LeaderboardPage";
 import CartPage from "./components/CartPage";
 import PaymentPage, { setSelectedPackage } from "./components/PaymentPage";
 import type { SelectedPackage } from "./components/PaymentPage";
@@ -343,6 +344,7 @@ function Navbar() {
                     { label: "My Favorites", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>, action: () => { setLocation("/favorites"); setShowProfileMenu(false); } },
                     { label: "Wallet", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="14" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M16 14a1 1 0 110-2 1 1 0 010 2z" fill="currentColor"/><path d="M2 11h20" stroke="currentColor" strokeWidth="1.8"/></svg>, action: () => { setLocation("/profile"); setShowProfileMenu(false); } },
                     { label: "Support", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>, action: () => { setLocation("/support"); setShowProfileMenu(false); } },
+                    { label: "Leaderboard", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="2" y="14" width="4" height="8" rx="1" stroke="currentColor" strokeWidth="1.8"/><rect x="9" y="9" width="4" height="13" rx="1" stroke="currentColor" strokeWidth="1.8"/><rect x="16" y="4" width="4" height="18" rx="1" stroke="currentColor" strokeWidth="1.8"/></svg>, action: () => { setLocation("/leaderboard"); setShowProfileMenu(false); } },
                   ] as { label: string; icon: React.ReactNode; action: () => void }[]).map(item => (
                     <button
                       key={item.label}
@@ -2319,6 +2321,7 @@ function AppRoutes() {
           <Route path="/rank-boost" component={() => <RankBoostPage />} />
           <Route path="/wallet-history" component={WalletHistoryPage} />
           <Route path="/notifications" component={NotificationsPage} />
+          <Route path="/leaderboard" component={LeaderboardPage} />
           <Route component={MainSite} />
         </Switch>
         </div>
