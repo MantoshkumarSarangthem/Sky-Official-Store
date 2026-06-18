@@ -68,6 +68,13 @@ async function initDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS admin_tokens (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS recharge_staff (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,

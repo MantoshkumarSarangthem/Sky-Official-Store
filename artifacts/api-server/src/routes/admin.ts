@@ -3,6 +3,7 @@ import pool from "../lib/db";
 import { brevoSend } from "../lib/email";
 import { createClerkClient } from "@clerk/express";
 import multer from "multer";
+import crypto from "crypto";
 import { insertNotification } from "../lib/notifications";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
@@ -14,13 +15,34 @@ function fileToDataUrl(file: Express.Multer.File): string {
 
 const router = Router();
 
-function requireAdmin(req: any, res: any, next: any) {
+async function requireAdmin(req: any, res: any, next: any) {
   const auth = req.headers["authorization"] || "";
-  const password = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: "Unauthorized" });
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  if (token === process.env.ADMIN_PASSWORD) {
+    req.isSuperAdmin = true;
+    return next();
   }
+
+  try {
+    const { rows } = await pool.query("SELECT id FROM admin_tokens WHERE token = $1", [token]);
+    if (rows.length > 0) {
+      req.isSuperAdmin = false;
+      return next();
+    }
+  } catch {}
+
+  return res.status(401).json({ error: "Unauthorized" });
+}
+
+function requireSuperAdmin(req: any, res: any, next: any) {
+  if (!req.isSuperAdmin) return res.status(403).json({ error: "Super admin access required" });
   next();
+}
+
+function generateAdminToken(): string {
+  return "SKY-" + crypto.randomBytes(10).toString("hex").toUpperCase();
 }
 
 async function getClerkUserEmail(userId: string): Promise<string | null> {
@@ -144,13 +166,50 @@ async function sendOrderCompletedEmail(to: string, order: any, customerName: str
   }
 }
 
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { password } = req.body;
   if (password === process.env.ADMIN_PASSWORD) {
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ error: "Wrong password" });
+    return res.json({ success: true, role: "superadmin" });
   }
+  try {
+    const { rows } = await pool.query("SELECT id FROM admin_tokens WHERE token = $1", [password]);
+    if (rows.length > 0) {
+      return res.json({ success: true, role: "admin" });
+    }
+  } catch {}
+  res.status(401).json({ error: "Wrong password" });
+});
+
+router.get("/me", requireAdmin, (req: any, res) => {
+  res.json({ role: req.isSuperAdmin ? "superadmin" : "admin" });
+});
+
+router.get("/tokens", requireAdmin, requireSuperAdmin, async (_req, res): Promise<void> => {
+  try {
+    const { rows } = await pool.query("SELECT id, name, token, created_at FROM admin_tokens ORDER BY created_at DESC");
+    res.json(rows);
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.post("/tokens", requireAdmin, requireSuperAdmin, async (req, res): Promise<void> => {
+  const { name } = req.body;
+  if (!name?.trim()) { res.status(400).json({ error: "Name is required" }); return; }
+  try {
+    const token = generateAdminToken();
+    const { rows } = await pool.query(
+      "INSERT INTO admin_tokens (name, token) VALUES ($1, $2) RETURNING *",
+      [name.trim(), token]
+    );
+    res.json(rows[0]);
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.delete("/tokens/:id", requireAdmin, requireSuperAdmin, async (req, res): Promise<void> => {
+  const { id } = req.params;
+  try {
+    await pool.query("DELETE FROM admin_tokens WHERE id = $1", [id]);
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "DB error" }); }
 });
 
 router.get("/packages", requireAdmin, async (_req, res) => {
@@ -760,7 +819,7 @@ router.put("/staff/:id", requireAdmin, upload.single("qr_image"), async (req: an
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
-router.put("/staff/:id/status", requireAdmin, async (req, res): Promise<void> => {
+router.put("/staff/:id/status", requireAdmin, requireSuperAdmin, async (req, res): Promise<void> => {
   const { id } = req.params;
   const { status } = req.body;
   if (!["available", "offline"].includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
@@ -817,7 +876,7 @@ router.post("/staff/:id/test-email", requireAdmin, async (req, res): Promise<voi
   }
 });
 
-router.delete("/staff/:id", requireAdmin, async (req, res) => {
+router.delete("/staff/:id", requireAdmin, requireSuperAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query("DELETE FROM recharge_staff WHERE id=$1", [id]);

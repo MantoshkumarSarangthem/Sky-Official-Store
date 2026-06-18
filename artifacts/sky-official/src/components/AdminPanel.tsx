@@ -94,7 +94,7 @@ interface WalletRequest {
   created_at: string;
 }
 
-type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners" | "offer-banners" | "stats";
+type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners" | "offer-banners" | "stats" | "access";
 type NotifState = "unknown" | "loading" | "subscribed" | "denied" | "unsupported";
 
 async function registerSW(): Promise<ServiceWorkerRegistration | null> {
@@ -112,6 +112,7 @@ function urlBase64ToUint8Array(base64String: string) {
 export default function AdminPanel({ onClose, fullPage = false }: { onClose: () => void; fullPage?: boolean }) {
   const [, setLocation] = useLocation();
   const [authed, setAuthed] = useState(() => !!sessionStorage.getItem("admin_token"));
+  const [isSuperAdmin, setIsSuperAdmin] = useState(() => sessionStorage.getItem("admin_role") === "superadmin");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [bioAvail, setBioAvail] = useState(false);
@@ -122,7 +123,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [showPwForm, setShowPwForm] = useState(() => !localStorage.getItem(ADMIN_BIO_CRED));
   const [tab, setTab] = useState<Tab>(() => {
     const p = new URLSearchParams(window.location.search).get("tab");
-    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners","offer-banners","stats"];
+    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners","offer-banners","stats","access"];
     return (valid.includes(p as Tab) ? p : "packages") as Tab;
   });
   const [packages, setPackages] = useState<Package[]>([]);
@@ -134,6 +135,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setTimeout(() => setCopiedKey(null), 1500);
     });
   }
+  interface AdminToken { id: number; name: string; token: string; created_at: string; }
+  const [adminTokens, setAdminTokens] = useState<AdminToken[]>([]);
+  const [newTokenName, setNewTokenName] = useState("");
+  const [tokenCreating, setTokenCreating] = useState(false);
+  const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [storeStats, setStoreStats] = useState<{ total_orders: number; total_diamonds: number; total_users: number } | null>(null);
   const [recentOrders, setRecentOrders] = useState<{ mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null; user_display_name: string | null }[]>([]);
@@ -862,12 +868,40 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     return () => { if (clerkSearchTimer.current) clearTimeout(clerkSearchTimer.current); };
   }, [creditUserSearch, creditUserId]);
 
+  const fetchAdminTokens = async () => {
+    try {
+      const res = await fetch(`${API}/admin/tokens`, { headers });
+      if (res.ok) setAdminTokens(await res.json());
+    } catch {}
+  };
+
+  const createAdminToken = async () => {
+    if (!newTokenName.trim()) return;
+    setTokenCreating(true);
+    try {
+      const res = await fetch(`${API}/admin/tokens`, { method: "POST", headers, body: JSON.stringify({ name: newTokenName.trim() }) });
+      if (res.ok) {
+        const data = await res.json();
+        setCreatedToken(data.token);
+        setNewTokenName("");
+        await fetchAdminTokens();
+      }
+    } catch {} finally { setTokenCreating(false); }
+  };
+
+  const deleteAdminToken = async (id: number) => {
+    await fetch(`${API}/admin/tokens/${id}`, { method: "DELETE", headers });
+    setCreatedToken(null);
+    await fetchAdminTokens();
+  };
+
   useEffect(() => {
     if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchCommunityLinks(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); }
     if (authed && tab === "staff") { fetchStaff(); fetchAdminStatus(); }
     if (authed && tab === "banners") fetchPromoBanners();
     if (authed && tab === "offer-banners") { fetchDailyOfferIds(); fetchGames(); }
     if (authed && (tab === "games" || tab === "packages")) fetchGames();
+    if (authed && tab === "access" && isSuperAdmin) fetchAdminTokens();
   }, [authed, tab]);
 
   useEffect(() => {
@@ -1055,7 +1089,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
+      const data = await res.json();
       sessionStorage.setItem("admin_token", password);
+      sessionStorage.setItem("admin_role", data.role);
+      setIsSuperAdmin(data.role === "superadmin");
       setAuthed(true);
     } else {
       setLoginError("Wrong password. Try again.");
@@ -1066,8 +1103,18 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setBioLoading(true); setLoginError(""); setBioMsg("");
     try {
       const token = await adminBioAuthenticate();
-      if (token) { sessionStorage.setItem("admin_token", token); setAuthed(true); }
-      else setBioMsg("Biometric verification failed. Use password instead.");
+      if (token) {
+        sessionStorage.setItem("admin_token", token);
+        try {
+          const meRes = await fetch(`${API}/admin/me`, { headers: { Authorization: `Bearer ${token}` } });
+          if (meRes.ok) {
+            const { role } = await meRes.json();
+            sessionStorage.setItem("admin_role", role);
+            setIsSuperAdmin(role === "superadmin");
+          }
+        } catch {}
+        setAuthed(true);
+      } else setBioMsg("Biometric verification failed. Use password instead.");
     } catch (e: any) {
       setBioMsg(e?.name === "NotAllowedError" ? "Biometric cancelled." : "Biometric login failed.");
     } finally { setBioLoading(false); }
@@ -1182,7 +1229,9 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
   const logout = () => {
     sessionStorage.removeItem("admin_token");
+    sessionStorage.removeItem("admin_role");
     setAuthed(false);
+    setIsSuperAdmin(false);
     onClose();
   };
 
@@ -1367,7 +1416,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
-              {(["games", "packages", "orders", "wallet", "staff", "banners", "offer-banners", "settings", "stats"] as Tab[]).map((t) => {
+              {([
+                "games", "packages", "orders", "wallet", "staff",
+                "banners", "offer-banners", "settings", "stats",
+                ...(isSuperAdmin ? ["access"] : [])
+              ] as Tab[]).map((t) => {
                 const pendingCount = t === "wallet" ? walletRequests.filter(r => r.status === "pending").length : 0;
                 return (
                   <button
@@ -1381,7 +1434,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         : { color: "#9ca3af" }),
                     }}
                   >
-                    {t === "stats" ? "Store Stats" : t === "offer-banners" ? "Offer Banners" : t}
+                    {t === "stats" ? "Store Stats" : t === "offer-banners" ? "Offer Banners" : t === "access" ? "🔑 Access" : t}
                     {pendingCount > 0 && (
                       <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#ef4444", color: "#fff", fontSize: 10 }}>{pendingCount}</span>
                     )}
@@ -2407,9 +2460,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: s.status === "available" ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)", color: s.status === "available" ? "#22c55e" : "#9ca3af" }}>{s.status === "available" ? "● Available" : "○ Offline"}</span>
                           </div>
                           {s.shift_hours && <div className="text-gray-500 text-xs mt-0.5">⏰ {s.shift_hours}</div>}
-                          <button onClick={() => setRevealedStaff(prev => ({ ...prev, [s.id]: !prev[s.id] }))} className="text-xs mt-1.5 px-2 py-0.5 rounded" style={{ background: revealedStaff[s.id] ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.06)", color: revealedStaff[s.id] ? "#f59e0b" : "rgba(255,255,255,0.4)", border: `1px solid ${revealedStaff[s.id] ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.1)"}`, cursor: "pointer" }}>
-                            {revealedStaff[s.id] ? "🔒 Hide Details" : "🔓 Reveal Details"}
-                          </button>
+                          {isSuperAdmin && (
+                            <button onClick={() => setRevealedStaff(prev => ({ ...prev, [s.id]: !prev[s.id] }))} className="text-xs mt-1.5 px-2 py-0.5 rounded" style={{ background: revealedStaff[s.id] ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.06)", color: revealedStaff[s.id] ? "#f59e0b" : "rgba(255,255,255,0.4)", border: `1px solid ${revealedStaff[s.id] ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.1)"}`, cursor: "pointer" }}>
+                              {revealedStaff[s.id] ? "🔒 Hide Details" : "🔓 Reveal Details"}
+                            </button>
+                          )}
                           {revealedStaff[s.id] && (
                             <div className="mt-1.5 flex flex-col gap-1">
                               {s.email && <div className="text-gray-400 text-xs">✉ {s.email}</div>}
@@ -2423,10 +2478,12 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             </div>
                           )}
                         </div>
-                        <div className="flex flex-col gap-1.5 flex-shrink-0 items-end">
-                          <button onClick={() => toggleStaffStatus(s.id, s.status)} className="px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: s.status === "available" ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: s.status === "available" ? "#ef4444" : "#22c55e", border: `1px solid ${s.status === "available" ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}` }}>{s.status === "available" ? "Set Offline" : "Set Available"}</button>
-                          <button onClick={() => deleteStaff(s.id)} className="px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}>Remove</button>
-                        </div>
+                        {isSuperAdmin && (
+                          <div className="flex flex-col gap-1.5 flex-shrink-0 items-end">
+                            <button onClick={() => toggleStaffStatus(s.id, s.status)} className="px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: s.status === "available" ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)", color: s.status === "available" ? "#ef4444" : "#22c55e", border: `1px solid ${s.status === "available" ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}` }}>{s.status === "available" ? "Set Offline" : "Set Available"}</button>
+                            <button onClick={() => deleteStaff(s.id)} className="px-2.5 py-1 rounded-lg text-xs font-bold" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}>Remove</button>
+                          </div>
+                        )}
                       </div>
 
                     </div>
@@ -2767,6 +2824,88 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                   {dailyOfferSaved && (
                     <div style={{ color: "#22c55e", fontSize: 12, fontWeight: 700, textAlign: "center" }}>✓ Saved</div>
                   )}
+                </div>
+              )}
+
+              {tab === "access" && isSuperAdmin && (
+                <div className="flex flex-col gap-4" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+                  <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.2)" }}>
+                    <div className="text-amber-400 font-bold text-sm">Admin Access Tokens</div>
+                    <div className="text-gray-500 text-xs">Generate a unique token for each associate. They use it to log into this admin panel. You can revoke any token individually — no need to change your master password.</div>
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="text"
+                        placeholder="Associate name (e.g. John)"
+                        value={newTokenName}
+                        onChange={e => setNewTokenName(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && createAdminToken()}
+                        className="flex-1 px-3 py-2 rounded-lg text-white text-sm outline-none"
+                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                      />
+                      <button
+                        onClick={createAdminToken}
+                        disabled={tokenCreating || !newTokenName.trim()}
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-black"
+                        style={{ background: tokenCreating || !newTokenName.trim() ? "rgba(245,158,11,0.4)" : "linear-gradient(135deg,#fbbf24,#f59e0b)", flexShrink: 0 }}
+                      >
+                        {tokenCreating ? "Creating…" : "Generate"}
+                      </button>
+                    </div>
+
+                    {createdToken && (
+                      <div className="rounded-lg p-3 flex flex-col gap-2" style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.3)" }}>
+                        <div className="text-green-400 text-xs font-bold">✓ Token created — share this with your associate:</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-amber-400 text-sm flex-1 break-all">{createdToken}</span>
+                          <button
+                            onClick={() => copyWithFeedback(createdToken, "created-token")}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold flex-shrink-0"
+                            style={{ background: copiedKey === "created-token" ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.08)", color: copiedKey === "created-token" ? "#22c55e" : "#fff", border: "1px solid rgba(255,255,255,0.1)" }}
+                          >
+                            {copiedKey === "created-token" ? "Copied!" : "Copy"}
+                          </button>
+                        </div>
+                        <div className="text-gray-500 text-xs">⚠️ Save this now — it won't be shown again in full.</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="text-white font-bold text-sm">Active Tokens ({adminTokens.length})</div>
+                    {adminTokens.length === 0 ? (
+                      <div className="text-gray-500 text-xs py-2">No tokens yet. Generate one above to give an associate access.</div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {adminTokens.map(t => (
+                          <div key={t.id} className="rounded-lg p-3 flex items-center justify-between gap-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)" }}>
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-white text-sm font-semibold">{t.name}</span>
+                              <span className="text-gray-600 text-xs font-mono">{t.token.slice(0, 12)}…</span>
+                              <span className="text-gray-600 text-xs">Added {new Date(t.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                            </div>
+                            <button
+                              onClick={() => { if (confirm(`Revoke access for ${t.name}? They will be logged out immediately.`)) deleteAdminToken(t.id); }}
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold flex-shrink-0"
+                              style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}
+                            >
+                              Revoke
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="text-white font-bold text-sm">What token holders can do</div>
+                    <div className="flex flex-col gap-1.5 text-xs text-gray-400 mt-1">
+                      <div>✅ View and manage orders, packages, wallet, games, banners, settings</div>
+                      <div>✅ Add new staff members</div>
+                      <div>❌ Cannot remove staff, reveal staff details, or toggle availability</div>
+                      <div>❌ Cannot create or revoke access tokens</div>
+                      <div>❌ Cannot see this Access tab</div>
+                    </div>
+                  </div>
                 </div>
               )}
 
