@@ -7,7 +7,7 @@ import OrderHistoryPage from "./components/OrderHistoryPage";
 import ProfilePage from "./components/ProfilePage";
 import WalletHistoryPage from "./components/WalletHistoryPage";
 import MLBBVerifyPage from "./components/MLBBVerifyPage";
-import MLBBTargetPage, { setAfterTargetPath } from "./components/MLBBTargetPage";
+import MLBBTargetPage, { setAfterTargetPath, setTargetGameName } from "./components/MLBBTargetPage";
 import CartPage from "./components/CartPage";
 import PaymentPage, { setSelectedPackage } from "./components/PaymentPage";
 import type { SelectedPackage } from "./components/PaymentPage";
@@ -1816,6 +1816,7 @@ function PackagesPage() {
 
   function handleBuy(pkg: SelectedPackage) {
     setSelectedPackage(pkg);
+    setTargetGameName(pkg.gameName ?? "MLBB");
     setAfterTargetPath("/pay");
     setLocation("/mlbb-target");
   }
