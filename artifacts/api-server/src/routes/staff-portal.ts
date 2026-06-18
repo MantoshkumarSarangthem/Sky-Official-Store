@@ -41,6 +41,7 @@ router.post("/login", async (req: any, res: any): Promise<void> => {
     );
     const staff = result.rows[0];
     if (!staff) { res.status(401).json({ error: "Invalid name or PIN" }); return; }
+    await pool.query("UPDATE recharge_staff SET last_active = NOW() WHERE id = $1", [staff.id]);
     const token = Buffer.from(`${staff.id}:${String(pin).trim()}`).toString("base64");
     res.json({ token, staff: { id: staff.id, name: staff.name, status: staff.status, qr_image: staff.qr_image, shift_hours: staff.shift_hours } });
   } catch { res.status(500).json({ error: "DB error" }); }

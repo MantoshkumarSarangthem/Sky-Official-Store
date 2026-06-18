@@ -387,7 +387,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [newPromo, setNewPromo] = useState({ title: "", description: "", badge: "", bgImage: "", bgGradient: "linear-gradient(135deg,#1a0a2e,#2d1b4e)", packIds: [] as number[], active: true });
   const promoImgRef = useRef<HTMLInputElement>(null);
 
-  interface RechargeStaff { id: number; name: string; email: string | null; qr_image: string | null; whatsapp: string | null; upi_id: string | null; status: string; shift_hours: string | null; sort_order: number; created_at: string; staff_pin: string | null; notify_orders: boolean; }
+  interface RechargeStaff { id: number; name: string; email: string | null; qr_image: string | null; whatsapp: string | null; upi_id: string | null; status: string; shift_hours: string | null; sort_order: number; created_at: string; staff_pin: string | null; notify_orders: boolean; last_active: string | null; }
   const [staffList, setStaffList] = useState<RechargeStaff[]>([]);
   const [staffSaving, setStaffSaving] = useState(false);
   const [showAddStaff, setShowAddStaff] = useState(false);
@@ -2460,6 +2460,21 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: s.status === "available" ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)", color: s.status === "available" ? "#22c55e" : "#9ca3af" }}>{s.status === "available" ? "● Available" : "○ Offline"}</span>
                           </div>
                           {s.shift_hours && <div className="text-gray-500 text-xs mt-0.5">⏰ {s.shift_hours}</div>}
+                          <div className="text-xs mt-0.5" style={{ color: s.last_active ? "#6b7280" : "#4b5563" }}>
+                            {s.last_active
+                              ? (() => {
+                                  const diff = Date.now() - new Date(s.last_active).getTime();
+                                  const mins = Math.floor(diff / 60000);
+                                  const hrs = Math.floor(mins / 60);
+                                  const days = Math.floor(hrs / 24);
+                                  if (mins < 2) return "🟢 Active just now";
+                                  if (mins < 60) return `🕐 Active ${mins}m ago`;
+                                  if (hrs < 24) return `🕐 Active ${hrs}h ago`;
+                                  if (days === 1) return "🕐 Active yesterday";
+                                  return `🕐 Active ${days} days ago`;
+                                })()
+                              : "⚫ Never logged in"}
+                          </div>
                           {isSuperAdmin && (
                             <button onClick={() => setRevealedStaff(prev => ({ ...prev, [s.id]: !prev[s.id] }))} className="text-xs mt-1.5 px-2 py-0.5 rounded" style={{ background: revealedStaff[s.id] ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.06)", color: revealedStaff[s.id] ? "#f59e0b" : "rgba(255,255,255,0.4)", border: `1px solid ${revealedStaff[s.id] ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.1)"}`, cursor: "pointer" }}>
                               {revealedStaff[s.id] ? "🔒 Hide Details" : "🔓 Reveal Details"}
