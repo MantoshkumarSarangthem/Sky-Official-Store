@@ -3,6 +3,15 @@ import { useCart } from "../context/CartContext";
 import { setSelectedPackage } from "./PaymentPage";
 import { setAfterTargetPath } from "./MLBBTargetPage";
 
+const DEFAULT_ICON_MLBB = "/default-icon-mlbb.png";
+const DEFAULT_ICON_BGMI = "/default-icon-bgmi.png";
+
+function getDefaultIcon(gameName?: string | null): string {
+  const n = (gameName ?? "").toLowerCase();
+  if (n.includes("bgmi") || n.includes("pubg")) return DEFAULT_ICON_BGMI;
+  return DEFAULT_ICON_MLBB;
+}
+
 export default function CartPage() {
   const [, setLocation] = useLocation();
   const { items, removeFromCart, updateQty, clearCart, totalPrice, totalDiamonds } = useCart();
@@ -24,6 +33,31 @@ export default function CartPage() {
     <div style={{ background: "#FAF9F6", minHeight: "100vh", paddingBottom: 80 }}>
       <style>{`
         @keyframes cartIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        .checkout-btn {
+          width: 100%;
+          padding: 16px 0;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #A89482 0%, #8D6E63 100%);
+          color: #FAF9F6;
+          font-weight: 800;
+          font-size: 17px;
+          border: none;
+          cursor: pointer;
+          box-shadow: 0 6px 20px rgba(141,110,99,0.45), 0 2px 6px rgba(0,0,0,0.12);
+          animation: cartIn 0.35s ease 0.25s both;
+          transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+          letter-spacing: 0.01em;
+        }
+        .checkout-btn:hover {
+          background: linear-gradient(135deg, #9a8575 0%, #7d6055 100%);
+          box-shadow: 0 8px 24px rgba(141,110,99,0.5), 0 2px 8px rgba(0,0,0,0.15);
+          transform: translateY(-1px);
+        }
+        .checkout-btn:active {
+          transform: translateY(1px) scale(0.99);
+          box-shadow: 0 2px 8px rgba(141,110,99,0.35), 0 1px 3px rgba(0,0,0,0.1);
+          background: linear-gradient(135deg, #8D6E63 0%, #7a5f55 100%);
+        }
       `}</style>
 
       {/* Header */}
@@ -67,65 +101,74 @@ export default function CartPage() {
         ) : (
           <>
             {/* Cart items */}
-            {items.map((item, i) => (
-              <div
-                key={item.pkg.id}
-                style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "16px", animation: `cartIn 0.35s ease ${i * 0.05}s both`, display: "flex", gap: 14, alignItems: "center", boxShadow: "0 2px 8px rgba(61,43,31,0.05)" }}
-              >
-                {/* Diamond icon */}
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(168,148,130,0.1)", border: "1px solid rgba(197,180,162,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ fontSize: 22 }}>♦</span>
-                </div>
+            {items.map((item, i) => {
+              const iconSrc = item.pkg.image || getDefaultIcon(item.pkg.gameName);
+              const currencyLabel = item.pkg.currencyLabel || "Diamonds";
+              return (
+                <div
+                  key={item.pkg.id}
+                  style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "16px", animation: `cartIn 0.35s ease ${i * 0.05}s both`, display: "flex", gap: 14, alignItems: "center", boxShadow: "0 2px 8px rgba(61,43,31,0.05)" }}
+                >
+                  {/* Package icon */}
+                  <div style={{ width: 52, height: 52, borderRadius: 14, overflow: "hidden", flexShrink: 0, background: "rgba(168,148,130,0.08)", border: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <img
+                      src={iconSrc}
+                      alt={item.pkg.name ?? "Package"}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_ICON_MLBB; }}
+                    />
+                  </div>
 
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 14, lineHeight: 1.3 }}>
-                    {item.pkg.name || `${item.pkg.diamonds.toLocaleString()} Diamonds`}
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 14, lineHeight: 1.3 }}>
+                      {item.pkg.name || `${item.pkg.diamonds.toLocaleString()} ${currencyLabel}`}
+                    </div>
+                    <div style={{ color: "#3D2B1F", fontSize: 12, marginTop: 2, fontWeight: 600 }}>
+                      {item.pkg.diamonds.toLocaleString()} {currencyLabel}
+                      {item.pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{item.pkg.bonus_diamonds.toLocaleString()} bonus</span>}
+                    </div>
+                    <div style={{ color: "#A89482", fontWeight: 700, fontSize: 13, marginTop: 2 }}>
+                      ₹{(parseFloat(item.pkg.price) * item.quantity).toLocaleString("en-IN")}
+                      {item.quantity > 1 && <span style={{ color: "rgba(61,43,31,0.35)", fontWeight: 400, fontSize: 11 }}> (₹{Number(item.pkg.price).toLocaleString("en-IN")} each)</span>}
+                    </div>
                   </div>
-                  <div style={{ color: "#38bdf8", fontSize: 12, marginTop: 2 }}>
-                    ♦ {item.pkg.diamonds.toLocaleString()}
-                    {item.pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{item.pkg.bonus_diamonds.toLocaleString()} bonus</span>}
-                  </div>
-                  <div style={{ color: "#A89482", fontWeight: 700, fontSize: 13, marginTop: 2 }}>
-                    ₹{(parseFloat(item.pkg.price) * item.quantity).toLocaleString("en-IN")}
-                    {item.quantity > 1 && <span style={{ color: "rgba(61,43,31,0.35)", fontWeight: 400, fontSize: 11 }}> (₹{Number(item.pkg.price).toLocaleString("en-IN")} each)</span>}
-                  </div>
-                </div>
 
-                {/* Quantity controls */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <button
-                    onClick={() => updateQty(item.pkg.id, item.quantity - 1)}
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", color: "#3D2B1F", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
-                  >
-                    −
-                  </button>
-                  <span style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 15, minWidth: 20, textAlign: "center" }}>{item.quantity}</span>
-                  <button
-                    onClick={() => updateQty(item.pkg.id, item.quantity + 1)}
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(168,148,130,0.12)", border: "1px solid rgba(197,180,162,0.5)", color: "#A89482", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => removeFromCart(item.pkg.id)}
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    ✕
-                  </button>
+                  {/* Quantity controls */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <button
+                      onClick={() => updateQty(item.pkg.id, item.quantity - 1)}
+                      style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(61,43,31,0.05)", border: "1px solid rgba(197,180,162,0.4)", color: "#3D2B1F", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+                    >
+                      −
+                    </button>
+                    <span style={{ color: "#3D2B1F", fontWeight: 800, fontSize: 15, minWidth: 20, textAlign: "center" }}>{item.quantity}</span>
+                    <button
+                      onClick={() => updateQty(item.pkg.id, item.quantity + 1)}
+                      style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(168,148,130,0.12)", border: "1px solid rgba(197,180,162,0.5)", color: "#A89482", fontSize: 18, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => removeFromCart(item.pkg.id)}
+                      style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Order summary */}
             <div style={{ background: "#FFFFFF", border: "1px solid rgba(197,180,162,0.4)", borderRadius: 18, padding: "4px 20px", animation: "cartIn 0.35s ease 0.2s both", boxShadow: "0 2px 8px rgba(61,43,31,0.05)" }}>
               {[
-                { label: "Total Diamonds", value: `♦ ${totalDiamonds.toLocaleString()}`, accent: true },
+                { label: "Total Diamonds", value: `${totalDiamonds.toLocaleString()}` },
                 { label: "Total Items", value: `${items.reduce((s, i) => s + i.quantity, 0)} packs` },
-              ].map(({ label, value, accent }) => (
+              ].map(({ label, value }) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid rgba(197,180,162,0.2)" }}>
                   <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13 }}>{label}</span>
-                  <span style={{ color: accent ? "#38bdf8" : "#3D2B1F", fontWeight: 700, fontSize: 13 }}>{value}</span>
+                  <span style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 13 }}>{value}</span>
                 </div>
               ))}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0" }}>
@@ -135,10 +178,7 @@ export default function CartPage() {
             </div>
 
             {/* Checkout button */}
-            <button
-              onClick={handleCheckout}
-              style={{ width: "100%", padding: "16px 0", borderRadius: 16, background: "#A89482", color: "#FAF9F6", fontWeight: 800, fontSize: 17, border: "none", cursor: "pointer", boxShadow: "0 4px 20px rgba(168,148,130,0.4)", animation: "cartIn 0.35s ease 0.25s both" }}
-            >
+            <button className="checkout-btn" onClick={handleCheckout}>
               Proceed to Payment — ₹{totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 0 })}
             </button>
             <button

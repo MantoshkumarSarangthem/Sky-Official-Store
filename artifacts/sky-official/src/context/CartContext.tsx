@@ -7,6 +7,10 @@ export interface CartPackage {
   price: string;
   name: string | null;
   category: string | null;
+  image?: string | null;
+  gameName?: string | null;
+  old_price?: string | null;
+  currencyLabel?: string | null;
 }
 
 export interface CartItem {
