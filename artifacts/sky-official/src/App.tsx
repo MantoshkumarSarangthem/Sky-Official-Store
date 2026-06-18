@@ -245,6 +245,14 @@ function Navbar() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [isSignedIn]);
 
+  const [hasPendingPayment, setHasPendingPayment] = useState(() => checkPendingPaymentSession());
+  useEffect(() => {
+    const check = () => setHasPendingPayment(checkPendingPaymentSession());
+    check();
+    const interval = setInterval(check, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (!showProfileMenu) return;
     const handler = (e: MouseEvent) => {
@@ -369,9 +377,9 @@ function Navbar() {
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </span>
                     Notifications
-                    {unreadCount > 0 && (
+                    {(unreadCount + (hasPendingPayment ? 1 : 0)) > 0 && (
                       <span style={{ marginLeft: "auto", minWidth: 18, height: 18, background: "#ef4444", borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", padding: "0 4px" }}>
-                        {unreadCount > 9 ? "9+" : unreadCount}
+                        {(unreadCount + (hasPendingPayment ? 1 : 0)) > 9 ? "9+" : (unreadCount + (hasPendingPayment ? 1 : 0))}
                       </span>
                     )}
                   </button>
@@ -2111,6 +2119,29 @@ function RefundPage() {
   );
 }
 
+// ── Pending payment session helper ──────────────────────────────────────────
+const PAY_SESSION_KEY = "sky_pay_session";
+function checkPendingPaymentSession(): boolean {
+  try {
+    const raw = sessionStorage.getItem(PAY_SESSION_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s.startedAt || !s.pkg) return false;
+    const elapsed = (Date.now() - s.startedAt) / 1000;
+    return elapsed < 300;
+  } catch { return false; }
+}
+function getPendingPaymentSecondsLeft(): number {
+  try {
+    const raw = sessionStorage.getItem(PAY_SESSION_KEY);
+    if (!raw) return 0;
+    const s = JSON.parse(raw);
+    if (!s.startedAt) return 0;
+    const elapsed = (Date.now() - s.startedAt) / 1000;
+    return Math.max(0, Math.floor(300 - elapsed));
+  } catch { return 0; }
+}
+
 // ── Notifications Page ──────────────────────────────────────────────────────
 function NotificationsPage() {
   const { getToken, isSignedIn } = useAuth();
@@ -2118,6 +2149,17 @@ function NotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [pendingPayment, setPendingPayment] = useState(() => checkPendingPaymentSession());
+  const [pendingSeenThisVisit, setPendingSeenThisVisit] = useState(false);
+  const [pendingSecondsLeft, setPendingSecondsLeft] = useState(() => getPendingPaymentSecondsLeft());
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const secs = getPendingPaymentSecondsLeft();
+      setPendingSecondsLeft(secs);
+      if (secs <= 0) setPendingPayment(false);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const EXPANDABLE = ["wallet_credited", "order_completed", "wallet_deducted"];
 
@@ -2195,15 +2237,45 @@ function NotificationsPage() {
           )}
         </div>
 
+        {pendingPayment && (
+          <div
+            onClick={() => { setPendingSeenThisVisit(true); setLocation("/pay"); }}
+            style={{ background: "#fff", border: "1px solid rgba(245,158,11,0.45)", borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", boxShadow: "0 2px 12px rgba(245,158,11,0.08)" }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 16 }}>⏳</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: 700, flex: 1 }}>Unsubmitted Payment</span>
+                  {!pendingSeenThisVisit && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
+                </div>
+                <p style={{ color: "#6b6b6b", fontSize: 13, margin: "0 0 8px", lineHeight: 1.5 }}>
+                  You left a payment in progress. Your order hasn't been placed yet.
+                </p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ color: pendingSecondsLeft <= 60 ? "#ef4444" : "#f59e0b", fontSize: 12, fontWeight: 700, fontFamily: "monospace" }}>
+                    {pendingSecondsLeft <= 0 ? "Expired" : `${String(Math.floor(pendingSecondsLeft / 60)).padStart(2, "0")}:${String(pendingSecondsLeft % 60).padStart(2, "0")} remaining`}
+                  </span>
+                  <span style={{ background: "rgba(245,158,11,0.12)", color: "#b45309", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, fontWeight: 700, padding: "4px 12px" }}>
+                    Resume →
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(0,0,0,0.3)", fontSize: 14 }}>Loading…</div>
-        ) : notifications.length === 0 ? (
+        ) : notifications.length === 0 && !pendingPayment ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔔</div>
             <p style={{ color: "rgba(0,0,0,0.4)", fontSize: 14 }}>No notifications yet.</p>
             <p style={{ color: "rgba(0,0,0,0.3)", fontSize: 12, marginTop: 6 }}>You'll be notified about order updates, wallet credits, and more.</p>
           </div>
-        ) : (
+        ) : notifications.length === 0 ? null : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {notifications.map(n => {
               const isExpandable = EXPANDABLE.includes(n.type);
