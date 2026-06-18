@@ -539,8 +539,8 @@ export default function ProfilePage() {
           </button>
           <button onClick={() => setLocation("/packages")} style={{ background: "#FFFFFF", borderRadius: 14, border: "1px solid rgba(197,180,162,0.35)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%", boxShadow: "0 1px 4px rgba(61,43,31,0.04)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(168,148,130,0.1)", border: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                <img src="/scoin.png" alt="S Coin" style={{ width: 30, height: 30, objectFit: "contain" }} />
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(168,148,130,0.1)", border: "1px solid rgba(197,180,162,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 10a4 4 0 01-8 0" stroke="#A89482" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <span style={{ color: "#3D2B1F", fontWeight: 600, fontSize: 14 }}>Browse Packages</span>
             </div>

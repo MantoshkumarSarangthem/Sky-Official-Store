@@ -313,7 +313,7 @@ function Navbar() {
         {isSignedIn && walletBalance !== null && !hideWallet && (
           <button
             onClick={() => setLocation("/profile")}
-            style={{ display: "flex", alignItems: "center", gap: 4, height: 34, background: "#7F00FF", border: "none", borderRadius: 999, padding: "0 10px 0 6px", cursor: "pointer", flexShrink: 0, touchAction: "manipulation", WebkitTapHighlightColor: "transparent", boxShadow: "0 2px 10px rgba(127,0,255,0.4)" }}
+            style={{ display: "flex", alignItems: "center", gap: 4, height: 34, background: "#7F00FF", border: "none", borderRadius: 999, padding: "0 10px 0 6px", cursor: "pointer", flexShrink: 0, touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
           >
             <img src="/scoin.png" alt="S" style={{ width: 16, height: 16, objectFit: "contain" }} />
             <span style={{ color: "#FFFFFF", fontSize: 11, fontWeight: 800 }}>₹{walletBalance.toFixed(0)}</span>
