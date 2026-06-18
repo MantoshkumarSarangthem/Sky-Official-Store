@@ -434,27 +434,23 @@ export default function GameProductsPage() {
                       </div>
                     )}
 
-                    {/* Name + price row (no icon here) */}
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 5, marginBottom: 6 }}>
+                    {/* Top row: icon (larger) + name/price */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 7, marginBottom: 8 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: pkg.image ? "transparent" : "rgba(139,92,246,0.08)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={28} />}
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ color: "#3D2B1F", fontWeight: 700, fontSize: 11, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}>
                           {pkg.name || `${total.toLocaleString()} ${currencyLabel}`}
                         </div>
-                        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 9.5, lineHeight: 1.2, marginTop: 1 }}>
+                        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 9.5, lineHeight: 1.2, marginTop: 2 }}>
                           {pkg.diamonds.toLocaleString()} {currencyLabel}
                           {pkg.bonus_diamonds > 0 && <span style={{ color: "#4ade80" }}> +{pkg.bonus_diamonds.toLocaleString()}</span>}
                         </div>
-                      </div>
-                      <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        {hasOldPrice && <div style={{ color: "rgba(61,43,31,0.3)", fontSize: 9, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
-                        <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 14, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
-                      </div>
-                    </div>
-
-                    {/* Large icon image — centred in the free middle space */}
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1, marginBottom: 8, minHeight: 52 }}>
-                      <div style={{ width: 56, height: 56, borderRadius: 12, overflow: "hidden", background: pkg.image ? "transparent" : "rgba(139,92,246,0.08)", border: pkg.image ? "none" : "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {pkg.image ? <img src={pkg.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <DiamondSVG size={30} />}
+                        <div style={{ marginTop: 3, textAlign: "left" }}>
+                          {hasOldPrice && <span style={{ color: "rgba(61,43,31,0.3)", fontSize: 9, textDecoration: "line-through", marginRight: 4 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</span>}
+                          <span style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 13 }}>₹{parseFloat(pkg.price).toFixed(0)}</span>
+                        </div>
                       </div>
                     </div>
 
