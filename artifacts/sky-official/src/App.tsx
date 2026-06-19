@@ -1633,11 +1633,11 @@ function DailyOfferSection() {
   const ref0    = useRef<HTMLDivElement>(null);
   const ref1    = useRef<HTMLDivElement>(null);
   const ref2    = useRef<HTMLDivElement>(null);
-  // H0 = featured (slot0) height, H1 = normal height.
-  // scale factor = H0/H1 so slot1 at scale(H0/H1) is visually identical to slot0 at scale(1).
-  const H0 = 97, H1 = 84;
-  const SCALE_UP   = H0 / H1;   // ≈ 1.1548 — slot1 grows to featured size
-  const SCALE_DOWN = H1 / H0;   // ≈ 0.8660 — slot0 shrinks to normal size
+  // All slots share the same DOM dimensions (H × flex:1).
+  // The non-featured slots are visually shrunk via a persistent CSS scale transform.
+  // This means card content never reflows when a card moves between slots.
+  const H = 97;
+  const SCALE_SMALL = 84 / 97; // ≈ 0.866 — resting scale for slots 1 and 2
 
   useEffect(() => {
     cachedFetch<DailyOfferPkg[]>(cacheKey)
@@ -1676,22 +1676,26 @@ function DailyOfferSection() {
           fill: "forwards",
         };
 
+        const s = SCALE_SMALL;
+
         // All three .animate() calls happen in the same JS execution tick.
-        // The browser compositor batches them into the exact same frame —
-        // translateX and scale are guaranteed to start and progress together.
+        // Slots 1 and 2 start from their CSS resting scale(s), not scale(1),
+        // so the animation perfectly matches the persistent CSS transform —
+        // when cancel() snaps back to CSS, the new render at the same scale
+        // is pixel-identical and no content reflow ever occurs.
         ref0.current?.animate(
-          [{ transform: "translateX(0px) scale(1)" },
-           { transform: `translateX(-${d0}px) scale(${SCALE_DOWN})` }],
+          [{ transform: `translateX(0px) scale(1)` },
+           { transform: `translateX(-${d0}px) scale(${s})` }],
           OPT,
         );
         ref1.current?.animate(
-          [{ transform: "translateX(0px) scale(1)" },
-           { transform: `translateX(-${d1}px) scale(${SCALE_UP})` }],
+          [{ transform: `translateX(0px) scale(${s})` },
+           { transform: `translateX(-${d1}px) scale(1)` }],
           OPT,
         );
         ref2.current?.animate(
-          [{ transform: "translateX(0px)" },
-           { transform: `translateX(-${d2}px)` }],
+          [{ transform: `translateX(0px) scale(${s})` },
+           { transform: `translateX(-${d2}px) scale(${s})` }],
           OPT,
         );
 
@@ -1708,7 +1712,7 @@ function DailyOfferSection() {
 
     cycle();
     return () => { clearTimeout(t0); clearTimeout(t1); };
-  }, [pkgs.length, SCALE_UP, SCALE_DOWN]);
+  }, [pkgs.length, SCALE_SMALL]);
 
   if (pkgs.length === 0) return null;
 
@@ -1720,6 +1724,7 @@ function DailyOfferSection() {
   ];
 
   const placeholder = <div style={{ background: "rgba(0,0,0,0.04)", borderRadius: 16, height: "100%", boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)" }} />;
+  const s = SCALE_SMALL;
 
   return (
     <section style={{ padding: "4px 0 4px" }}>
@@ -1733,13 +1738,15 @@ function DailyOfferSection() {
       </div>
       <div style={{ overflowX: "hidden", padding: "4px 16px 24px" }}>
         <div ref={rowRef} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div ref={ref0} style={{ flex: 1.15, height: H0, transformOrigin: "left center" }}>
+          {/* All three slots: identical DOM size. Scale is the ONLY visual differentiator.
+              When cancel() snaps back to CSS, new slot 0 at scale(1) = animation end state → zero reflow. */}
+          <div ref={ref0} style={{ flex: 1, height: H, transformOrigin: "left center", transform: "scale(1)" }}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} /> : placeholder}
           </div>
-          <div ref={ref1} style={{ flex: 1, height: H1, transformOrigin: "left center" }}>
+          <div ref={ref1} style={{ flex: 1, height: H, transformOrigin: "left center", transform: `scale(${s})` }}>
             {slots[1] ? <DailyOfferCard pkg={slots[1]} /> : placeholder}
           </div>
-          <div ref={ref2} key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, height: H1 }}>
+          <div ref={ref2} key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, height: H, transformOrigin: "left center", transform: `scale(${s})` }}>
             {slots[2] ? <DailyOfferCard pkg={slots[2]} /> : placeholder}
           </div>
         </div>
