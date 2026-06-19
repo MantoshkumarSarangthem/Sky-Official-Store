@@ -2173,7 +2173,7 @@ function NotificationsPage() {
 
   const handleCardClick = (n: any) => {
     if (!n.read) markRead(n.id);
-    if (EXPANDABLE.includes(n.type)) {
+    if (n.body) {
       setExpandedId(prev => prev === n.id ? null : n.id);
     }
   };
@@ -2223,9 +2223,11 @@ function NotificationsPage() {
                   <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: 700, flex: 1 }}>Unsubmitted Payment</span>
                   {!pendingSeenThisVisit && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
                 </div>
-                <p style={{ color: "#6b6b6b", fontSize: 13, margin: "0 0 8px", lineHeight: 1.5 }}>
-                  You left a payment in progress. Your order hasn't been placed yet.
-                </p>
+                <div style={{ background: "rgba(245,158,11,0.05)", borderRadius: 8, padding: "10px 12px", margin: "4px 0 10px", borderLeft: "3px solid rgba(245,158,11,0.35)" }}>
+                  <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: "0 0 6px", fontStyle: "italic" }}>Dear User,</p>
+                  <p style={{ color: "#6b6b6b", fontSize: 13, margin: "0 0 8px", lineHeight: 1.6 }}>You left a payment in progress. Your order hasn't been placed yet. Please resume before the session expires.</p>
+                  <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: 0 }}>Best regards,<br />@SkyOfficialTeam</p>
+                </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ color: pendingSecondsLeft <= 60 ? "#ef4444" : "#f59e0b", fontSize: 12, fontWeight: 700, fontFamily: "monospace" }}>
                     {pendingSecondsLeft <= 0 ? "Expired" : `${String(Math.floor(pendingSecondsLeft / 60)).padStart(2, "0")}:${String(pendingSecondsLeft % 60).padStart(2, "0")} remaining`}
@@ -2269,13 +2271,15 @@ function NotificationsPage() {
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isExpanded ? 6 : 4 }}>
-                      <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: n.read ? 500 : 700, flex: 1, lineHeight: 1.4 }}>{stripEmoji(n.title)}</span>
+                      <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: 800, flex: 1, lineHeight: 1.4 }}>{stripEmoji(n.title)}</span>
                       {!n.read && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
                     </div>
 
-                    {isExpandable && isExpanded && expandContent && (
-                      <div style={{ background: "#FAF9F6", borderRadius: 8, padding: "10px 12px", marginBottom: 8, borderLeft: "3px solid rgba(127,0,255,0.3)" }}>
-                        <p style={{ color: "#4a4a4a", fontSize: 13, margin: 0, lineHeight: 1.5 }}>{expandContent}</p>
+                    {isExpandable && isExpanded && (
+                      <div style={{ background: "#FAF9F6", borderRadius: 8, padding: "12px 14px", marginBottom: 8, borderLeft: "3px solid rgba(127,0,255,0.3)" }}>
+                        <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: "0 0 8px", fontStyle: "italic" }}>Dear User,</p>
+                        <p style={{ color: "#4a4a4a", fontSize: 13, margin: "0 0 10px", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{n.body}</p>
+                        <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: 0 }}>Best regards,<br />@SkyOfficialTeam</p>
                       </div>
                     )}
 
