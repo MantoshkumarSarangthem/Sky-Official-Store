@@ -292,29 +292,46 @@ export default function ProfilePage() {
 
             {settingsTab === "name" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12, marginBottom: 4 }}>Change your display name shown across the app.</div>
+                <div style={{ color: "rgba(61,43,31,0.5)", fontSize: 12, marginBottom: 4 }}>Change your username shown across the app, leaderboard, and admin search.<br />3–20 characters — letters, numbers, and underscores only.</div>
                 <input
                   value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  placeholder="New display name"
+                  onChange={e => setNewName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                  placeholder="new_username"
+                  maxLength={20}
                   style={{ background: "#FAF9F6", border: "1px solid rgba(197,180,162,0.5)", borderRadius: 10, color: "#3D2B1F", fontSize: 15, padding: "12px 14px", outline: "none", fontFamily: "inherit" }}
                 />
                 <button
                   disabled={settingsSaving}
                   onClick={async () => {
-                    if (!newName.trim()) return;
+                    const val = newName.trim();
+                    if (!val) return;
+                    if (!/^[a-z0-9_]{3,20}$/.test(val)) {
+                      setSettingsMsg({ ok: false, text: "Use 3–20 characters: letters, numbers, underscores only." });
+                      return;
+                    }
                     setSettingsSaving(true); setSettingsMsg(null);
                     try {
-                      await user.update({ firstName: newName.trim() });
-                      await user.reload();
-                      setSettingsMsg({ ok: true, text: "Display name updated!" });
-                    } catch (e: any) {
-                      setSettingsMsg({ ok: false, text: e?.errors?.[0]?.message || "Failed to update name." });
+                      const token = await getToken();
+                      const res = await fetch(`${API}/profile/username`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        credentials: "include",
+                        body: JSON.stringify({ username: val }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        setSettingsMsg({ ok: false, text: data.error || "Failed to update username." });
+                      } else {
+                        setProfileUsername(data.username);
+                        setSettingsMsg({ ok: true, text: "Username updated!" });
+                      }
+                    } catch {
+                      setSettingsMsg({ ok: false, text: "Network error. Please try again." });
                     } finally { setSettingsSaving(false); }
                   }}
                   style={{ padding: "13px 0", borderRadius: 12, background: "#8D6E63", color: "#FFFFFF", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(141,110,99,0.35)" }}
                 >
-                  {settingsSaving ? "Saving…" : "Save Name"}
+                  {settingsSaving ? "Saving…" : "Save Username"}
                 </button>
               </div>
             )}
