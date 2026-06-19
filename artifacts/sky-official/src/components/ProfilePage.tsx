@@ -67,11 +67,16 @@ export default function ProfilePage() {
   const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
   const [cropScale, setCropScale] = useState(1);
   const cropDragRef = useRef<{ startX: number; startY: number; startOx: number; startOy: number } | null>(null);
-  const CROP_SIZE = 220;
+  const cropPinchRef = useRef<{ dist: number; scale: number; ox: number; oy: number; mx: number; my: number } | null>(null);
+  const [cropMinScale, setCropMinScale] = useState(0.2);
+  const [isDragging, setIsDragging] = useState(false);
+  const CROP_SIZE = Math.min(288, (typeof window !== "undefined" ? window.innerWidth : 380) - 56);
+  const CROP_MAX_SCALE = 10;
 
   const handleCropMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     cropDragRef.current = { startX: e.clientX, startY: e.clientY, startOx: cropOffset.x, startOy: cropOffset.y };
+    setIsDragging(true);
   }, [cropOffset]);
 
   const handleCropMouseMove = useCallback((e: React.MouseEvent) => {
@@ -79,32 +84,73 @@ export default function ProfilePage() {
     setCropOffset({ x: cropDragRef.current.startOx + e.clientX - cropDragRef.current.startX, y: cropDragRef.current.startOy + e.clientY - cropDragRef.current.startY });
   }, []);
 
+  const handleCropMouseUp = useCallback(() => { cropDragRef.current = null; setIsDragging(false); }, []);
+
   const handleCropTouchStart = useCallback((e: React.TouchEvent) => {
-    const t = e.touches[0];
-    cropDragRef.current = { startX: t.clientX, startY: t.clientY, startOx: cropOffset.x, startOy: cropOffset.y };
-  }, [cropOffset]);
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      cropDragRef.current = { startX: t.clientX, startY: t.clientY, startOx: cropOffset.x, startOy: cropOffset.y };
+      cropPinchRef.current = null;
+      setIsDragging(true);
+    } else if (e.touches.length >= 2) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const mx = (t1.clientX + t2.clientX) / 2;
+      const my = (t1.clientY + t2.clientY) / 2;
+      cropPinchRef.current = { dist, scale: cropScale, ox: cropOffset.x, oy: cropOffset.y, mx, my };
+      cropDragRef.current = null;
+      setIsDragging(true);
+    }
+  }, [cropOffset, cropScale]);
 
   const handleCropTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!cropDragRef.current) return;
     e.preventDefault();
-    const t = e.touches[0];
-    setCropOffset({ x: cropDragRef.current.startOx + t.clientX - cropDragRef.current.startX, y: cropDragRef.current.startOy + t.clientY - cropDragRef.current.startY });
-  }, []);
+    if (e.touches.length >= 2 && cropPinchRef.current) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const { dist: dist0, scale: s0, ox: ox0, oy: oy0, mx, my } = cropPinchRef.current;
+      const newScale = Math.min(CROP_MAX_SCALE, Math.max(cropMinScale, s0 * (dist / dist0)));
+      const scCx = window.innerWidth / 2;
+      const scCy = window.innerHeight / 2;
+      const newOx = mx - scCx - ((mx - scCx - ox0) / s0) * newScale;
+      const newOy = my - scCy - ((my - scCy - oy0) / s0) * newScale;
+      setCropScale(newScale);
+      setCropOffset({ x: newOx, y: newOy });
+    } else if (e.touches.length === 1 && cropDragRef.current) {
+      const t = e.touches[0];
+      setCropOffset({ x: cropDragRef.current.startOx + t.clientX - cropDragRef.current.startX, y: cropDragRef.current.startOy + t.clientY - cropDragRef.current.startY });
+    }
+  }, [cropMinScale, CROP_MAX_SCALE]);
 
-  const handleCropEnd = useCallback(() => { cropDragRef.current = null; }, []);
+  const handleCropTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      cropDragRef.current = null;
+      cropPinchRef.current = null;
+      setIsDragging(false);
+    } else if (e.touches.length === 1 && cropPinchRef.current) {
+      const t = e.touches[0];
+      cropPinchRef.current = null;
+      setCropOffset(prev => {
+        cropDragRef.current = { startX: t.clientX, startY: t.clientY, startOx: prev.x, startOy: prev.y };
+        return prev;
+      });
+    }
+  }, []);
 
   const openCropForFile = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const scale = Math.max(CROP_SIZE / img.naturalWidth, CROP_SIZE / img.naturalHeight);
+      const cropDiam = Math.min(288, window.innerWidth - 56);
+      const minS = Math.max(cropDiam / img.naturalWidth, cropDiam / img.naturalHeight);
       setCropImgEl(img);
-      setCropScale(Math.max(scale, 0.5));
+      setCropMinScale(minS);
+      setCropScale(minS);
       setCropOffset({ x: 0, y: 0 });
       setCropSrc(url);
     };
     img.src = url;
-  }, [CROP_SIZE]);
+  }, []);
 
   const confirmCrop = useCallback(async () => {
     if (!cropImgEl || !user) return;
@@ -519,74 +565,141 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Crop modal */}
-      {cropSrc && cropImgEl && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(61,43,31,0.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: 24 }}
-          onMouseMove={handleCropMouseMove}
-          onMouseUp={handleCropEnd}
-          onMouseLeave={handleCropEnd}
-        >
-          <div style={{ color: "#FAF9F6", fontSize: 15, fontWeight: 700 }}>Position your photo</div>
-          <div style={{ color: "rgba(250,249,246,0.55)", fontSize: 12, marginTop: -14 }}>Drag to reposition · Pinch or use +/− to zoom</div>
-
-          {/* Circular crop viewport */}
+      {/* Crop modal — full-screen gallery style */}
+      {cropSrc && cropImgEl && (() => {
+        const sliderPct = Math.max(0, Math.min(100, ((cropScale - cropMinScale) / (CROP_MAX_SCALE - cropMinScale)) * 100));
+        return (
           <div
-            style={{ width: CROP_SIZE, height: CROP_SIZE, borderRadius: "50%", overflow: "hidden", border: "3px solid #f59e0b", boxShadow: "0 0 0 4px rgba(245,158,11,0.18), 0 8px 32px rgba(0,0,0,0.7)", position: "relative", cursor: "grab", userSelect: "none", touchAction: "none", flexShrink: 0 }}
-            onMouseDown={handleCropMouseDown}
-            onTouchStart={handleCropTouchStart}
-            onTouchMove={handleCropTouchMove}
-            onTouchEnd={handleCropEnd}
+            style={{ position: "fixed", inset: 0, zIndex: 300, background: "#000", overflow: "hidden", touchAction: "none", userSelect: "none" }}
+            onMouseMove={handleCropMouseMove}
+            onMouseUp={handleCropMouseUp}
+            onMouseLeave={handleCropMouseUp}
           >
-            <img
-              src={cropSrc}
-              alt="crop preview"
+            <style>{`
+              .crop-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 3px; border-radius: 2px; outline: none; cursor: pointer; background: linear-gradient(to right, #f59e0b ${sliderPct}%, rgba(255,255,255,0.22) ${sliderPct}%); }
+              .crop-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2.5px solid #f59e0b; box-shadow: 0 2px 8px rgba(0,0,0,0.4); cursor: grab; }
+              .crop-slider::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2.5px solid #f59e0b; cursor: grab; }
+            `}</style>
+
+            {/* Full image layer — drag/pinch here */}
+            <div
+              style={{ position: "absolute", inset: 0, cursor: isDragging ? "grabbing" : "grab" }}
+              onMouseDown={handleCropMouseDown}
+              onTouchStart={handleCropTouchStart}
+              onTouchMove={handleCropTouchMove}
+              onTouchEnd={handleCropTouchEnd}
+            >
+              <img
+                src={cropSrc}
+                draggable={false}
+                alt=""
+                style={{
+                  position: "absolute",
+                  width: cropImgEl.naturalWidth * cropScale,
+                  height: cropImgEl.naturalHeight * cropScale,
+                  left: "50%",
+                  top: "50%",
+                  transform: `translate(calc(-50% + ${cropOffset.x}px), calc(-50% + ${cropOffset.y}px))`,
+                  pointerEvents: "none",
+                  maxWidth: "none",
+                }}
+              />
+            </div>
+
+            {/* Dim mask outside circle using box-shadow trick */}
+            <div
               style={{
                 position: "absolute",
-                width: cropImgEl.naturalWidth * cropScale,
-                height: cropImgEl.naturalHeight * cropScale,
                 left: "50%",
                 top: "50%",
-                transform: `translate(calc(-50% + ${cropOffset.x}px), calc(-50% + ${cropOffset.y}px))`,
+                width: CROP_SIZE,
+                height: CROP_SIZE,
+                borderRadius: "50%",
+                transform: "translate(-50%, -50%)",
+                boxShadow: "0 0 0 2000px rgba(0,0,0,0.62)",
+                border: "2px solid rgba(245,158,11,0.9)",
                 pointerEvents: "none",
-                userSelect: "none",
-                maxWidth: "none",
+                zIndex: 2,
               }}
-              draggable={false}
             />
-          </div>
 
-          {/* Zoom controls */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button
-              onClick={() => setCropScale(s => Math.max(0.15, s - 0.1))}
-              style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(250,249,246,0.1)", border: "1px solid rgba(250,249,246,0.2)", color: "#FAF9F6", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
-            >−</button>
-            <span style={{ color: "rgba(250,249,246,0.55)", fontSize: 12, minWidth: 48, textAlign: "center" }}>{Math.round(cropScale * 100)}%</span>
-            <button
-              onClick={() => setCropScale(s => Math.min(5, s + 0.1))}
-              style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(250,249,246,0.1)", border: "1px solid rgba(250,249,246,0.2)", color: "#FAF9F6", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
-            >+</button>
-          </div>
+            {/* Grid lines inside circle — shown while dragging/pinching */}
+            {isDragging && (
+              <svg
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  width: CROP_SIZE,
+                  height: CROP_SIZE,
+                  transform: "translate(-50%, -50%)",
+                  pointerEvents: "none",
+                  zIndex: 3,
+                  overflow: "hidden",
+                  borderRadius: "50%",
+                }}
+              >
+                <line x1={CROP_SIZE / 2} y1={0} x2={CROP_SIZE / 2} y2={CROP_SIZE} stroke="rgba(255,255,255,0.5)" strokeWidth="0.8" />
+                <line x1={0} y1={CROP_SIZE / 2} x2={CROP_SIZE} y2={CROP_SIZE / 2} stroke="rgba(255,255,255,0.5)" strokeWidth="0.8" />
+                <line x1={CROP_SIZE / 3} y1={0} x2={CROP_SIZE / 3} y2={CROP_SIZE} stroke="rgba(255,255,255,0.28)" strokeWidth="0.7" />
+                <line x1={(CROP_SIZE * 2) / 3} y1={0} x2={(CROP_SIZE * 2) / 3} y2={CROP_SIZE} stroke="rgba(255,255,255,0.28)" strokeWidth="0.7" />
+                <line x1={0} y1={CROP_SIZE / 3} x2={CROP_SIZE} y2={CROP_SIZE / 3} stroke="rgba(255,255,255,0.28)" strokeWidth="0.7" />
+                <line x1={0} y1={(CROP_SIZE * 2) / 3} x2={CROP_SIZE} y2={(CROP_SIZE * 2) / 3} stroke="rgba(255,255,255,0.28)" strokeWidth="0.7" />
+              </svg>
+            )}
 
-          {/* Action buttons */}
-          <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 300 }}>
-            <button
-              onClick={() => { setCropSrc(null); setCropImgEl(null); }}
-              style={{ flex: 1, padding: "13px 0", borderRadius: 12, background: "rgba(250,249,246,0.1)", border: "1px solid rgba(250,249,246,0.2)", color: "rgba(250,249,246,0.75)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
-            >
-              Cancel
-            </button>
-            <button
-              disabled={settingsSaving}
-              onClick={confirmCrop}
-              style={{ flex: 2, padding: "13px 0", borderRadius: 12, background: settingsSaving ? "rgba(168,148,130,0.4)" : "#A89482", color: "#FAF9F6", fontWeight: 700, fontSize: 14, border: "none", cursor: settingsSaving ? "not-allowed" : "pointer" }}
-            >
-              {settingsSaving ? "Uploading…" : "Crop & Set Photo"}
-            </button>
+            {/* Top bar */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, padding: "52px 20px 14px", background: "linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, transparent 100%)", pointerEvents: "none", textAlign: "center" }}>
+              <div style={{ color: "#FAF9F6", fontSize: 15, fontWeight: 700, letterSpacing: "0.01em" }}>Move and Scale</div>
+              <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, marginTop: 3 }}>Drag · Pinch two fingers to zoom</div>
+            </div>
+
+            {/* Bottom controls */}
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10, padding: "20px 24px 44px", background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)" }}>
+              {/* Zoom slider row */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
+                  <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2"/>
+                  <line x1="16.5" y1="16.5" x2="22" y2="22" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <input
+                  type="range"
+                  className="crop-slider"
+                  min={0}
+                  max={1000}
+                  step={1}
+                  value={Math.round(((cropScale - cropMinScale) / (CROP_MAX_SCALE - cropMinScale)) * 1000)}
+                  onChange={e => {
+                    const t = Number(e.target.value) / 1000;
+                    setCropScale(cropMinScale + t * (CROP_MAX_SCALE - cropMinScale));
+                  }}
+                />
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
+                  <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2"/>
+                  <line x1="16.5" y1="16.5" x2="22" y2="22" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 12 }}>
+                <button
+                  onClick={() => { setCropSrc(null); setCropImgEl(null); setIsDragging(false); }}
+                  style={{ flex: 1, padding: "13px 0", borderRadius: 14, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.8)", fontWeight: 600, fontSize: 14, cursor: "pointer", letterSpacing: "0.01em" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={settingsSaving}
+                  onClick={confirmCrop}
+                  style={{ flex: 2, padding: "13px 0", borderRadius: 14, background: settingsSaving ? "rgba(168,148,130,0.4)" : "#f59e0b", color: settingsSaving ? "rgba(255,255,255,0.5)" : "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: settingsSaving ? "not-allowed" : "pointer", letterSpacing: "0.01em" }}
+                >
+                  {settingsSaving ? "Uploading…" : "Use Photo"}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
