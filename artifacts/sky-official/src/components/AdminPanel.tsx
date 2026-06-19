@@ -1795,21 +1795,36 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               {tab === "orders" && (
                 <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
                   <div style={{ flexShrink: 0, padding: "20px 20px 12px", background: "#111", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    {stats && (
-                      <div className="grid grid-cols-3 gap-3" style={{ marginBottom: 14 }}>
-                        {[
-                          { label: "Total Orders", value: stats.total_orders, icon: "📦" },
-                          { label: "Revenue", value: `₹${parseFloat(stats.total_revenue).toFixed(0)}`, icon: "💰" },
-                          { label: "Products Sold", value: parseInt(stats.total_diamonds).toLocaleString(), icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="22.08" x2="12" y2="12" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-                        ].map((s) => (
-                          <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", fontSize: 22, lineHeight: 1, marginBottom: 4, height: 26 }}>{s.icon}</div>
-                            <div className="text-white font-bold text-lg leading-tight">{s.value}</div>
-                            <div className="text-gray-400 text-xs mt-0.5">{s.label}</div>
-                          </div>
-                        ))}
+                    <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)", marginBottom: 14 }}>
+                      <div className="text-amber-400 text-xs font-bold">Order Search</div>
+                      <div className="flex gap-2">
+                        <input placeholder="Search by Order ID, MLBB ID, IGN…" value={orderSearch} onChange={e => setOrderSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && searchOrders()} className="flex-1 px-3 py-2 rounded-lg text-white text-xs outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", minWidth: 0 }} />
+                        <select value={orderSearchStatus} onChange={e => setOrderSearchStatus(e.target.value)} className="px-2 py-2 rounded-lg text-white text-xs outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
+                          <option value="">All</option>
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                        <button onClick={searchOrders} disabled={searching} className="px-3 py-2 rounded-lg text-xs font-bold text-black" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)", flexShrink: 0, whiteSpace: "nowrap" }}>{searching ? "…" : "Search"}</button>
                       </div>
-                    )}
+                      {searchResults && (
+                        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+                          {searchResults.length === 0 ? (
+                            <div className="text-gray-500 text-xs text-center py-3">No results found.</div>
+                          ) : searchResults.map(o => (
+                            <div key={o.id} className="rounded-lg p-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)" }}>
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <span className="text-amber-400 font-bold text-xs font-mono">{(o as any).display_id || `#${o.id}`}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: o.status === "completed" ? "rgba(34,197,94,0.12)" : o.status === "pending" ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.06)", color: o.status === "completed" ? "#22c55e" : o.status === "pending" ? "#f59e0b" : "#9ca3af" }}>{o.status}</span>
+                              </div>
+                              <div className="text-gray-300 text-xs mt-1 flex items-center gap-1"><img src="/diamond.png" alt="♦" style={{ width: 11, height: 11, objectFit: "contain" }} />{Number(o.diamonds).toLocaleString()} · ₹{parseFloat(o.price).toFixed(0)}</div>
+                              {o.mlbb_id && <div className="text-gray-500 text-xs mt-0.5">MLBB: {o.mlbb_id}</div>}
+                              {(o as any).staff_name && <div className="text-gray-500 text-xs mt-0.5">Staff: {(o as any).staff_name}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <span className="text-white font-bold text-sm">Recent Orders</span>
                   </div>
                   <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2390,37 +2405,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                   </div>
                   <div className="text-gray-400 text-xs">Set staff as "Available" to receive orders. Their QR is shown to customers on the payment page.</div>
 
-                  {/* Order Search */}
-                  <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <div className="text-amber-400 text-xs font-bold">Order Search</div>
-                    <div className="flex gap-2">
-                      <input placeholder="Search by Order ID, MLBB ID, IGN…" value={orderSearch} onChange={e => setOrderSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && searchOrders()} className="flex-1 px-3 py-2 rounded-lg text-white text-xs outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
-                      <select value={orderSearchStatus} onChange={e => setOrderSearchStatus(e.target.value)} className="px-2 py-2 rounded-lg text-white text-xs outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
-                        <option value="">All</option>
-                        <option value="pending">Pending</option>
-                        <option value="processing">Processing</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                      <button onClick={searchOrders} disabled={searching} className="px-3 py-2 rounded-lg text-xs font-bold text-black" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)", flexShrink: 0 }}>{searching ? "…" : "Search"}</button>
-                    </div>
-                    {searchResults && (
-                      <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-                        {searchResults.length === 0 ? (
-                          <div className="text-gray-500 text-xs text-center py-3">No results found.</div>
-                        ) : searchResults.map(o => (
-                          <div key={o.id} className="rounded-lg p-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)" }}>
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <span className="text-amber-400 font-bold text-xs font-mono">{(o as any).display_id || `#${o.id}`}</span>
-                              <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: o.status === "completed" ? "rgba(34,197,94,0.12)" : o.status === "pending" ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.06)", color: o.status === "completed" ? "#22c55e" : o.status === "pending" ? "#f59e0b" : "#9ca3af" }}>{o.status}</span>
-                            </div>
-                            <div className="text-gray-300 text-xs mt-1 flex items-center gap-1"><img src="/diamond.png" alt="♦" style={{ width: 11, height: 11, objectFit: "contain" }} />{Number(o.diamonds).toLocaleString()} · ₹{parseFloat(o.price).toFixed(0)}</div>
-                            {o.mlbb_id && <div className="text-gray-500 text-xs mt-0.5">MLBB: {o.mlbb_id}</div>}
-                            {(o as any).staff_name && <div className="text-gray-500 text-xs mt-0.5">Staff: {(o as any).staff_name}</div>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
 
                   {showAddStaff && (
                     <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.2)" }}>

@@ -99,6 +99,7 @@ const clerkAppearance = {
     formHeader: "hidden",
     footerPages: "!hidden",
     internal__clerk_components_inner: "gap-5",
+    formField__username: "!hidden",
   },
 };
 
@@ -478,7 +479,6 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
   const { getToken } = useAuth();
   const [username, setUsername] = useState("");
   const [status, setStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -486,7 +486,6 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
     setUsername(v);
-    setSuggestions([]);
     setError(null);
     if (checkTimer.current) clearTimeout(checkTimer.current);
     if (v.length === 0) { setStatus("idle"); return; }
@@ -498,7 +497,6 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
         const res = await fetch(`${API}/profile/username-check?username=${encodeURIComponent(v)}`);
         const data = await res.json();
         setStatus(data.available ? "available" : "taken");
-        setSuggestions(data.suggestions || []);
       } catch { setStatus("idle"); }
     }, 500);
   };
@@ -547,7 +545,7 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
               value={username}
               onChange={handleChange}
               maxLength={20}
-              placeholder="e.g. mantosh_mlbb"
+              placeholder="your_username"
               autoFocus
               onKeyDown={e => { if (e.key === "Enter") submit(); }}
               style={{ width: "100%", padding: "13px 40px 13px 14px", borderRadius: 12, border: `1.5px solid ${borderColor}`, background: "#FAF9F6", color: "#3D2B1F", fontSize: 15, fontWeight: 600, outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }}
@@ -574,22 +572,6 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
             )}
           </div>
 
-          {status === "taken" && suggestions.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 11, color: "rgba(61,43,31,0.4)", marginBottom: 7 }}>Try one of these:</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {suggestions.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => { setUsername(s); setStatus("available"); setSuggestions([]); setError(null); }}
-                    style={{ padding: "5px 11px", borderRadius: 20, background: "rgba(127,0,255,0.07)", border: "1px solid rgba(127,0,255,0.2)", color: "#7F00FF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                  >
-                    @{s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {error && <div style={{ marginTop: 8, fontSize: 11.5, color: "#ef4444" }}>{error}</div>}
         </div>
@@ -2161,7 +2143,7 @@ function NotificationsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const EXPANDABLE = ["wallet_credited", "order_completed", "wallet_deducted"];
+  const EXPANDABLE = ["wallet_credited", "order_completed", "wallet_deducted", "admin_note", "system"];
 
   const fetchNotifications = async () => {
     if (!isSignedIn) return;
@@ -2208,18 +2190,11 @@ function NotificationsPage() {
     return `${Math.floor(diff / 86400000)}d ago`;
   };
 
+  const stripEmoji = (str: string) =>
+    str.replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FEFF}\u{1F900}-\u{1F9FF}]/gu, "").replace(/\s+/g, " ").trim();
+
   const getExpandContent = (n: any) => {
-    if (n.type === "wallet_credited") {
-      const match = n.body.match(/ — (.+?)\.?\s*$/);
-      return match ? `Note: ${match[1]}` : n.body;
-    }
-    if (n.type === "order_completed") {
-      return n.body;
-    }
-    if (n.type === "wallet_deducted") {
-      return n.body;
-    }
-    return null;
+    return n.body ? stripEmoji(n.body) : null;
   };
 
   return (
@@ -2242,10 +2217,7 @@ function NotificationsPage() {
             onClick={() => { setPendingSeenThisVisit(true); setLocation("/pay"); }}
             style={{ background: "#fff", border: "1px solid rgba(245,158,11,0.45)", borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", boxShadow: "0 2px 12px rgba(245,158,11,0.08)" }}
           >
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 16 }}>⏳</span>
-              </div>
+            <div style={{ display: "flex", alignItems: "flex-start" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: 700, flex: 1 }}>Unsubmitted Payment</span>
@@ -2271,17 +2243,15 @@ function NotificationsPage() {
           <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(0,0,0,0.3)", fontSize: 14 }}>Loading…</div>
         ) : notifications.length === 0 && !pendingPayment ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔔</div>
             <p style={{ color: "rgba(0,0,0,0.4)", fontSize: 14 }}>No notifications yet.</p>
             <p style={{ color: "rgba(0,0,0,0.3)", fontSize: 12, marginTop: 6 }}>You'll be notified about order updates, wallet credits, and more.</p>
           </div>
         ) : notifications.length === 0 ? null : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {notifications.map(n => {
-              const isExpandable = EXPANDABLE.includes(n.type);
+              const isExpandable = !!n.body;
               const isExpanded = expandedId === n.id;
               const expandContent = getExpandContent(n);
-              const showBodyInline = !isExpandable;
 
               return (
                 <div
@@ -2297,31 +2267,25 @@ function NotificationsPage() {
                     boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: showBodyInline || isExpanded ? 6 : 4 }}>
-                        <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: n.read ? 500 : 700, flex: 1, lineHeight: 1.4 }}>{n.title}</span>
-                        {!n.read && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isExpanded ? 6 : 4 }}>
+                      <span style={{ color: "#1a1a1a", fontSize: 14, fontWeight: n.read ? 500 : 700, flex: 1, lineHeight: 1.4 }}>{stripEmoji(n.title)}</span>
+                      {!n.read && <span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: "50%", flexShrink: 0 }} />}
+                    </div>
+
+                    {isExpandable && isExpanded && expandContent && (
+                      <div style={{ background: "#FAF9F6", borderRadius: 8, padding: "10px 12px", marginBottom: 8, borderLeft: "3px solid rgba(127,0,255,0.3)" }}>
+                        <p style={{ color: "#4a4a4a", fontSize: 13, margin: 0, lineHeight: 1.5 }}>{expandContent}</p>
                       </div>
+                    )}
 
-                      {showBodyInline && (
-                        <p style={{ color: "#6b6b6b", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5 }}>{n.body}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ color: "#aaa", fontSize: 11 }}>{relativeTime(n.created_at)}</span>
+                      {isExpandable && (
+                        <span style={{ color: "rgba(127,0,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: "0.01em" }}>
+                          {isExpanded ? "▲ hide" : "▼ details"}
+                        </span>
                       )}
-
-                      {isExpandable && isExpanded && expandContent && (
-                        <div style={{ background: "#FAF9F6", borderRadius: 8, padding: "10px 12px", marginBottom: 8, borderLeft: "3px solid rgba(127,0,255,0.3)" }}>
-                          <p style={{ color: "#4a4a4a", fontSize: 13, margin: 0, lineHeight: 1.5 }}>{expandContent}</p>
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ color: "#aaa", fontSize: 11 }}>{relativeTime(n.created_at)}</span>
-                        {isExpandable && (
-                          <span style={{ color: "rgba(127,0,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: "0.01em" }}>
-                            {isExpanded ? "▲ hide" : "▼ details"}
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </div>

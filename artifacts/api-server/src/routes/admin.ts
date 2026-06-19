@@ -316,7 +316,7 @@ router.put("/orders/:id", requireAdmin, async (req, res): Promise<void> => {
       insertNotification(
         order.clerk_user_id,
         "order_completed",
-        "Order Delivered! 💎",
+        "Order Delivered",
         `Your order ${orderId} (${diamonds} diamonds) has been delivered to your account.`
       );
       getClerkUserProfile(order.clerk_user_id).then(({ email, name }) => {
@@ -1024,7 +1024,7 @@ router.put("/orders/:id/complete", requireAdmin, async (req, res): Promise<void>
       insertNotification(
         order.clerk_user_id,
         "order_completed",
-        "Order Delivered! 💎",
+        "Order Delivered",
         `Your order ${orderId} (${diamonds} diamonds) has been delivered to your account.`
       );
       getClerkUserProfile(order.clerk_user_id).then(({ email, name }) => {
