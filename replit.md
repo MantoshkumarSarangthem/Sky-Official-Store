@@ -91,6 +91,7 @@ Use these names when asking for changes to a specific page:
 
 - Keep secrets out of code and `.replit` — use Replit's secret store only
 - The project must be fully self-bootstrapping on new devices
+- Always send a confirmation message describing planned changes before making them; only proceed after the user explicitly confirms
 
 ## Gotchas
 
