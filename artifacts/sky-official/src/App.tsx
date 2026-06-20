@@ -339,9 +339,9 @@ function Navbar() {
                 <div className="rounded-full overflow-hidden flex-shrink-0" style={{ width: 34, height: 34, boxShadow: showProfileMenu ? "0 0 0 2px rgba(141,110,99,0.4)" : "none", transition: "box-shadow 0.15s" }}>
                   <img src={user.imageUrl} alt={user.firstName ?? "User"} className="w-full h-full object-cover" />
                 </div>
-                {unreadCount > 0 && (
+                {(unreadCount + (hasPendingPayment ? 1 : 0)) > 0 && (
                   <span style={{ position: "absolute", top: -2, right: -2, minWidth: 16, height: 16, background: "#ef4444", borderRadius: 99, border: "2px solid #FAF9F6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff", lineHeight: 1, padding: "0 3px" }}>
-                    {unreadCount > 9 ? "9+" : unreadCount}
+                    {(unreadCount + (hasPendingPayment ? 1 : 0)) > 9 ? "9+" : (unreadCount + (hasPendingPayment ? 1 : 0))}
                   </span>
                 )}
               </button>
