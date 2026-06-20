@@ -2310,7 +2310,7 @@ function NotificationsPage() {
 // ── Persistent Navbar (outside page transitions so it never moves) ───────────
 function PersistentNavbar() {
   const [location] = useLocation();
-  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/profile") || location.startsWith("/support") || location === "/pay" || location === "/terms" || location === "/privacy" || location === "/refund") return null;
+  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/profile") || location.startsWith("/support") || location === "/pay" || location === "/terms" || location === "/privacy" || location === "/refund" || location === "/leaderboard") return null;
   return <Navbar />;
 }
 

@@ -149,6 +149,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [showAddPkg, setShowAddPkg] = useState(false);
   const [newPkgStep, setNewPkgStep] = useState<"game" | "form">("game");
   const [newPkgGameId, setNewPkgGameId] = useState<number | null>(null);
+  const [selectedPkgGame, setSelectedPkgGame] = useState<{ id: number; name: string; image: string | null } | null>(null);
   const [newPkgCurrencyType, setNewPkgCurrencyType] = useState("");
   const [newOrder, setNewOrder] = useState({ diamonds: "", price: "", mlbb_id: "", status: "completed", note: "" });
   const [showAddOrder, setShowAddOrder] = useState(false);
@@ -1553,46 +1554,59 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               {/* ── PACKAGES TAB ── */}
               {tab === "packages" && (
                 <div className="flex flex-col gap-4" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white font-bold text-sm">{packages.length} Packages</span>
-                    <button
-                      onClick={() => setShowAddPkg(!showAddPkg)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-black"
-                      style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
-                    >
-                      + Add Package
-                    </button>
-                  </div>
-
-                  {showAddPkg && (
-                    <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.2)" }}>
-                      {newPkgStep === "game" ? (
-                        <>
-                          <div className="text-amber-400 text-sm font-bold">Select Game for Package</div>
-                          <div className="text-xs text-gray-500">Choose which game this package belongs to.</div>
-                          {games.length === 0 ? (
-                            <div className="text-xs text-gray-500 py-4 text-center">No games added yet. Add games in the Games tab first.</div>
-                          ) : (
-                            <div className="grid grid-cols-2 gap-2">
-                              {games.map(g => (
-                                <button key={g.id}
-                                  onClick={() => { setNewPkgGameId(g.id); setNewPkgCurrencyType(""); setNewPkgStep("form"); }}
-                                  className="flex flex-col items-center gap-2 p-3 rounded-xl text-center"
-                                  style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}>
-                                  {g.image && <img src={g.image} alt={g.name} style={{ width: 44, height: 44, objectFit: "contain", borderRadius: 8 }} />}
-                                  <span className="text-white text-xs font-semibold">{g.name}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          <button onClick={cancelAddPkg} className="py-2 rounded-lg text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
-                        </>
+                  {!selectedPkgGame ? (
+                    /* ── Game Grid View ── */
+                    <>
+                      <div className="text-white font-bold text-sm">Select a Game</div>
+                      {games.length === 0 ? (
+                        <div className="text-xs text-gray-500 py-8 text-center">No games added yet. Add games in the Games tab first.</div>
                       ) : (
-                        <>
+                        <div className="grid grid-cols-2 gap-3">
+                          {games.map(g => {
+                            const count = packages.filter(p => p.game_id === g.id).length;
+                            return (
+                              <button key={g.id}
+                                onClick={() => { setSelectedPkgGame(g); setShowAddPkg(false); setNewPkgStep("game"); setNewPkgCurrencyType(""); setEditingPkg(null); }}
+                                className="flex flex-col items-center gap-2 p-4 rounded-xl text-center"
+                                style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                                {g.image
+                                  ? <img src={g.image} alt={g.name} style={{ width: 52, height: 52, objectFit: "contain", borderRadius: 10 }} />
+                                  : <div style={{ width: 52, height: 52, borderRadius: 10, background: "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 22 }}>🎮</span></div>
+                                }
+                                <span className="text-white text-xs font-semibold">{g.name}</span>
+                                <span style={{ color: "#f59e0b", fontSize: 11 }}>{count} package{count !== 1 ? "s" : ""}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* ── Game Packages View ── */
+                    <>
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => { setSelectedPkgGame(null); setShowAddPkg(false); setNewPkgStep("game"); setNewPkgGameId(null); setNewPkgCurrencyType(""); setEditingPkg(null); }} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 0, fontSize: 20, lineHeight: 1 }}>←</button>
+                          {selectedPkgGame.image && <img src={selectedPkgGame.image} alt={selectedPkgGame.name} style={{ width: 26, height: 26, objectFit: "contain", borderRadius: 6 }} />}
+                          <span className="text-white font-bold text-sm">{selectedPkgGame.name}</span>
+                          <span className="text-gray-500 text-xs">({packages.filter(p => p.game_id === selectedPkgGame.id).length})</span>
+                        </div>
+                        <button
+                          onClick={() => { setShowAddPkg(true); setNewPkgGameId(selectedPkgGame.id); setNewPkgStep("form"); setNewPkgCurrencyType(""); setNewPkg({ name: "", diamonds: "", bonus_diamonds: "", price: "", label: "", is_popular: false, category: "small", status: "available" }); setNewPkgOldPrice(""); setNewPkgIconUrl(""); setNewPkgImage(""); }}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-black"
+                          style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
+                        >
+                          + Add Package
+                        </button>
+                      </div>
+
+                      {/* Add package form */}
+                      {showAddPkg && (
+                        <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(245,158,11,0.2)" }}>
                           <div className="flex items-center gap-2">
-                            <button onClick={() => { setNewPkgStep("game"); setNewPkgCurrencyType(""); }} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 0, fontSize: 18, lineHeight: 1 }}>←</button>
                             <div className="text-amber-400 text-sm font-bold">New Package</div>
-                            {pkgSelGame && <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>{pkgSelGame.name}</span>}
+                            <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)" }}>{selectedPkgGame.name}</span>
                           </div>
                           {pkgHasTypes && (
                             <div>
@@ -1616,7 +1630,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                             <input placeholder="Old Price (₹, optional)" type="number" value={newPkgOldPrice} onChange={(e) => setNewPkgOldPrice(e.target.value)} className="px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
                             <input placeholder='Label (e.g. "Best Value")' value={newPkg.label} onChange={(e) => setNewPkg(p => ({ ...p, label: e.target.value }))} className="px-3 py-2 rounded-lg text-white text-sm outline-none col-span-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
                           </div>
-                          {/* Package icon upload */}
                           <div>
                             <div className="text-xs text-gray-400 mb-1">Package Icon (optional)</div>
                             <div className="flex gap-2 items-center">
@@ -1675,119 +1688,122 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                           )}
                           <div className="flex gap-2">
                             <button onClick={addPkg} disabled={loading} className="flex-1 py-2 rounded-lg text-xs font-bold text-black" style={{ background: "#f59e0b" }}>Save</button>
-                            <button onClick={cancelAddPkg} className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
+                            <button onClick={() => { setShowAddPkg(false); setNewPkgCurrencyType(""); }} className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
                           </div>
-                        </>
+                        </div>
                       )}
-                    </div>
-                  )}
 
-                  {packages.map((pkg) => (
-                    <div key={pkg.id} className="rounded-xl p-4" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
-                      {editingPkg?.id === pkg.id ? (
-                        <div className="flex flex-col gap-3">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="col-span-2">
-                              <div className="text-xs text-gray-400 mb-1">Name</div>
-                              <input placeholder='e.g. "Starter Pack"' value={editingPkg.name || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, name: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 mb-1">Diamonds</div>
-                              <input type="number" value={editingPkg.diamonds} onChange={(e) => setEditingPkg(p => p ? { ...p, diamonds: +e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 mb-1">Bonus Diamonds</div>
-                              <input type="number" value={editingPkg.bonus_diamonds} onChange={(e) => setEditingPkg(p => p ? { ...p, bonus_diamonds: +e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 mb-1">Price (₹)</div>
-                              <input type="number" value={editingPkg.price} onChange={(e) => setEditingPkg(p => p ? { ...p, price: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 mb-1">Old Price (₹, optional)</div>
-                              <input type="number" value={editingPkg.old_price || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, old_price: e.target.value || null } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 mb-1">Label</div>
-                              <input value={editingPkg.label || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, label: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-400 mb-1">Sort Order</div>
-                              <input type="number" value={editingPkg.sort_order} onChange={(e) => setEditingPkg(p => p ? { ...p, sort_order: +e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                            </div>
-                          </div>
-                          {/* Edit package icon */}
-                          <div>
-                            <div className="text-xs text-gray-400 mb-1">Package Icon</div>
-                            <div className="flex gap-2 items-center">
-                              <label style={{ flexShrink: 0, cursor: "pointer" }}>
-                                <input ref={editingPkgIconRef} type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
-                                  const file = e.target.files?.[0]; if (!file) return;
-                                  setEditingPkgIconUploading(true);
-                                  await uploadImage(file, u => setEditingPkg(p => p ? { ...p, image: u } : p));
-                                  setEditingPkgIconUploading(false);
-                                  e.target.value = "";
-                                }} />
-                                <div style={{ padding: "6px 12px", borderRadius: 8, background: editingPkgIconUploading ? "rgba(245,158,11,0.2)" : "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                  {editingPkgIconUploading ? "Uploading…" : editingPkg.image ? "Change Icon" : "Upload Icon"}
-                                </div>
-                              </label>
-                              {editingPkg.image && (
-                                <>
-                                  <img src={editingPkg.image} alt="icon" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }} />
-                                  <button onClick={() => setEditingPkg(p => p ? { ...p, image: null } : p)} style={{ color: "#ef4444", fontSize: 11, fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>Remove</button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-                            <input type="checkbox" checked={editingPkg.is_popular} onChange={(e) => setEditingPkg(p => p ? { ...p, is_popular: e.target.checked } : p)} />
-                            Mark as popular
-                          </label>
-                          <div className="col-span-2">
-                            <div className="text-xs text-gray-400 mb-1">Status</div>
-                            <select value={editingPkg.status || "available"} onChange={(e) => setEditingPkg(p => p ? { ...p, status: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }}>
-                              <option value="available">Available</option>
-                              <option value="out_of_stock">Out of Stock</option>
-                              <option value="coming_soon">Coming Soon</option>
-                            </select>
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => savePkg(editingPkg)} disabled={loading} className="flex-1 py-2 rounded-lg text-xs font-bold text-black" style={{ background: "#f59e0b" }}>Save</button>
-                            <button onClick={() => { setEditingPkg(null); if (editingPkgIconRef.current) editingPkgIconRef.current.value = ""; }} className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden" style={{ background: pkg.image ? "rgba(255,255,255,0.05)" : "rgba(56,189,248,0.12)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                              {pkg.image
-                                ? <img src={pkg.image} alt="icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                : <img src="/diamond.png" alt="♦" style={{ width: 22, height: 22, objectFit: "contain" }} />
-                              }
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-white font-bold text-sm">{pkg.name || `${pkg.diamonds.toLocaleString()} ${adminCurrLabel(pkg.game_id)}`}</span>
-                              </div>
-                              <div className="text-amber-400 text-xs font-semibold mt-0.5 flex items-center gap-1">
-                                {pkg.image ? <img src={pkg.image} alt="icon" style={{ width: 12, height: 12, objectFit: "cover", flexShrink: 0, borderRadius: 3 }} /> : <img src="/diamond.png" alt="♦" style={{ width: 12, height: 12, objectFit: "contain", flexShrink: 0 }} />} {pkg.diamonds.toLocaleString()}{pkg.bonus_diamonds > 0 ? <span className="text-green-400"> +{pkg.bonus_diamonds.toLocaleString()} bonus</span> : null}
-                                <span className="text-gray-500 mx-1">·</span>₹{parseFloat(pkg.price).toFixed(0)}
-                                {pkg.label ? <span className="text-gray-400 font-normal"> · {pkg.label}</span> : null}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap justify-end">
-                            {pkg.is_popular && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(245,158,11,0.2)", color: "#f59e0b" }}>Popular</span>}
-                            {pkg.status === "out_of_stock" && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(239,68,68,0.2)", color: "#ef4444" }}>Out of Stock</span>}
-                            {pkg.status === "coming_soon" && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(99,102,241,0.2)", color: "#a5b4fc" }}>Coming Soon</span>}
-                            <button onClick={() => { setEditingPkg(pkg); setEditingPkgImage(starlightImages[pkg.name || ""] || ""); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors text-sm">✏️</button>
-                            <button onClick={() => deletePkg(pkg.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors text-sm">🗑️</button>
-                          </div>
-                        </div>
+                      {/* Package list for this game only */}
+                      {packages.filter(p => p.game_id === selectedPkgGame.id).length === 0 && !showAddPkg && (
+                        <div className="text-xs text-gray-500 py-8 text-center">No packages yet for this game. Tap "+ Add Package" to add one.</div>
                       )}
-                    </div>
-                  ))}
+                      {packages.filter(p => p.game_id === selectedPkgGame.id).map((pkg) => (
+                        <div key={pkg.id} className="rounded-xl p-4" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                          {editingPkg?.id === pkg.id ? (
+                            <div className="flex flex-col gap-3">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="col-span-2">
+                                  <div className="text-xs text-gray-400 mb-1">Name</div>
+                                  <input placeholder='e.g. "Starter Pack"' value={editingPkg.name || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, name: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">Diamonds</div>
+                                  <input type="number" value={editingPkg.diamonds} onChange={(e) => setEditingPkg(p => p ? { ...p, diamonds: +e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">Bonus Diamonds</div>
+                                  <input type="number" value={editingPkg.bonus_diamonds} onChange={(e) => setEditingPkg(p => p ? { ...p, bonus_diamonds: +e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">Price (₹)</div>
+                                  <input type="number" value={editingPkg.price} onChange={(e) => setEditingPkg(p => p ? { ...p, price: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">Old Price (₹, optional)</div>
+                                  <input type="number" value={editingPkg.old_price || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, old_price: e.target.value || null } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">Label</div>
+                                  <input value={editingPkg.label || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, label: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
+                                </div>
+                                <div>
+                                  <div className="text-xs text-gray-400 mb-1">Sort Order</div>
+                                  <input type="number" value={editingPkg.sort_order} onChange={(e) => setEditingPkg(p => p ? { ...p, sort_order: +e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-400 mb-1">Package Icon</div>
+                                <div className="flex gap-2 items-center">
+                                  <label style={{ flexShrink: 0, cursor: "pointer" }}>
+                                    <input ref={editingPkgIconRef} type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
+                                      const file = e.target.files?.[0]; if (!file) return;
+                                      setEditingPkgIconUploading(true);
+                                      await uploadImage(file, u => setEditingPkg(p => p ? { ...p, image: u } : p));
+                                      setEditingPkgIconUploading(false);
+                                      e.target.value = "";
+                                    }} />
+                                    <div style={{ padding: "6px 12px", borderRadius: 8, background: editingPkgIconUploading ? "rgba(245,158,11,0.2)" : "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                      {editingPkgIconUploading ? "Uploading…" : editingPkg.image ? "Change Icon" : "Upload Icon"}
+                                    </div>
+                                  </label>
+                                  {editingPkg.image && (
+                                    <>
+                                      <img src={editingPkg.image} alt="icon" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }} />
+                                      <button onClick={() => setEditingPkg(p => p ? { ...p, image: null } : p)} style={{ color: "#ef4444", fontSize: 11, fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>Remove</button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                                <input type="checkbox" checked={editingPkg.is_popular} onChange={(e) => setEditingPkg(p => p ? { ...p, is_popular: e.target.checked } : p)} />
+                                Mark as popular
+                              </label>
+                              <div>
+                                <div className="text-xs text-gray-400 mb-1">Status</div>
+                                <select value={editingPkg.status || "available"} onChange={(e) => setEditingPkg(p => p ? { ...p, status: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }}>
+                                  <option value="available">Available</option>
+                                  <option value="out_of_stock">Out of Stock</option>
+                                  <option value="coming_soon">Coming Soon</option>
+                                </select>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => savePkg(editingPkg)} disabled={loading} className="flex-1 py-2 rounded-lg text-xs font-bold text-black" style={{ background: "#f59e0b" }}>Save</button>
+                                <button onClick={() => { setEditingPkg(null); if (editingPkgIconRef.current) editingPkgIconRef.current.value = ""; }} className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden" style={{ background: pkg.image ? "rgba(255,255,255,0.05)" : "rgba(56,189,248,0.12)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                                  {pkg.image
+                                    ? <img src={pkg.image} alt="icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    : <img src="/diamond.png" alt="♦" style={{ width: 22, height: 22, objectFit: "contain" }} />
+                                  }
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-white font-bold text-sm">{pkg.name || `${pkg.diamonds.toLocaleString()} ${adminCurrLabel(pkg.game_id)}`}</span>
+                                  </div>
+                                  <div className="text-amber-400 text-xs font-semibold mt-0.5 flex items-center gap-1">
+                                    {pkg.image ? <img src={pkg.image} alt="icon" style={{ width: 12, height: 12, objectFit: "cover", flexShrink: 0, borderRadius: 3 }} /> : <img src="/diamond.png" alt="♦" style={{ width: 12, height: 12, objectFit: "contain", flexShrink: 0 }} />} {pkg.diamonds.toLocaleString()}{pkg.bonus_diamonds > 0 ? <span className="text-green-400"> +{pkg.bonus_diamonds.toLocaleString()} bonus</span> : null}
+                                    <span className="text-gray-500 mx-1">·</span>₹{parseFloat(pkg.price).toFixed(0)}
+                                    {pkg.label ? <span className="text-gray-400 font-normal"> · {pkg.label}</span> : null}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap justify-end">
+                                {pkg.is_popular && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(245,158,11,0.2)", color: "#f59e0b" }}>Popular</span>}
+                                {pkg.status === "out_of_stock" && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(239,68,68,0.2)", color: "#ef4444" }}>Out of Stock</span>}
+                                {pkg.status === "coming_soon" && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(99,102,241,0.2)", color: "#a5b4fc" }}>Coming Soon</span>}
+                                <button onClick={() => { setEditingPkg(pkg); setEditingPkgImage(starlightImages[pkg.name || ""] || ""); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors text-sm">✏️</button>
+                                <button onClick={() => deletePkg(pkg.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors text-sm">🗑️</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
 
