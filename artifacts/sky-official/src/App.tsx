@@ -1634,7 +1634,7 @@ function DailyOfferSection() {
   // All slots share the same DOM dimensions (H × flex:1).
   // The non-featured slots are visually shrunk via a persistent CSS scale transform.
   // This means card content never reflows when a card moves between slots.
-  const H = 97;
+  const H = 80;
   const SCALE_SMALL = 84 / 97; // ≈ 0.866 — resting scale for slots 1 and 2
 
   useEffect(() => {
@@ -1741,10 +1741,10 @@ function DailyOfferSection() {
           <div ref={ref0} style={{ flex: 1, height: H, transformOrigin: "left center", transform: "scale(1)" }}>
             {slots[0] ? <DailyOfferCard pkg={slots[0]} /> : placeholder}
           </div>
-          <div ref={ref1} style={{ flex: 1, height: H, transformOrigin: "left center", transform: `scale(${s})` }}>
+          <div ref={ref1} style={{ flex: 1, height: H, transformOrigin: "right center", transform: `scale(${s})` }}>
             {slots[1] ? <DailyOfferCard pkg={slots[1]} /> : placeholder}
           </div>
-          <div ref={ref2} key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, height: H, transformOrigin: "left center", transform: `scale(${s})` }}>
+          <div ref={ref2} key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, height: H, transformOrigin: "right center", transform: `scale(${s})` }}>
             {slots[2] ? <DailyOfferCard pkg={slots[2]} /> : placeholder}
           </div>
         </div>
