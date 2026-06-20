@@ -1134,4 +1134,27 @@ router.put("/settings/latest_event", requireAdmin, async (req, res): Promise<voi
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+router.get("/settings/maintenance", requireAdmin, async (_req, res): Promise<void> => {
+  try {
+    const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('maintenance_enabled','maintenance_end_time','maintenance_message')");
+    const m: Record<string, string> = {};
+    rows.forEach((r: any) => { m[r.key] = r.value; });
+    res.json({
+      enabled: m["maintenance_enabled"] === "true",
+      end_time: m["maintenance_end_time"] || null,
+      message: m["maintenance_message"] || "We'll be back soon.",
+    });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.put("/settings/maintenance", requireAdmin, requireSuperAdmin, async (req, res): Promise<void> => {
+  try {
+    const { enabled, end_time, message } = req.body;
+    await pool.query(`INSERT INTO settings (key,value) VALUES ('maintenance_enabled',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [enabled ? "true" : "false"]);
+    await pool.query(`INSERT INTO settings (key,value) VALUES ('maintenance_end_time',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [end_time || ""]);
+    await pool.query(`INSERT INTO settings (key,value) VALUES ('maintenance_message',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [message || "We'll be back soon."]);
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 export default router;

@@ -161,6 +161,19 @@ router.get("/settings/latest_event", async (_req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+router.get("/settings/maintenance", async (_req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('maintenance_enabled','maintenance_end_time','maintenance_message')");
+    const m: Record<string, string> = {};
+    rows.forEach((r: any) => { m[r.key] = r.value; });
+    res.json({
+      enabled: m["maintenance_enabled"] === "true",
+      end_time: m["maintenance_end_time"] || null,
+      message: m["maintenance_message"] || "We'll be back soon.",
+    });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 router.get("/packages", async (req, res) => {
   try {
     const gameId = req.query.game_id ? parseInt(req.query.game_id as string, 10) : null;

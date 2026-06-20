@@ -444,6 +444,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [latestEventSaved, setLatestEventSaved] = useState(false);
   const latestEventImgRef = useRef<HTMLInputElement>(null);
   const [latestEventUploading, setLatestEventUploading] = useState(false);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceEndTime, setMaintenanceEndTime] = useState("");
+  const [maintenanceMessage, setMaintenanceMessage] = useState("We'll be back soon.");
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [maintenanceSaved, setMaintenanceSaved] = useState(false);
 
   const uploadImage = async (file: File, onDone: (url: string) => void) => {
     const form = new FormData();
@@ -762,6 +767,31 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setLatestEventSaving(false);
   };
 
+  const fetchMaintenance = useCallback(async () => {
+    const res = await fetch(`${API}/admin/settings/maintenance`, { headers });
+    if (res.ok) {
+      const d = await res.json();
+      setMaintenanceEnabled(d.enabled);
+      setMaintenanceEndTime(d.end_time ? new Date(d.end_time).toISOString().slice(0, 16) : "");
+      setMaintenanceMessage(d.message || "We'll be back soon.");
+    }
+  }, [token]);
+
+  const saveMaintenance = async () => {
+    setMaintenanceSaving(true);
+    await fetch(`${API}/admin/settings/maintenance`, {
+      method: "PUT", headers,
+      body: JSON.stringify({
+        enabled: maintenanceEnabled,
+        end_time: maintenanceEndTime ? new Date(maintenanceEndTime).toISOString() : "",
+        message: maintenanceMessage,
+      }),
+    });
+    setMaintenanceSaved(true);
+    setTimeout(() => setMaintenanceSaved(false), 3000);
+    setMaintenanceSaving(false);
+  };
+
   const saveStarlightImages = async (images: Record<string, string>) => {
     await fetch(`${API}/admin/settings/starlight_images`, { method: "PUT", headers, body: JSON.stringify(images) });
   };
@@ -897,7 +927,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   };
 
   useEffect(() => {
-    if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchCommunityLinks(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); }
+    if (authed && tab === "settings") { fetchQr(); fetchTrustpilot(); fetchCommunityLinks(); fetchBanners(); fetchPackImages(); fetchPassImages(); fetchStarlightImages(); fetchCategoryAvailability(); fetchLatestEvent(); if (isSuperAdmin) fetchMaintenance(); }
     if (authed && tab === "staff") { fetchStaff(); fetchAdminStatus(); }
     if (authed && tab === "banners") fetchPromoBanners();
     if (authed && tab === "offer-banners") { fetchDailyOfferIds(); fetchGames(); }
@@ -2005,6 +2035,70 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       {latestEventSaved ? "✓ Saved!" : latestEventSaving ? "Saving…" : "Save Latest Event"}
                     </button>
                   </div>
+
+                  {/* Maintenance Mode — super admin only */}
+                  {isSuperAdmin && (
+                    <>
+                      <div>
+                        <div className="text-white font-bold text-sm mb-1">🔧 Maintenance Mode</div>
+                        <div className="text-gray-400 text-xs">When enabled, regular users see a maintenance page with a countdown. Admins and staff can still access the site normally.</div>
+                      </div>
+                      <div className="rounded-xl p-4 flex flex-col gap-4" style={{ background: "#1a1a1a", border: `1px solid ${maintenanceEnabled ? "rgba(239,68,68,0.35)" : "rgba(255,255,255,0.07)"}` }}>
+                        {maintenanceEnabled && (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold" style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "pulse 1.5s ease-in-out infinite" }} />
+                            Maintenance is ACTIVE — users are blocked
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-white text-sm font-semibold">Enable Maintenance</span>
+                          <button
+                            onClick={() => setMaintenanceEnabled(v => !v)}
+                            style={{ width: 44, height: 24, borderRadius: 12, background: maintenanceEnabled ? "#ef4444" : "rgba(255,255,255,0.1)", border: `1px solid ${maintenanceEnabled ? "#dc2626" : "rgba(255,255,255,0.15)"}`, transition: "all 0.2s", cursor: "pointer", padding: 0, position: "relative", flexShrink: 0 }}
+                          >
+                            <span style={{ position: "absolute", top: 3, left: maintenanceEnabled ? 22 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s", display: "block" }} />
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">End Time (countdown target)</span>
+                          <input
+                            type="datetime-local"
+                            value={maintenanceEndTime}
+                            onChange={e => setMaintenanceEndTime(e.target.value)}
+                            className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)", colorScheme: "dark" }}
+                          />
+                          <div className="text-gray-500 text-xs">Leave blank to show "coming back soon" without a countdown.</div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Message shown to users</span>
+                          <input
+                            type="text"
+                            value={maintenanceMessage}
+                            onChange={e => setMaintenanceMessage(e.target.value)}
+                            placeholder="We'll be back soon."
+                            className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                          />
+                        </div>
+                        <button
+                          onClick={saveMaintenance}
+                          disabled={maintenanceSaving}
+                          className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                          style={{
+                            background: maintenanceSaved ? "rgba(34,197,94,0.15)" : maintenanceEnabled ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.1)",
+                            border: `1px solid ${maintenanceSaved ? "rgba(34,197,94,0.4)" : maintenanceEnabled ? "rgba(239,68,68,0.35)" : "rgba(245,158,11,0.3)"}`,
+                            color: maintenanceSaved ? "#4ade80" : maintenanceEnabled ? "#f87171" : "#f59e0b",
+                            cursor: maintenanceSaving ? "default" : "pointer",
+                            opacity: maintenanceSaving ? 0.6 : 1,
+                          }}
+                        >
+                          {maintenanceSaving && <span style={{ width: 13, height: 13, border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />}
+                          {maintenanceSaved ? "✓ Saved!" : maintenanceSaving ? "Saving…" : maintenanceEnabled ? "🔴 Save & Lock Site" : "Save Settings"}
+                        </button>
+                      </div>
+                    </>
+                  )}
 
                   {/* Email Test */}
                   <div>

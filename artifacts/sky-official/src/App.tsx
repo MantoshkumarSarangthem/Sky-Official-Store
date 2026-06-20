@@ -2307,6 +2307,133 @@ function NotificationsPage() {
   );
 }
 
+// ── Maintenance Page ─────────────────────────────────────────────────────────
+function MaintenancePage({ endTime, message }: { endTime: string | null; message: string }) {
+  const [timeLeft, setTimeLeft] = useState<{ h: number; m: number; s: number } | null>(null);
+  const [expired, setExpired] = useState(false);
+
+  useEffect(() => {
+    if (!endTime) return;
+    const target = new Date(endTime).getTime();
+    const tick = () => {
+      const diff = target - Date.now();
+      if (diff <= 0) { setExpired(true); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft({ h, m, s });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [endTime]);
+
+  useEffect(() => {
+    if (expired) {
+      const id = setTimeout(() => window.location.reload(), 1500);
+      return () => clearTimeout(id);
+    }
+  }, [expired]);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div style={{
+      minHeight: "100vh", width: "100%",
+      background: "linear-gradient(160deg,#0a0a12 0%,#12091e 50%,#0a0a12 100%)",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      padding: "32px 24px", boxSizing: "border-box", position: "fixed", inset: 0, zIndex: 9999,
+    }}>
+      {/* Animated gears icon */}
+      <div style={{ position: "relative", width: 90, height: 90, marginBottom: 28 }}>
+        <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
+          <g style={{ transformOrigin: "45px 45px", animation: "maint-spin 8s linear infinite" }}>
+            <path d="M45 27a18 18 0 1 1 0 36 18 18 0 0 1 0-36z" fill="rgba(139,92,246,0.12)" stroke="#7c3aed" strokeWidth="2"/>
+            {[0,45,90,135,180,225,270,315].map(deg => (
+              <rect key={deg} x="42" y="8" width="6" height="11" rx="3" fill="#7c3aed"
+                style={{ transformOrigin: "45px 45px", transform: `rotate(${deg}deg)` }} />
+            ))}
+          </g>
+          <circle cx="45" cy="45" r="7" fill="#a78bfa"/>
+        </svg>
+        <style>{`
+          @keyframes maint-spin { to { transform: rotate(360deg); } }
+          @keyframes maint-pulse { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
+        `}</style>
+      </div>
+
+      {/* Title */}
+      <div style={{ color: "#e9d5ff", fontWeight: 900, fontSize: 22, letterSpacing: "-0.01em", textAlign: "center", marginBottom: 8 }}>
+        Under Maintenance
+      </div>
+      <div style={{ color: "rgba(233,213,255,0.55)", fontSize: 14, textAlign: "center", maxWidth: 280, lineHeight: 1.5, marginBottom: 32 }}>
+        {expired ? "Maintenance complete! Reloading…" : message}
+      </div>
+
+      {/* Countdown */}
+      {endTime && !expired && timeLeft && (
+        <div style={{ display: "flex", gap: 12, marginBottom: 32 }}>
+          {[
+            { label: "HRS",  val: timeLeft.h },
+            { label: "MIN",  val: timeLeft.m },
+            { label: "SEC",  val: timeLeft.s },
+          ].map(({ label, val }) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 14,
+                background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#c4b5fd", fontWeight: 900, fontSize: 26, fontVariantNumeric: "tabular-nums",
+              }}>
+                {pad(val)}
+              </div>
+              <div style={{ color: "rgba(196,181,253,0.45)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em" }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {endTime && !expired && !timeLeft && (
+        <div style={{ marginBottom: 32, color: "rgba(196,181,253,0.45)", fontSize: 13 }}>Calculating…</div>
+      )}
+      {(!endTime || expired) && !expired && (
+        <div style={{ marginBottom: 32, color: "rgba(196,181,253,0.45)", fontSize: 13 }}>Duration not specified — check back soon.</div>
+      )}
+
+      {/* Sky Official branding */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <img src="/sky-official-logo.png" alt="Sky Official" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }}
+          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        <span style={{ color: "rgba(233,213,255,0.3)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em" }}>SKY OFFICIAL</span>
+      </div>
+    </div>
+  );
+}
+
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const [status, setStatus] = useState<{ enabled: boolean; end_time: string | null; message: string } | null>(null);
+
+  useEffect(() => {
+    const check = () => {
+      fetch(`${API}/settings/maintenance`)
+        .then(r => r.json())
+        .then(d => setStatus(d))
+        .catch(() => setStatus({ enabled: false, end_time: null, message: "" }));
+    };
+    check();
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  // While loading, render children (avoids flash)
+  if (status === null) return <>{children}</>;
+
+  // Admins and staff have admin_token in sessionStorage — always let them through
+  const hasAdminToken = !!sessionStorage.getItem("admin_token");
+  if (!status.enabled || hasAdminToken) return <>{children}</>;
+
+  return <MaintenancePage endTime={status.end_time} message={status.message} />;
+}
+
 // ── Persistent Navbar (outside page transitions so it never moves) ───────────
 function PersistentNavbar() {
   const [location] = useLocation();
@@ -2343,6 +2470,7 @@ function AppRoutes() {
       <TransitionProvider>
         <PersistentNavbar />
         <AnimatedBackground />
+        <MaintenanceGate>
         <UsernameGate>
         <div style={{ position: "relative" }}>
         <Switch>
@@ -2371,6 +2499,7 @@ function AppRoutes() {
         </Switch>
         </div>
         </UsernameGate>
+        </MaintenanceGate>
       </TransitionProvider>
     </ClerkProvider>
   );
