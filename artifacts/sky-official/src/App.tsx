@@ -340,9 +340,7 @@ function Navbar() {
                   <img src={user.imageUrl} alt={user.firstName ?? "User"} className="w-full h-full object-cover" />
                 </div>
                 {(unreadCount + (hasPendingPayment ? 1 : 0)) > 0 && (
-                  <span style={{ position: "absolute", top: -2, right: -2, minWidth: 16, height: 16, background: "#ef4444", borderRadius: 99, border: "2px solid #FAF9F6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff", lineHeight: 1, padding: "0 3px" }}>
-                    {(unreadCount + (hasPendingPayment ? 1 : 0)) > 9 ? "9+" : (unreadCount + (hasPendingPayment ? 1 : 0))}
-                  </span>
+                  <span style={{ position: "absolute", top: -2, right: -2, width: 10, height: 10, background: "#ef4444", borderRadius: "50%", border: "2px solid #FAF9F6" }} />
                 )}
               </button>
               {showProfileMenu && (
