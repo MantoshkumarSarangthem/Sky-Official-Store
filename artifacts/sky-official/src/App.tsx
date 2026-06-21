@@ -122,21 +122,7 @@ function AnimatedDiamonds({ size = 80 }: { size?: number }) {
 }
 
 // ── Loading Screen ─────────────────────────────────────────────────────────
-function LoadingScreen({ onDone }: { onDone: () => void }) {
-  const doneRef = useRef(false);
-
-  const triggerDone = () => {
-    if (doneRef.current) return;
-    doneRef.current = true;
-    onDone();
-  };
-
-  useEffect(() => {
-    // Safety fallback — dismiss after 5 s even if content never signals ready
-    const t = setTimeout(triggerDone, 5000);
-    return () => clearTimeout(t);
-  }, []);
-
+function LoadingScreen({ isOffline }: { isOffline: boolean }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#FAF9F6", zIndex: 9999 }}>
       <div style={{ position: "relative", width: 84, height: 84 }}>
@@ -157,6 +143,21 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <img src="/logo-phoenix.png" alt="Sky Official" style={{ width: 50, height: 50, objectFit: "contain" }} />
         </div>
+      </div>
+      {/* Offline message — fades in/out smoothly */}
+      <div style={{
+        position: "absolute", bottom: 72, left: 0, right: 0,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+        opacity: isOffline ? 1 : 0,
+        transition: "opacity 0.5s ease",
+        pointerEvents: "none",
+      }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.56 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, letterSpacing: "0.01em" }}>
+          Check your internet connection
+        </span>
       </div>
       <style>{`
         @keyframes skyComet {
@@ -830,6 +831,15 @@ function GameSelectSection() {
   const [gamesLoading, setGamesLoading] = useState(() => !getCached(gamesCacheKey));
   const [catAvailability, setCatAvailability] = useState<Record<string, string>>(() => getCached<Record<string, string>>(availCacheKey) ?? {});
   const { navigateTo } = usePageNav();
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (retryRef.current) clearTimeout(retryRef.current);
+    };
+  }, []);
 
   const fetchGames = useCallback((force = false) => {
     if (force) invalidateCache(gamesCacheKey, availCacheKey);
@@ -838,14 +848,16 @@ function GameSelectSection() {
       cachedFetch<Record<string, string>>(availCacheKey),
     ])
       .then(([d, avail]) => {
+        if (!mountedRef.current) return;
         setGames(Array.isArray(d) ? d : []);
         setCatAvailability(avail && typeof avail === "object" ? avail : {});
         setGamesLoading(false);
         window.dispatchEvent(new Event("skyContentReady"));
       })
       .catch(() => {
-        setGamesLoading(false);
-        window.dispatchEvent(new Event("skyContentReady"));
+        if (!mountedRef.current) return;
+        // Don't signal ready — retry after 3 s until it succeeds
+        retryRef.current = setTimeout(() => fetchGames(), 3000);
       });
   }, [gamesCacheKey, availCacheKey]);
 
@@ -2541,6 +2553,7 @@ function AppRoutes() {
 
 export default function App() {
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const minPassedRef = useRef(false);
   const contentReadyRef = useRef(false);
 
@@ -2559,15 +2572,22 @@ export default function App() {
       minPassedRef.current = true;
       tryDismiss();
     }, 800);
-    // Listen for content-ready signal from GameSelectSection
+    // Dismiss when games signal they're loaded
     const onReady = () => {
       contentReadyRef.current = true;
       tryDismiss();
     };
+    // Track internet connectivity for the offline message
+    const onOffline = () => setIsOffline(true);
+    const onOnline = () => setIsOffline(false);
     window.addEventListener("skyContentReady", onReady);
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
     return () => {
       clearTimeout(t);
       window.removeEventListener("skyContentReady", onReady);
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", onOnline);
     };
   }, [tryDismiss]);
 
@@ -2575,7 +2595,7 @@ export default function App() {
     <WouterRouter base={basePath}>
       <CartProvider>
         <div style={{ background: "#0d0d0d", minHeight: "100vh", overflowX: "hidden" }}>
-          {loading && <LoadingScreen onDone={() => setLoading(false)} />}
+          {loading && <LoadingScreen isOffline={isOffline} />}
           <AppRoutes />
         </div>
       </CartProvider>
