@@ -470,10 +470,10 @@ export default function PaymentPage() {
                 </span>
               ) : (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  <img src={pkgIcon} alt="♦" style={{ width: 14, height: 14, objectFit: "contain", display: "inline-block", borderRadius: pkg?.image ? 3 : 0 }} />
+                  <img src={pkgIcon} alt="♦" style={{ width: 20, height: 20, objectFit: "contain", display: "inline-block", borderRadius: pkg?.image ? 4 : 0 }} />
                   {isCartMode
                     ? <>{pkg?.diamonds.toLocaleString()} {currLabel} total · {cartItems.reduce((s, i) => s + i.quantity, 0)} packs</>
-                    : <>{pkg?.diamonds.toLocaleString()} {currLabel} {(pkg?.bonus_diamonds ?? 0) > 0 && <span style={{ color: "#4ade80" }}>+{pkg?.bonus_diamonds.toLocaleString()} bonus</span>}</>
+                    : <>{pkg?.name || <>{pkg?.diamonds.toLocaleString()} {currLabel} {(pkg?.bonus_diamonds ?? 0) > 0 && <span style={{ color: "#4ade80" }}>+{pkg?.bonus_diamonds.toLocaleString()} bonus</span>}</>}</>
                   }
                 </span>
               )}
