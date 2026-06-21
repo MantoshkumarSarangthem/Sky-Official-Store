@@ -2249,8 +2249,7 @@ function NotificationsPage() {
                 </div>
                 <div style={{ background: "rgba(245,158,11,0.05)", borderRadius: 8, padding: "10px 12px", margin: "4px 0 10px", borderLeft: "3px solid rgba(245,158,11,0.35)" }}>
                   <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: "0 0 6px", fontStyle: "italic" }}>Dear User,</p>
-                  <p style={{ color: "#6b6b6b", fontSize: 13, margin: "0 0 8px", lineHeight: 1.6 }}>You left a payment in progress. Your order hasn't been placed yet. Please resume before the session expires.</p>
-                  <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: 0 }}>Best regards,<br />@SkyOfficialTeam</p>
+                  <p style={{ color: "#6b6b6b", fontSize: 13, margin: 0, lineHeight: 1.6 }}>You left a payment in progress. Your order hasn't been placed yet. Please resume before the session expires.</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ color: pendingSecondsLeft <= 60 ? "#ef4444" : "#f59e0b", fontSize: 12, fontWeight: 700, fontFamily: "monospace" }}>
@@ -2302,8 +2301,7 @@ function NotificationsPage() {
                     {isExpandable && isExpanded && (
                       <div style={{ background: "#FAF9F6", borderRadius: 8, padding: "12px 14px", marginBottom: 8, borderLeft: "3px solid rgba(127,0,255,0.3)" }}>
                         <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: "0 0 8px", fontStyle: "italic" }}>Dear User,</p>
-                        <p style={{ color: "#4a4a4a", fontSize: 13, margin: "0 0 10px", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{n.body}</p>
-                        <p style={{ color: "#999", fontSize: 12, fontWeight: 600, margin: 0 }}>Best regards,<br />@SkyOfficialTeam</p>
+                        <p style={{ color: "#4a4a4a", fontSize: 13, margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{n.body}</p>
                       </div>
                     )}
 
