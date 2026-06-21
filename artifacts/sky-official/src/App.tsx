@@ -1824,7 +1824,12 @@ function DailyOfferSection() {
         @keyframes doFadeIn { from { opacity: 0 } to { opacity: 1 } }
         .daily-s2-enter { animation: doFadeIn 0.42s ease forwards; }
       `}</style>
-      <div style={{ padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 7 }}>
+      <div style={{ padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#7F00FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.3L12 17l-6.2 4.2 2.4-7.3L2 9.4h7.6z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
         <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.01em" }}>Daily Offers</span>
         <span style={{ background: "linear-gradient(90deg,#f59e0b,#fbbf24)", color: "#3D2B1F", fontSize: 8, fontWeight: 900, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.08em" }}>HOT</span>
       </div>
