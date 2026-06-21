@@ -1578,10 +1578,12 @@ interface DailyOfferPkg {
   image: string | null;
   game_name: string | null;
   game_id: number | null;
+  has_offer?: boolean;
 }
 
 function DailyOfferCard({ pkg, onClick }: { pkg: DailyOfferPkg; onClick?: () => void }) {
   const hasOld = !!(pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
+  const isOffer = !!pkg.has_offer;
   const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
   const label = pkg.name || `${total.toLocaleString()} Diamonds`;
   return (
@@ -1598,7 +1600,18 @@ function DailyOfferCard({ pkg, onClick }: { pkg: DailyOfferPkg; onClick?: () => 
       boxSizing: "border-box",
       boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)",
       cursor: onClick ? "pointer" : "default",
+      position: "relative",
     }}>
+      {isOffer && (
+        <div style={{
+          position: "absolute", top: 0, right: 0,
+          background: "linear-gradient(135deg,#f59e0b,#ef4444)",
+          color: "#fff", fontSize: 7.5, fontWeight: 900,
+          padding: "3px 7px", borderRadius: "0 16px 0 10px",
+          letterSpacing: "0.08em", lineHeight: 1.2,
+          zIndex: 2,
+        }}>OFFER</div>
+      )}
       <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{
           width: 40, height: 40,
@@ -1623,7 +1636,7 @@ function DailyOfferCard({ pkg, onClick }: { pkg: DailyOfferPkg; onClick?: () => 
               </div>
             )}
           </div>
-          <div style={{ color: "#7c3aed", fontWeight: 900, fontSize: 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
+          <div style={{ color: isOffer ? "#ef4444" : "#7c3aed", fontWeight: 900, fontSize: 13, lineHeight: 1.1, whiteSpace: "nowrap" }}>
             ₹{parseFloat(pkg.price).toFixed(0)}
           </div>
         </div>
@@ -2454,7 +2467,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
 // ── Persistent Navbar (outside page transitions so it never moves) ───────────
 function PersistentNavbar() {
   const [location] = useLocation();
-  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/profile") || location.startsWith("/support") || location === "/pay" || location === "/terms" || location === "/privacy" || location === "/refund" || location === "/leaderboard") return null;
+  if (location.startsWith("/sign-in") || location.startsWith("/sign-up") || location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/profile") || location.startsWith("/support") || location === "/pay" || location === "/terms" || location === "/privacy" || location === "/refund" || location === "/leaderboard" || location === "/wallet-history") return null;
   return <Navbar />;
 }
 
