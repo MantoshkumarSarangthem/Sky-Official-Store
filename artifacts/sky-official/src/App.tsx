@@ -132,7 +132,8 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
   };
 
   useEffect(() => {
-    const t = setTimeout(triggerDone, 2500);
+    // Safety fallback — dismiss after 5 s even if content never signals ready
+    const t = setTimeout(triggerDone, 5000);
     return () => clearTimeout(t);
   }, []);
 
@@ -840,8 +841,12 @@ function GameSelectSection() {
         setGames(Array.isArray(d) ? d : []);
         setCatAvailability(avail && typeof avail === "object" ? avail : {});
         setGamesLoading(false);
+        window.dispatchEvent(new Event("skyContentReady"));
       })
-      .catch(() => setGamesLoading(false));
+      .catch(() => {
+        setGamesLoading(false);
+        window.dispatchEvent(new Event("skyContentReady"));
+      });
   }, [gamesCacheKey, availCacheKey]);
 
   useEffect(() => {
@@ -2536,11 +2541,36 @@ function AppRoutes() {
 
 export default function App() {
   const [loading, setLoading] = useState(true);
+  const minPassedRef = useRef(false);
+  const contentReadyRef = useRef(false);
+
+  const tryDismiss = useCallback(() => {
+    if (minPassedRef.current && contentReadyRef.current) {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
-  }, []);
+    // Minimum visible time so it doesn't flash on cache hits
+    const t = setTimeout(() => {
+      minPassedRef.current = true;
+      tryDismiss();
+    }, 800);
+    // Listen for content-ready signal from GameSelectSection
+    const onReady = () => {
+      contentReadyRef.current = true;
+      tryDismiss();
+    };
+    window.addEventListener("skyContentReady", onReady);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("skyContentReady", onReady);
+    };
+  }, [tryDismiss]);
+
   return (
     <WouterRouter base={basePath}>
       <CartProvider>
