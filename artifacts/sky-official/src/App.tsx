@@ -726,9 +726,26 @@ function PromoBannerSlider() {
   useEffect(() => {
     fetchBanners();
     const onAdminUpdate = () => fetchBanners(true);
+    // Reset to slide 0 when the loading screen dismisses so the first banner
+    // always plays from the start — the component renders under the loading
+    // screen and the video would otherwise advance unseen.
+    const onReady = () => {
+      stopTimer();
+      const { banners: bs } = liveRef.current;
+      const cur = bs[0];
+      if (cur && isVidSrc(cur.image)) {
+        const v = videoRefs.current.get(cur.id);
+        if (v) { v.currentTime = 0; v.play().catch(() => {}); }
+      }
+      setActiveIdx(0);
+    };
     window.addEventListener("skyAdminUpdate", onAdminUpdate);
-    return () => window.removeEventListener("skyAdminUpdate", onAdminUpdate);
-  }, [fetchBanners]);
+    window.addEventListener("skyContentReady", onReady);
+    return () => {
+      window.removeEventListener("skyAdminUpdate", onAdminUpdate);
+      window.removeEventListener("skyContentReady", onReady);
+    };
+  }, [fetchBanners, stopTimer]);
 
   // Restart suspended video when user returns to the tab
   useEffect(() => {
