@@ -55,7 +55,6 @@ router.post("/topup", requireAuth, async (req: any, res): Promise<void> => {
 
     if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {
       const ownerEmail = process.env.NOTIFY_EMAIL ?? process.env.FROM_EMAIL;
-      console.log(`[notify] EMAIL_ATTEMPT_STARTED — wallet topup request ${requestId}`);
       try {
         const messageId = await brevoSend({
           to: ownerEmail,
@@ -75,7 +74,6 @@ router.post("/topup", requireAuth, async (req: any, res): Promise<void> => {
             </div>
           `,
         });
-        console.log(`[notify] EMAIL_SENT_SUCCESS — wallet topup request ${requestId}, messageId: ${messageId}`);
       } catch (err: any) {
         console.error(`[notify] EMAIL_FAILED — wallet topup request ${requestId}: ${err?.message}`);
       }

@@ -147,7 +147,6 @@ router.get("/my", requireAuth, async (req: any, res): Promise<void> => {
 });
 
 router.post("/", requireAuth, async (req: any, res): Promise<void> => {
-  console.log("[notify] ORDER_API_HIT — POST /api/orders");
   const clerkUserId = req.clerkUserId as string;
   const { packageId, refId, remark, mlbbUserId, mlbbServerId, mlbbIgn, isForFriend, offerId } = req.body;
 
@@ -220,7 +219,6 @@ router.post("/", requireAuth, async (req: any, res): Promise<void> => {
 
     await client.query("COMMIT");
 
-    console.log(`[notify] ORDER_SAVED — id: ${orderId}, displayId: ${displayId}, staffId: ${staffId ?? "none"}${appliedOffer ? `, offer: ${appliedOffer.offerId}` : ""}`);
     res.json({ ok: true, id: orderId, displayId });
 
     fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: finalPrice }, mlbbId, remark ?? null, { serverId, ign, isForFriend: isForFriend || false });
@@ -298,14 +296,10 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
       }
     }
 
-    console.log(`[notify] ORDER_SAVED — cart: ${orderIds.length} orders saved, displayIds: ${displayIds.join(", ")}`);
-
     res.json({ ok: true, ids: orderIds, displayIds });
 
     const totalDiamonds = items.reduce((s: number, i: any) => s + (i.diamonds || 0) * (i.quantity || 1), 0);
     const totalPrice = items.reduce((s: number, i: any) => s + parseFloat(i.price || "0") * (i.quantity || 1), 0);
-
-    console.log(`[notify] NOTIFICATION_TRIGGERED — cart order, ${orderIds.length} items, ₹${totalPrice.toFixed(0)}`);
 
     sendPushToAll({ title: "🛒 Cart Order!", body: `${orderIds.length} items · ₹${totalPrice.toFixed(0)}`, tag: "new-order", url: "/admin" });
 
@@ -326,7 +320,6 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
 });
 
 router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => {
-  console.log("[notify] ORDER_API_HIT — POST /api/orders/wallet-pay");
   const clerkUserId = req.clerkUserId as string;
   const { packageId, mlbbUserId, mlbbServerId, mlbbIgn, isForFriend, offerId } = req.body;
 
@@ -414,7 +407,6 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
     await client.query("COMMIT");
 
     const orderId = inserted[0].id;
-    console.log(`[notify] WALLET_ORDER_SAVED — id: ${orderId}, displayId: ${displayId}${appliedOffer ? `, offer: ${appliedOffer.offerId}` : ""}`);
     res.json({ ok: true, id: orderId, displayId });
 
     const pkgName = pkg.name || `${pkg.diamonds} Diamonds`;

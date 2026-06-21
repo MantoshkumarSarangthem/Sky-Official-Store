@@ -82,7 +82,6 @@ async function sendOrderCompletedEmail(to: string, order: any, customerName: str
     .toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
   const storeName = "Sky Official";
 
-  console.log(`[email] EMAIL_ATTEMPT_STARTED — order completed ${orderId} to ${to}`);
   try {
     const messageId = await brevoSend({
       to,
@@ -160,7 +159,6 @@ async function sendOrderCompletedEmail(to: string, order: any, customerName: str
 </body>
 </html>`,
     });
-    console.log(`[email] EMAIL_SENT_SUCCESS — order completed ${orderId} to ${to}, messageId: ${messageId}`);
   } catch (err: any) {
     console.error(`[email] EMAIL_FAILED — order completed ${orderId} to ${to}: ${err?.message}`);
   }
@@ -858,7 +856,6 @@ router.post("/staff/:id/test-email", requireAdmin, async (req, res): Promise<voi
     if (!staff) { res.status(404).json({ error: "Staff not found" }); return; }
     if (!staff.email) { res.status(400).json({ error: "This staff member has no email address saved." }); return; }
 
-    console.log(`[email] EMAIL_ATTEMPT_STARTED — test email to staff ${staff.name} <${staff.email}>`);
     const messageId = await brevoSend({
       to: staff.email,
       subject: `✅ Test Notification — Sky Official`,
@@ -868,7 +865,6 @@ router.post("/staff/:id/test-email", requireAdmin, async (req, res): Promise<voi
         <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">You will receive emails like this whenever a new order comes in. You're all set! 🎉</p>
       </div>`,
     });
-    console.log(`[email] EMAIL_SENT_SUCCESS — test email to staff ${staff.name}, messageId: ${messageId}`);
     res.json({ ok: true, sentTo: staff.email });
   } catch (err: any) {
     console.error("[email] EMAIL_FAILED — test email to staff:", err?.message);
@@ -961,7 +957,6 @@ router.post("/test-notification", requireAdmin, async (_req, res): Promise<void>
   result.staffEmails = staffResults;
   result.steps = log;
   result.summary = "Test complete — check steps for details";
-  console.log("[notify] TEST_NOTIFICATION complete:", JSON.stringify(result, null, 2));
   res.json(result);
 });
 
@@ -1047,7 +1042,6 @@ router.post("/test-email", requireAdmin, async (_req, res) => {
   }
 
   const to = ownerEmail ?? fromEmail;
-  console.log(`[email] EMAIL_ATTEMPT_STARTED — test email to ${to}`);
   try {
     const messageId = await brevoSend({
       to,
@@ -1065,7 +1059,6 @@ router.post("/test-email", requireAdmin, async (_req, res) => {
         </div>
       `,
     });
-    console.log(`[email] EMAIL_SENT_SUCCESS — test email to ${to}, messageId: ${messageId}`);
     res.json({ ok: true });
   } catch (err: any) {
     console.error(`[email] EMAIL_FAILED — test email: ${err?.message}`);

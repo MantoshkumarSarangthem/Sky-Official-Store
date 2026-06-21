@@ -55,8 +55,6 @@ export async function sendOrderEmail(order: {
 }) {
   const ownerEmail = process.env.NOTIFY_EMAIL;
 
-  console.log(`[notify] EMAIL_ATTEMPT_STARTED — order #${order.orderId} to owner`);
-
   if (!process.env.BREVO_API_KEY || !process.env.FROM_EMAIL) {
     console.error("[notify] EMAIL_FAILED — BREVO_API_KEY or FROM_EMAIL not set");
     return;
@@ -112,7 +110,6 @@ export async function sendOrderEmail(order: {
       subject: `💎 New Order #${order.orderId} — ♦${diamonds} Diamonds · ₹${price}`,
       html,
     });
-    console.log(`[notify] EMAIL_SENT_SUCCESS — order #${order.orderId} to owner, messageId: ${messageId}`);
   } catch (err: any) {
     console.error(`[notify] EMAIL_FAILED — order #${order.orderId} to owner: ${err?.message}`);
     throw err;
@@ -142,18 +139,14 @@ export async function notifyAvailableStaff(
   }
 
   if (staffList.length === 0) {
-    console.log("[notify] STAFF_EMAIL_SKIPPED — no available staff with notify_orders=true and email");
     return;
   }
-
-  console.log(`[notify] NOTIFICATION_TRIGGERED — notifying ${staffList.length} available staff for order ${orderId}`);
 
   const diamonds = Number(orderData.diamonds).toLocaleString("en-IN");
   const price = parseFloat(orderData.price).toFixed(0);
 
   for (const staff of staffList) {
     const isAssigned = assignedStaffId === staff.id;
-    console.log(`[notify] EMAIL_ATTEMPT_STARTED — order ${orderId} to staff ${staff.name} <${staff.email}>`);
     try {
       const messageId = await brevoSend({
         to: staff.email,
@@ -171,7 +164,6 @@ export async function notifyAvailableStaff(
           <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:20px;">Log in to the admin panel to process this order.</p>
         </div>`,
       });
-      console.log(`[notify] EMAIL_SENT_SUCCESS — order ${orderId} to staff ${staff.name}, messageId: ${messageId}`);
     } catch (err: any) {
       console.error(`[notify] EMAIL_FAILED — order ${orderId} to staff ${staff.name} <${staff.email}>: ${err?.message}`);
     }
@@ -185,8 +177,6 @@ export async function sendInquiryEmail(inquiry: {
   description: string;
 }) {
   const ownerEmail = process.env.NOTIFY_EMAIL;
-
-  console.log(`[notify] EMAIL_ATTEMPT_STARTED — inquiry notification from ${inquiry.userEmail || "anonymous"}`);
 
   if (!process.env.BREVO_API_KEY || !process.env.FROM_EMAIL) {
     console.error("[notify] EMAIL_FAILED — BREVO_API_KEY or FROM_EMAIL not set");
@@ -217,7 +207,6 @@ export async function sendInquiryEmail(inquiry: {
         </div>
       `,
     });
-    console.log(`[notify] EMAIL_SENT_SUCCESS — inquiry notification to owner, messageId: ${messageId}`);
   } catch (err: any) {
     console.error(`[notify] EMAIL_FAILED — inquiry notification: ${err?.message}`);
   }

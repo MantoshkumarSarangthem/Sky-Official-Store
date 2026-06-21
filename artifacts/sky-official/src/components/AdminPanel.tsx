@@ -184,6 +184,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [trustpilotSaved, setTrustpilotSaved] = useState(false);
   const [communityWhatsapp, setCommunityWhatsapp] = useState("");
   const [communityInstagram, setCommunityInstagram] = useState("");
+  const [communitySupport, setCommunitySupport] = useState("");
   const [communitySaving, setCommunitySaving] = useState(false);
   const [communitySaved, setCommunitySaved] = useState(false);
   const [broadcastType, setBroadcastType] = useState("news");
@@ -773,6 +774,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const data = await res.json();
       setCommunityWhatsapp(data.whatsapp || "");
       setCommunityInstagram(data.instagram || "");
+      setCommunitySupport(data.support_wa || "");
     }
   }, [token]);
 
@@ -944,7 +946,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setCommunitySaving(true);
     await fetch(`${API}/admin/settings/community_links`, {
       method: "PUT", headers,
-      body: JSON.stringify({ whatsapp: communityWhatsapp, instagram: communityInstagram }),
+      body: JSON.stringify({ whatsapp: communityWhatsapp, instagram: communityInstagram, support_wa: communitySupport }),
     });
     setCommunitySaved(true);
     setTimeout(() => setCommunitySaved(false), 3000);
@@ -2512,6 +2514,17 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         value={communityInstagram}
                         onChange={(e) => setCommunityInstagram(e.target.value)}
                         placeholder="https://www.instagram.com/..."
+                        className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
+                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">Support WhatsApp Number</div>
+                      <div className="text-xs text-gray-500 mb-1.5">Enter with country code, no spaces or symbols (e.g. 919362003788)</div>
+                      <input
+                        value={communitySupport}
+                        onChange={(e) => setCommunitySupport(e.target.value)}
+                        placeholder="919362003788"
                         className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none"
                         style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
                       />
