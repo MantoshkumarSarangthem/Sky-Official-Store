@@ -123,11 +123,30 @@ function AnimatedDiamonds({ size = 80 }: { size?: number }) {
 
 // ── Loading Screen ─────────────────────────────────────────────────────────
 function LoadingScreen({ isOffline, onRetry }: { isOffline: boolean; onRetry: () => void }) {
-  const [showRetry, setShowRetry] = useState(false);
+  const [showSlow, setShowSlow] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setShowRetry(true), 4000);
+    const t = setTimeout(() => setShowSlow(true), 7000);
     return () => clearTimeout(t);
   }, []);
+
+  const retryBtn = (
+    <button
+      onClick={onRetry}
+      style={{
+        background: "transparent",
+        border: "1.5px solid rgba(61,43,31,0.2)",
+        borderRadius: 20,
+        padding: "7px 22px",
+        color: "rgba(61,43,31,0.5)",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+        letterSpacing: "0.01em",
+      }}
+    >
+      Retry
+    </button>
+  );
 
   return (
     <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#FAF9F6", zIndex: 9999 }}>
@@ -150,10 +169,11 @@ function LoadingScreen({ isOffline, onRetry }: { isOffline: boolean; onRetry: ()
           <img src="/logo-phoenix.png" alt="Sky Official" style={{ width: 50, height: 50, objectFit: "contain" }} />
         </div>
       </div>
-      {/* Offline message — fades in/out smoothly */}
+
+      {/* Offline: icon + message + retry button */}
       <div style={{
-        position: "absolute", bottom: 72, left: 0, right: 0,
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+        position: "absolute", bottom: 48, left: 0, right: 0,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
         opacity: isOffline ? 1 : 0,
         transition: "opacity 0.5s ease",
         pointerEvents: isOffline ? "auto" : "none",
@@ -164,31 +184,21 @@ function LoadingScreen({ isOffline, onRetry }: { isOffline: boolean; onRetry: ()
         <span style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, letterSpacing: "0.01em" }}>
           Check your internet connection
         </span>
+        {retryBtn}
       </div>
-      {/* Retry button — appears after 4 s for slow/stuck loads */}
+
+      {/* Slow fetch (not offline): message + retry after 7 s */}
       <div style={{
-        position: "absolute", bottom: 32, left: 0, right: 0,
-        display: "flex", justifyContent: "center",
-        opacity: showRetry ? 1 : 0,
+        position: "absolute", bottom: 48, left: 0, right: 0,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+        opacity: (!isOffline && showSlow) ? 1 : 0,
         transition: "opacity 0.5s ease",
-        pointerEvents: showRetry ? "auto" : "none",
+        pointerEvents: (!isOffline && showSlow) ? "auto" : "none",
       }}>
-        <button
-          onClick={onRetry}
-          style={{
-            background: "transparent",
-            border: "1.5px solid rgba(61,43,31,0.2)",
-            borderRadius: 20,
-            padding: "7px 22px",
-            color: "rgba(61,43,31,0.5)",
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-            letterSpacing: "0.01em",
-          }}
-        >
-          Retry
-        </button>
+        <span style={{ color: "rgba(61,43,31,0.45)", fontSize: 13, fontWeight: 500, letterSpacing: "0.01em" }}>
+          This is taking longer than expected
+        </span>
+        {retryBtn}
       </div>
       <style>{`
         @keyframes skyComet {
