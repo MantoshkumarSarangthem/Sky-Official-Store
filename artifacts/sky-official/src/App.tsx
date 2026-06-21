@@ -620,7 +620,6 @@ function UsernameGate({ children }: { children: React.ReactNode }) {
     });
   }, [isLoaded, isSignedIn]);
 
-  if (usernameStatus === "loading" && isSignedIn && !isExcluded) return null;
   if (usernameStatus === "unset" && !isExcluded) {
     return <UsernameSetupPage onDone={() => setUsernameStatus("set")} />;
   }
