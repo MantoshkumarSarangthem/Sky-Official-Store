@@ -137,28 +137,38 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: "#FAF9F6" }}>
-      <div style={{ position: "absolute", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,148,130,0.06) 0%, transparent 60%)", pointerEvents: "none" }} />
-      <div className="relative flex flex-col items-center z-10" style={{ gap: 28 }}>
-        <div style={{ position: "relative", width: 74, height: 74 }}>
-          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(245,158,11,0.15)" }} />
-          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid transparent", borderTopColor: "#f59e0b", animation: "skySpin 1.1s linear infinite" }} />
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img src="/logo-phoenix.png" alt="Sky Official" style={{ width: 48, height: 48, objectFit: "contain" }} />
-          </div>
-        </div>
-        <div className="flex flex-col items-center" style={{ gap: 6 }}>
-          <span style={{ color: "#3D2B1F", fontSize: 13, fontWeight: 700, letterSpacing: "0.3em" }}>SKY OFFICIAL</span>
-          <span style={{ fontSize: 7, fontWeight: 600, letterSpacing: "0.32em", background: "linear-gradient(90deg, transparent, #f59e0b, #fcd34d, #f59e0b, transparent)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "skyShimmer 2s ease-in-out infinite" }}>SHOP SMART | PLAY HARD</span>
-        </div>
-        <div style={{ width: 100, height: 1, background: "rgba(61,43,31,0.12)", borderRadius: 999, overflow: "hidden" }}>
-          <div style={{ height: "100%", background: "linear-gradient(90deg,#f59e0b,#fcd34d)", borderRadius: 999, animation: "skyBar 2s ease-out forwards" }} />
+    <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#FAF9F6", zIndex: 9999 }}>
+      <div style={{ position: "relative", width: 84, height: 84 }}>
+        {/* Faint track ring */}
+        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(245,158,11,0.13)" }} />
+        {/* Comet arc — SVG rotates continuously, dasharray pulses in sync */}
+        <svg width="84" height="84" viewBox="0 0 84 84"
+          style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", animation: "skyComet 1.5s linear infinite" }}>
+          <circle cx="42" cy="42" r="38"
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth="5"
+            strokeLinecap="round"
+            style={{ animation: "skyCometDash 1.5s linear infinite" }}
+          />
+        </svg>
+        {/* Bird */}
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <img src="/logo-phoenix.png" alt="Sky Official" style={{ width: 50, height: 50, objectFit: "contain" }} />
         </div>
       </div>
       <style>{`
-        @keyframes skySpin    { to { transform: rotate(360deg); } }
-        @keyframes skyShimmer { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
-        @keyframes skyBar     { 0% { width: 0%; } 70% { width: 80%; } 100% { width: 100%; } }
+        @keyframes skyComet {
+          from { transform: rotate(-90deg); }
+          to   { transform: rotate(270deg); }
+        }
+        @keyframes skyCometDash {
+          0%   { stroke-dasharray: 1 238; stroke-dashoffset: 0; }
+          25%  { stroke-dasharray: 90 148; stroke-dashoffset: 0; }
+          50%  { stroke-dasharray: 150 88; stroke-dashoffset: 0; }
+          75%  { stroke-dasharray: 90 148; stroke-dashoffset: 0; }
+          100% { stroke-dasharray: 1 238; stroke-dashoffset: 0; }
+        }
         @keyframes shimmerLR {
           0%   { background-position: 150% 0; }
           100% { background-position: -150% 0; }
@@ -1567,14 +1577,15 @@ interface DailyOfferPkg {
   old_price: string | null;
   image: string | null;
   game_name: string | null;
+  game_id: number | null;
 }
 
-function DailyOfferCard({ pkg }: { pkg: DailyOfferPkg }) {
+function DailyOfferCard({ pkg, onClick }: { pkg: DailyOfferPkg; onClick?: () => void }) {
   const hasOld = !!(pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
   const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
   const label = pkg.name || `${total.toLocaleString()} Diamonds`;
   return (
-    <div style={{
+    <div onClick={onClick} style={{
       background: "#FFFFFF",
       borderRadius: 16,
       padding: "10px",
@@ -1586,6 +1597,7 @@ function DailyOfferCard({ pkg }: { pkg: DailyOfferPkg }) {
       overflow: "hidden",
       boxSizing: "border-box",
       boxShadow: "0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)",
+      cursor: onClick ? "pointer" : "default",
     }}>
       <div style={{ display: "flex", alignItems: "center" }}>
         <div style={{
@@ -1624,8 +1636,15 @@ function DailyOfferCard({ pkg }: { pkg: DailyOfferPkg }) {
 }
 
 function DailyOfferSection() {
+  const [, setLocation] = useLocation();
   const cacheKey = `${API}/settings/daily_offer_packages`;
   const [pkgs, setPkgs] = useState<DailyOfferPkg[]>(() => getCached<DailyOfferPkg[]>(cacheKey) ?? []);
+
+  const handleCardClick = (pkg: DailyOfferPkg) => {
+    if (!pkg.game_id) return;
+    sessionStorage.setItem("pendingSelectPkgId", String(pkg.id));
+    setLocation(`/game/${pkg.game_id}`);
+  };
   const [headIdx, setHeadIdx] = useState(0);
   const rowRef  = useRef<HTMLDivElement>(null);
   const ref0    = useRef<HTMLDivElement>(null);
@@ -1739,13 +1758,13 @@ function DailyOfferSection() {
           {/* All three slots: identical DOM size. Scale is the ONLY visual differentiator.
               When cancel() snaps back to CSS, new slot 0 at scale(1) = animation end state → zero reflow. */}
           <div ref={ref0} style={{ flex: 1, height: H, transformOrigin: "left center", transform: "scale(1)" }}>
-            {slots[0] ? <DailyOfferCard pkg={slots[0]} /> : placeholder}
+            {slots[0] ? <DailyOfferCard pkg={slots[0]} onClick={() => handleCardClick(slots[0]!)} /> : placeholder}
           </div>
           <div ref={ref1} style={{ flex: 1, height: H, transformOrigin: "right center", transform: `scale(${s})` }}>
-            {slots[1] ? <DailyOfferCard pkg={slots[1]} /> : placeholder}
+            {slots[1] ? <DailyOfferCard pkg={slots[1]} onClick={() => handleCardClick(slots[1]!)} /> : placeholder}
           </div>
           <div ref={ref2} key={`s2-${headIdx}`} className="daily-s2-enter" style={{ flex: 1, height: H, transformOrigin: "right center", transform: `scale(${s})` }}>
-            {slots[2] ? <DailyOfferCard pkg={slots[2]} /> : placeholder}
+            {slots[2] ? <DailyOfferCard pkg={slots[2]} onClick={() => handleCardClick(slots[2]!)} /> : placeholder}
           </div>
         </div>
       </div>
