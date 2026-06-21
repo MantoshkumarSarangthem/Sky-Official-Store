@@ -143,13 +143,13 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(245,158,11,0.13)" }} />
         {/* Comet arc — SVG rotates continuously, dasharray pulses in sync */}
         <svg width="84" height="84" viewBox="0 0 84 84"
-          style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", animation: "skyComet 1.5s linear infinite" }}>
+          style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", animation: "skyComet 1.4s linear infinite" }}>
           <circle cx="42" cy="42" r="38"
             fill="none"
             stroke="#f59e0b"
             strokeWidth="5"
             strokeLinecap="round"
-            style={{ animation: "skyCometDash 1.5s linear infinite" }}
+            style={{ animation: "skyCometDash 1.4s ease-in-out infinite" }}
           />
         </svg>
         {/* Bird */}
@@ -163,11 +163,11 @@ function LoadingScreen({ onDone }: { onDone: () => void }) {
           to   { transform: rotate(270deg); }
         }
         @keyframes skyCometDash {
-          0%   { stroke-dasharray: 1 238; stroke-dashoffset: 0; }
-          25%  { stroke-dasharray: 90 148; stroke-dashoffset: 0; }
-          50%  { stroke-dasharray: 150 88; stroke-dashoffset: 0; }
-          75%  { stroke-dasharray: 90 148; stroke-dashoffset: 0; }
-          100% { stroke-dasharray: 1 238; stroke-dashoffset: 0; }
+          0%   { stroke-dasharray: 1, 238; stroke-dashoffset: 0; }
+          10%  { stroke-dasharray: 1, 238; stroke-dashoffset: 0; }
+          55%  { stroke-dasharray: 180, 238; stroke-dashoffset: -65; }
+          85%  { stroke-dasharray: 1, 238; stroke-dashoffset: -237; }
+          100% { stroke-dasharray: 1, 238; stroke-dashoffset: -238; }
         }
         @keyframes shimmerLR {
           0%   { background-position: 150% 0; }
