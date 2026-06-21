@@ -122,7 +122,13 @@ function AnimatedDiamonds({ size = 80 }: { size?: number }) {
 }
 
 // ── Loading Screen ─────────────────────────────────────────────────────────
-function LoadingScreen({ isOffline }: { isOffline: boolean }) {
+function LoadingScreen({ isOffline, onRetry }: { isOffline: boolean; onRetry: () => void }) {
+  const [showRetry, setShowRetry] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowRetry(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#FAF9F6", zIndex: 9999 }}>
       <div style={{ position: "relative", width: 84, height: 84 }}>
@@ -150,7 +156,7 @@ function LoadingScreen({ isOffline }: { isOffline: boolean }) {
         display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
         opacity: isOffline ? 1 : 0,
         transition: "opacity 0.5s ease",
-        pointerEvents: "none",
+        pointerEvents: isOffline ? "auto" : "none",
       }}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.56 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -158,6 +164,31 @@ function LoadingScreen({ isOffline }: { isOffline: boolean }) {
         <span style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, letterSpacing: "0.01em" }}>
           Check your internet connection
         </span>
+      </div>
+      {/* Retry button — appears after 4 s for slow/stuck loads */}
+      <div style={{
+        position: "absolute", bottom: 32, left: 0, right: 0,
+        display: "flex", justifyContent: "center",
+        opacity: showRetry ? 1 : 0,
+        transition: "opacity 0.5s ease",
+        pointerEvents: showRetry ? "auto" : "none",
+      }}>
+        <button
+          onClick={onRetry}
+          style={{
+            background: "transparent",
+            border: "1.5px solid rgba(61,43,31,0.2)",
+            borderRadius: 20,
+            padding: "7px 22px",
+            color: "rgba(61,43,31,0.5)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            letterSpacing: "0.01em",
+          }}
+        >
+          Retry
+        </button>
       </div>
       <style>{`
         @keyframes skyComet {
@@ -864,8 +895,13 @@ function GameSelectSection() {
   useEffect(() => {
     fetchGames();
     const onUpdate = () => fetchGames(true);
+    const onRetry = () => fetchGames();
     window.addEventListener("skyAdminUpdate", onUpdate);
-    return () => window.removeEventListener("skyAdminUpdate", onUpdate);
+    window.addEventListener("skyRetryFetch", onRetry);
+    return () => {
+      window.removeEventListener("skyAdminUpdate", onUpdate);
+      window.removeEventListener("skyRetryFetch", onRetry);
+    };
   }, [fetchGames]);
 
   if (gamesLoading) {
@@ -2595,7 +2631,7 @@ export default function App() {
     <WouterRouter base={basePath}>
       <CartProvider>
         <div style={{ background: "#0d0d0d", minHeight: "100vh", overflowX: "hidden" }}>
-          {loading && <LoadingScreen isOffline={isOffline} />}
+          {loading && <LoadingScreen isOffline={isOffline} onRetry={() => window.dispatchEvent(new Event("skyRetryFetch"))} />}
           <AppRoutes />
         </div>
       </CartProvider>
