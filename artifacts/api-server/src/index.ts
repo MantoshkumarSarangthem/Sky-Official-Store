@@ -120,6 +120,32 @@ async function initDb() {
       username TEXT UNIQUE NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS offers (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      eligibility TEXT NOT NULL DEFAULT 'first_time',
+      max_claims INT,
+      total_claims INT NOT NULL DEFAULT 0,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS offer_packages (
+      offer_id INT NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+      package_id INT NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+      offer_price NUMERIC(10,2) NOT NULL,
+      PRIMARY KEY (offer_id, package_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS claimed_offers (
+      id SERIAL PRIMARY KEY,
+      offer_id INT NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL,
+      claimed_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(offer_id, user_id)
+    );
   `);
 
   // Step 2: Add columns that may be missing on older installs (all tables exist by now)

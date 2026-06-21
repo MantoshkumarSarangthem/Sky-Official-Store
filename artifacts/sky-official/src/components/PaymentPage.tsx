@@ -25,6 +25,8 @@ export interface SelectedPackage {
   gameName?: string;
   currencyLabel?: string;
   gameId?: number;
+  offerId?: number | null;
+  originalPrice?: string | null;
 }
 
 let _selectedPackage: SelectedPackage | null = null;
@@ -303,6 +305,7 @@ export default function PaymentPage() {
               quantity: i.quantity,
               diamonds: i.pkg.diamonds,
               price: i.pkg.price,
+              ...(i.pkg.offerId ? { offerId: i.pkg.offerId } : {}),
             })),
           }),
         });
@@ -320,7 +323,7 @@ export default function PaymentPage() {
           method: "POST",
           headers,
           credentials: "include",
-          body: JSON.stringify({ packageId: pkg.id, ...basePayload }),
+          body: JSON.stringify({ packageId: pkg.id, ...basePayload, ...(pkg.offerId ? { offerId: pkg.offerId } : {}) }),
         });
         const data = await r.json();
         if (data.ok || data.id) {

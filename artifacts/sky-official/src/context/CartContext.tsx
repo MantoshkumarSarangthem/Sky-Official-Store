@@ -11,6 +11,8 @@ export interface CartPackage {
   gameName?: string | null;
   old_price?: string | null;
   currencyLabel?: string | null;
+  offerId?: number | null;
+  originalPrice?: string | null;
 }
 
 export interface CartItem {

@@ -131,6 +131,8 @@ export default function GameProductsPage() {
   const [showWalletConfirm, setShowWalletConfirm] = useState(false);
   const [cartAdded, setCartAdded] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [activeOffers, setActiveOffers] = useState<Array<{ id: number; name: string; eligibility: string; max_claims: number | null; package_id: number; offer_price: string }>>([]);
+  const [myClaims, setMyClaims] = useState<number[]>([]);
 
   const { addToCart } = useCart();
   const { getToken, isSignedIn } = useAuth();
@@ -168,6 +170,24 @@ export default function GameProductsPage() {
       }
     }).finally(() => setLoading(false));
   }, [gameId, gameCacheKey, pkgCacheKey]);
+
+  useEffect(() => {
+    fetch(`${API}/offers/active`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setActiveOffers(data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isSignedIn) { setMyClaims([]); return; }
+    getToken().then(token => {
+      fetch(`${API}/offers/my-claims`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      }).then(r => r.json()).then(data => {
+        if (Array.isArray(data)) setMyClaims(data);
+      }).catch(() => {});
+    });
+  }, [isSignedIn]);
 
   const currencyLabel = game ? getCurrencyLabel(game.name) : "Currency";
   const isMLBB = game ? isMlbbGame(game.name) : false;
@@ -230,10 +250,12 @@ export default function GameProductsPage() {
         let firstOrderId: number | null = null;
         let firstDisplayId = "";
         for (let i = 0; i < quantity; i++) {
+          const pkgOfferW = activeOffers.find(o => o.package_id === selectedPkg.id);
+          const offerValidW = pkgOfferW && !myClaims.includes(pkgOfferW.id);
           const res = await fetch(`/api/orders/wallet-pay`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ packageId: selectedPkg.id, mlbbUserId: userId.trim(), mlbbServerId: isMLBB ? serverId.trim() : "", mlbbIgn: "", isForFriend: false }),
+            body: JSON.stringify({ packageId: selectedPkg.id, mlbbUserId: userId.trim(), mlbbServerId: isMLBB ? serverId.trim() : "", mlbbIgn: "", isForFriend: false, ...(offerValidW ? { offerId: pkgOfferW!.id } : {}) }),
           });
           const data = await res.json();
           if (!res.ok) {
@@ -271,18 +293,22 @@ export default function GameProductsPage() {
       gameName: game?.name || "",
       currencyLabel,
     });
+    const pkgOffer = activeOffers.find(o => o.package_id === selectedPkg.id);
+    const offerValid = pkgOffer && !myClaims.includes(pkgOffer.id);
     setSelectedPackage({
       id: selectedPkg.id,
       diamonds: selectedPkg.diamonds,
       bonus_diamonds: selectedPkg.bonus_diamonds,
-      price: selectedPkg.price,
-      old_price: selectedPkg.old_price ?? null,
+      price: offerValid ? pkgOffer!.offer_price : selectedPkg.price,
+      old_price: offerValid ? selectedPkg.price : (selectedPkg.old_price ?? null),
       name: selectedPkg.name,
       category: selectedPkg.category,
       image: selectedPkg.image ?? null,
       gameName: game?.name || "",
       currencyLabel,
       gameId: gameId ? Number(gameId) : undefined,
+      offerId: offerValid ? pkgOffer!.id : null,
+      originalPrice: offerValid ? selectedPkg.price : null,
     });
     sessionStorage.setItem("preferredPaymentMethod", paymentMethod);
     if (quantity > 1) sessionStorage.setItem("orderQuantity", String(quantity));
@@ -403,7 +429,14 @@ export default function GameProductsPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {packages.map((pkg, idx) => {
                 const total = pkg.diamonds + (pkg.bonus_diamonds || 0);
-                const hasOldPrice = pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price);
+                const cardOffer = activeOffers.find(o => o.package_id === pkg.id);
+                const cardOfferUsed = cardOffer ? myClaims.includes(cardOffer.id) : false;
+                const cardOfferActive = cardOffer && !cardOfferUsed;
+                const displayPrice = cardOfferActive ? cardOffer!.offer_price : pkg.price;
+                const hasOldPrice = cardOfferActive
+                  ? true
+                  : (pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
+                const oldPriceVal = cardOfferActive ? pkg.price : pkg.old_price;
                 const isSelected = selectedPkgId === pkg.id;
                 const isFav = favorites.includes(pkg.id);
                 const showBadge = pkg.is_popular || (pkg.label && pkg.label !== "");
@@ -428,6 +461,16 @@ export default function GameProductsPage() {
                       WebkitTapHighlightColor: "transparent",
                     }}
                   >
+                    {cardOfferActive && (
+                      <div style={{ position: "absolute", top: 0, right: 0, background: "linear-gradient(135deg,#f59e0b,#ef4444)", color: "#fff", fontSize: 7.5, fontWeight: 900, padding: "3px 8px", borderRadius: "0 16px 0 8px", letterSpacing: "0.06em", zIndex: 2 }}>
+                        OFFER
+                      </div>
+                    )}
+                    {cardOfferUsed && (
+                      <div style={{ position: "absolute", top: 0, right: 0, background: "rgba(61,43,31,0.55)", color: "#fff", fontSize: 7, fontWeight: 800, padding: "3px 7px", borderRadius: "0 16px 0 8px", letterSpacing: "0.04em", zIndex: 2 }}>
+                        OFFER USED
+                      </div>
+                    )}
                     {showBadge && (
                       <div style={{ position: "absolute", top: 0, left: 0, background: pkg.is_popular ? "linear-gradient(135deg,#8b5cf6,#7c3aed)" : "rgba(139,92,246,0.75)", color: "#fff", fontSize: 8, fontWeight: 800, padding: "3px 8px", borderRadius: "16px 0 8px 0", letterSpacing: "0.04em", zIndex: 1 }}>
                         {pkg.is_popular ? "POPULAR" : pkg.label}
@@ -449,8 +492,8 @@ export default function GameProductsPage() {
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        {hasOldPrice && <div style={{ color: "rgba(61,43,31,0.3)", fontSize: 9, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(pkg.old_price!).toFixed(0)}</div>}
-                        <div style={{ color: isSelected ? "#a78bfa" : "#8b5cf6", fontWeight: 800, fontSize: 14, lineHeight: 1.1 }}>₹{parseFloat(pkg.price).toFixed(0)}</div>
+                        {hasOldPrice && <div style={{ color: "rgba(61,43,31,0.3)", fontSize: 9, textDecoration: "line-through", lineHeight: 1 }}>₹{parseFloat(oldPriceVal!).toFixed(0)}</div>}
+                        <div style={{ color: cardOfferActive ? "#ef4444" : (isSelected ? "#a78bfa" : "#8b5cf6"), fontWeight: 800, fontSize: 14, lineHeight: 1.1 }}>₹{parseFloat(displayPrice).toFixed(0)}</div>
                       </div>
                     </div>
 
@@ -459,7 +502,15 @@ export default function GameProductsPage() {
                       <button
                         onClick={e => {
                           e.stopPropagation();
-                          addToCart({ id: pkg.id, diamonds: pkg.diamonds, bonus_diamonds: pkg.bonus_diamonds, price: pkg.price, old_price: pkg.old_price ?? null, name: pkg.name, category: pkg.category, image: pkg.image ?? null, gameName: game?.name || "", currencyLabel });
+                          addToCart({
+                            id: pkg.id, diamonds: pkg.diamonds, bonus_diamonds: pkg.bonus_diamonds,
+                            price: cardOfferActive ? cardOffer!.offer_price : pkg.price,
+                            old_price: cardOfferActive ? pkg.price : (pkg.old_price ?? null),
+                            name: pkg.name, category: pkg.category, image: pkg.image ?? null,
+                            gameName: game?.name || "", currencyLabel,
+                            offerId: cardOfferActive ? cardOffer!.id : null,
+                            originalPrice: cardOfferActive ? pkg.price : null,
+                          });
                           setCartAdded(pkg.id);
                           setTimeout(() => setCartAdded(null), 1800);
                         }}

@@ -1157,4 +1157,118 @@ router.put("/settings/maintenance", requireAdmin, requireSuperAdmin, async (req,
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+// ── Offers CRUD ───────────────────────────────────────────────────────────────
+
+router.get("/offers", requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT o.*,
+             COALESCE(json_agg(
+               json_build_object(
+                 'package_id', op.package_id,
+                 'offer_price', op.offer_price,
+                 'package_name', p.name,
+                 'package_diamonds', p.diamonds,
+                 'package_price', p.price,
+                 'game_name', g.name
+               )
+             ) FILTER (WHERE op.package_id IS NOT NULL), '[]') AS packages
+      FROM offers o
+      LEFT JOIN offer_packages op ON op.offer_id = o.id
+      LEFT JOIN packages p ON p.id = op.package_id
+      LEFT JOIN games g ON g.id = p.game_id
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err: any) {
+    console.error("[admin] GET /offers failed:", err?.message);
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.post("/offers", requireAdmin, async (req, res) => {
+  const { name, description, eligibility, max_claims, is_active, packages } = req.body;
+  if (!name?.trim()) { res.status(400).json({ error: "name is required" }); return; }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const eligVal = eligibility || "first_time";
+    const maxClaims = eligVal === "first_time" && max_claims ? parseInt(max_claims) : null;
+    const { rows } = await client.query(
+      `INSERT INTO offers (name, description, eligibility, max_claims, is_active)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [name.trim(), description?.trim() || null, eligVal, maxClaims, is_active !== false]
+    );
+    const offerId = rows[0].id;
+    for (const pkg of (packages || [])) {
+      await client.query(
+        `INSERT INTO offer_packages (offer_id, package_id, offer_price) VALUES ($1, $2, $3)`,
+        [offerId, pkg.package_id, parseFloat(pkg.offer_price)]
+      );
+    }
+    await client.query("COMMIT");
+    res.json({ ok: true, id: offerId });
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("[admin] POST /offers failed:", err?.message);
+    res.status(500).json({ error: "DB error" });
+  } finally {
+    client.release();
+  }
+});
+
+router.put("/offers/:id", requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { name, description, eligibility, max_claims, is_active, packages } = req.body;
+  if (!name?.trim()) { res.status(400).json({ error: "name is required" }); return; }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const eligVal = eligibility || "first_time";
+    const maxClaims = eligVal === "first_time" && max_claims ? parseInt(max_claims) : null;
+    await client.query(
+      `UPDATE offers SET name=$1, description=$2, eligibility=$3, max_claims=$4, is_active=$5 WHERE id=$6`,
+      [name.trim(), description?.trim() || null, eligVal, maxClaims, is_active !== false, id]
+    );
+    await client.query("DELETE FROM offer_packages WHERE offer_id = $1", [id]);
+    for (const pkg of (packages || [])) {
+      await client.query(
+        `INSERT INTO offer_packages (offer_id, package_id, offer_price) VALUES ($1, $2, $3)`,
+        [id, pkg.package_id, parseFloat(pkg.offer_price)]
+      );
+    }
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("[admin] PUT /offers/:id failed:", err?.message);
+    res.status(500).json({ error: "DB error" });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/offers/:id", requireAdmin, async (req, res) => {
+  try {
+    await pool.query("DELETE FROM offers WHERE id = $1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[admin] DELETE /offers/:id failed:", err?.message);
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.post("/offers/:id/reset-claims", requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query("DELETE FROM claimed_offers WHERE offer_id = $1", [id]);
+    await pool.query("UPDATE offers SET total_claims = 0 WHERE id = $1", [id]);
+    res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[admin] POST /offers/:id/reset-claims failed:", err?.message);
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
 export default router;

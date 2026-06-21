@@ -94,7 +94,7 @@ interface WalletRequest {
   created_at: string;
 }
 
-type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners" | "offer-banners" | "stats" | "access";
+type Tab = "games" | "packages" | "orders" | "wallet" | "staff" | "settings" | "banners" | "offer-banners" | "offers" | "stats" | "access";
 type NotifState = "unknown" | "loading" | "subscribed" | "denied" | "unsupported";
 
 async function registerSW(): Promise<ServiceWorkerRegistration | null> {
@@ -123,7 +123,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [showPwForm, setShowPwForm] = useState(() => !localStorage.getItem(ADMIN_BIO_CRED));
   const [tab, setTab] = useState<Tab>(() => {
     const p = new URLSearchParams(window.location.search).get("tab");
-    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners","offer-banners","stats","access"];
+    const valid: Tab[] = ["games","packages","orders","wallet","staff","settings","banners","offer-banners","offers","stats","access"];
     return (valid.includes(p as Tab) ? p : "packages") as Tab;
   });
   const [packages, setPackages] = useState<Package[]>([]);
@@ -201,6 +201,104 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [offerSelectedGameId, setOfferSelectedGameId] = useState<number | null>(null);
   const [offerGamePkgs, setOfferGamePkgs] = useState<Package[]>([]);
   const [offerPkgLoading, setOfferPkgLoading] = useState(false);
+
+  interface AdminOffer {
+    id: number; name: string; description: string | null; eligibility: string;
+    max_claims: number | null; is_active: boolean; total_claims: number; created_at: string;
+    packages: Array<{ package_id: number; offer_price: string; pkg_name: string | null; pkg_price: string; pkg_diamonds: number; pkg_bonus: number; game_name: string | null; }>;
+  }
+  interface OfferFormPkg { package_id: number; offer_price: string; pkg_name: string | null; pkg_price: string; pkg_diamonds: number; pkg_bonus: number; game_name: string | null; }
+  const [adminOffers, setAdminOffers] = useState<AdminOffer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [offerFormOpen, setOfferFormOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<AdminOffer | null>(null);
+  const [offerForm, setOfferForm] = useState({ name: "", description: "", eligibility: "first_time", max_claims: "", is_active: true });
+  const [offerFormPkgs, setOfferFormPkgs] = useState<OfferFormPkg[]>([]);
+  const [offerPkgSearch, setOfferPkgSearch] = useState("");
+  const [allPkgsForOffer, setAllPkgsForOffer] = useState<Array<{ id: number; name: string | null; price: string; diamonds: number; bonus_diamonds: number; game_name: string; }>>([]);
+  const [offerSaving, setOfferSaving] = useState(false);
+  const [offerDeleting, setOfferDeleting] = useState<number | null>(null);
+  const [offerResetting, setOfferResetting] = useState<number | null>(null);
+
+  const fetchAdminOffers = async () => {
+    setOffersLoading(true);
+    try {
+      const res = await fetch(`${API}/admin/offers`, { headers });
+      if (res.ok) setAdminOffers(await res.json());
+    } catch {} finally { setOffersLoading(false); }
+  };
+
+  const fetchAllPkgsForOffer = async () => {
+    try {
+      const res = await fetch(`${API}/packages`, { headers });
+      if (res.ok) setAllPkgsForOffer(await res.json());
+    } catch {}
+  };
+
+  const openCreateOffer = () => {
+    setEditingOffer(null);
+    setOfferForm({ name: "", description: "", eligibility: "first_time", max_claims: "", is_active: true });
+    setOfferFormPkgs([]);
+    setOfferPkgSearch("");
+    fetchAllPkgsForOffer();
+    setOfferFormOpen(true);
+  };
+
+  const openEditOffer = (offer: AdminOffer) => {
+    setEditingOffer(offer);
+    setOfferForm({ name: offer.name, description: offer.description || "", eligibility: offer.eligibility, max_claims: offer.max_claims != null ? String(offer.max_claims) : "", is_active: offer.is_active });
+    setOfferFormPkgs(offer.packages.map(p => ({ ...p, offer_price: p.offer_price })));
+    setOfferPkgSearch("");
+    fetchAllPkgsForOffer();
+    setOfferFormOpen(true);
+  };
+
+  const saveOffer = async () => {
+    if (!offerForm.name.trim()) return;
+    setOfferSaving(true);
+    try {
+      const body = {
+        name: offerForm.name.trim(),
+        description: offerForm.description.trim() || null,
+        eligibility: offerForm.eligibility,
+        max_claims: offerForm.eligibility === "first_time" && offerForm.max_claims ? Number(offerForm.max_claims) : null,
+        is_active: offerForm.is_active,
+        packages: offerFormPkgs.filter(p => p.offer_price && parseFloat(p.offer_price) > 0).map(p => ({ package_id: p.package_id, offer_price: p.offer_price })),
+      };
+      const url = editingOffer ? `${API}/admin/offers/${editingOffer.id}` : `${API}/admin/offers`;
+      const method = editingOffer ? "PUT" : "POST";
+      const res = await fetch(url, { method, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (res.ok) { setOfferFormOpen(false); await fetchAdminOffers(); }
+    } catch {} finally { setOfferSaving(false); }
+  };
+
+  const deleteOffer = async (id: number) => {
+    if (!confirm("Delete this offer? This cannot be undone.")) return;
+    setOfferDeleting(id);
+    try {
+      await fetch(`${API}/admin/offers/${id}`, { method: "DELETE", headers });
+      await fetchAdminOffers();
+    } catch {} finally { setOfferDeleting(null); }
+  };
+
+  const resetOfferClaims = async (id: number) => {
+    if (!confirm("Reset all claims for this offer? Users will be able to claim it again.")) return;
+    setOfferResetting(id);
+    try {
+      await fetch(`${API}/admin/offers/${id}/reset-claims`, { method: "POST", headers });
+      await fetchAdminOffers();
+    } catch {} finally { setOfferResetting(null); }
+  };
+
+  const toggleOfferActive = async (offer: AdminOffer) => {
+    try {
+      await fetch(`${API}/admin/offers/${offer.id}`, {
+        method: "PUT", headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ ...offer, is_active: !offer.is_active, packages: offer.packages.map(p => ({ package_id: p.package_id, offer_price: p.offer_price })) }),
+      });
+      await fetchAdminOffers();
+    } catch {}
+  };
 
   interface PromoBannerAdmin { id: string; image: string; link: string; active: boolean; }
   const [promoBanners, setPromoBanners] = useState<PromoBannerAdmin[]>([]);
@@ -931,6 +1029,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (authed && tab === "staff") { fetchStaff(); fetchAdminStatus(); }
     if (authed && tab === "banners") fetchPromoBanners();
     if (authed && tab === "offer-banners") { fetchDailyOfferIds(); fetchGames(); }
+    if (authed && tab === "offers") fetchAdminOffers();
     if (authed && (tab === "games" || tab === "packages")) fetchGames();
     if (authed && tab === "access" && isSuperAdmin) fetchAdminTokens();
   }, [authed, tab]);
@@ -1449,7 +1548,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
             >
               {([
                 "games", "packages", "orders", "wallet", "staff",
-                "banners", "offer-banners", "settings", "stats",
+                "banners", "offer-banners", "offers", "settings", "stats",
                 ...(isSuperAdmin ? ["access"] : [])
               ] as Tab[]).map((t) => {
                 const pendingCount = t === "wallet" ? walletRequests.filter(r => r.status === "pending").length : 0;
@@ -1465,7 +1564,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         : { color: "#9ca3af" }),
                     }}
                   >
-                    {t === "stats" ? "Store Stats" : t === "offer-banners" ? "Offer Banners" : t === "access" ? "🔑 Access" : t}
+                    {t === "stats" ? "Store Stats" : t === "offer-banners" ? "Offer Banners" : t === "offers" ? "Offers" : t === "access" ? "🔑 Access" : t}
                     {pendingCount > 0 && (
                       <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#ef4444", color: "#fff", fontSize: 10 }}>{pendingCount}</span>
                     )}
@@ -3014,6 +3113,177 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       <div>❌ Cannot create or revoke access tokens</div>
                       <div>❌ Cannot see this Access tab</div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {tab === "offers" && (
+                <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+                  <div style={{ flexShrink: 0, padding: "16px 20px 12px", background: "#111", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <div className="text-amber-400 text-sm font-bold">Offers / Promotions</div>
+                      <div className="text-gray-500 text-xs mt-0.5">Create limited-time discounts on specific packages. Eligibility rules control who can claim each offer.</div>
+                    </div>
+                    <button onClick={openCreateOffer} className="px-4 py-2 rounded-lg text-xs font-bold" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)", color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
+                      + New Offer
+                    </button>
+                  </div>
+
+                  {/* Offer form modal */}
+                  {offerFormOpen && (
+                    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setOfferFormOpen(false)}>
+                      <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                        <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div className="text-white text-sm font-bold">{editingOffer ? "Edit Offer" : "Create Offer"}</div>
+                          <button onClick={() => setOfferFormOpen(false)} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 18, cursor: "pointer" }}>×</button>
+                        </div>
+                        <div style={{ overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                          <div>
+                            <label className="text-gray-400 text-xs font-semibold block mb-1">Offer Name *</label>
+                            <input value={offerForm.name} onChange={e => setOfferForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. First-Time Buyer Deal" className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                          </div>
+                          <div>
+                            <label className="text-gray-400 text-xs font-semibold block mb-1">Description (optional)</label>
+                            <input value={offerForm.description} onChange={e => setOfferForm(f => ({ ...f, description: e.target.value }))} placeholder="Short description shown to users" className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                          </div>
+                          <div>
+                            <label className="text-gray-400 text-xs font-semibold block mb-1">Eligibility</label>
+                            <select value={offerForm.eligibility} onChange={e => setOfferForm(f => ({ ...f, eligibility: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+                              <option value="first_time">First-time buyers only (never placed an order)</option>
+                              <option value="all_once">All users — one-time each</option>
+                              <option value="unlimited">Unlimited (anyone, no restriction)</option>
+                            </select>
+                          </div>
+                          {offerForm.eligibility === "first_time" && (
+                            <div>
+                              <label className="text-gray-400 text-xs font-semibold block mb-1">Max Total Claims (leave blank for unlimited)</label>
+                              <input type="number" min="1" value={offerForm.max_claims} onChange={e => setOfferForm(f => ({ ...f, max_claims: e.target.value }))} placeholder="e.g. 50" className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                            </div>
+                          )}
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <label className="text-gray-400 text-xs font-semibold">Active</label>
+                            <button onClick={() => setOfferForm(f => ({ ...f, is_active: !f.is_active }))} style={{ width: 40, height: 22, borderRadius: 11, background: offerForm.is_active ? "#22c55e" : "#374151", border: "none", cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
+                              <span style={{ position: "absolute", top: 2, left: offerForm.is_active ? 20 : 2, width: 18, height: 18, background: "#fff", borderRadius: "50%", transition: "left 0.2s" }} />
+                            </button>
+                          </div>
+
+                          {/* Package selection */}
+                          <div>
+                            <label className="text-gray-400 text-xs font-semibold block mb-2">Packages with Offer Price</label>
+                            <input value={offerPkgSearch} onChange={e => setOfferPkgSearch(e.target.value)} placeholder="Search packages..." className="w-full px-3 py-2 rounded-lg text-white text-xs outline-none mb-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} />
+                            <div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                              {allPkgsForOffer
+                                .filter(p => {
+                                  const q = offerPkgSearch.toLowerCase();
+                                  return !q || (p.name || "").toLowerCase().includes(q) || p.game_name.toLowerCase().includes(q) || String(p.diamonds).includes(q);
+                                })
+                                .filter(p => !offerFormPkgs.find(fp => fp.package_id === p.id))
+                                .slice(0, 30)
+                                .map(p => (
+                                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "rgba(255,255,255,0.04)", borderRadius: 8 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div className="text-white text-xs font-semibold truncate">{p.name || `${p.diamonds + p.bonus_diamonds} Diamonds`}</div>
+                                      <div className="text-gray-500 text-xs">{p.game_name} · ₹{parseFloat(p.price).toFixed(0)}</div>
+                                    </div>
+                                    <button onClick={() => setOfferFormPkgs(prev => [...prev, { package_id: p.id, offer_price: "", pkg_name: p.name, pkg_price: p.price, pkg_diamonds: p.diamonds, pkg_bonus: p.bonus_diamonds, game_name: p.game_name }])} style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", color: "#f59e0b", borderRadius: 6, padding: "3px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                      Add
+                                    </button>
+                                  </div>
+                                ))}
+                            </div>
+
+                            {offerFormPkgs.length > 0 && (
+                              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+                                <div className="text-gray-400 text-xs font-semibold mb-1">Selected Packages</div>
+                                {offerFormPkgs.map((fp, i) => (
+                                  <div key={fp.package_id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div className="text-white text-xs font-semibold truncate">{fp.pkg_name || `${fp.pkg_diamonds + fp.pkg_bonus} Diamonds`}</div>
+                                      <div className="text-gray-500 text-xs">{fp.game_name} · reg ₹{parseFloat(fp.pkg_price).toFixed(0)}</div>
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                      <span className="text-gray-400 text-xs">₹</span>
+                                      <input
+                                        type="number" min="1" step="0.01"
+                                        placeholder="Offer price"
+                                        value={fp.offer_price}
+                                        onChange={e => setOfferFormPkgs(prev => prev.map((p, j) => j === i ? { ...p, offer_price: e.target.value } : p))}
+                                        style={{ width: 80, background: "#111", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#fff", fontSize: 12, padding: "3px 6px", outline: "none" }}
+                                      />
+                                    </div>
+                                    <button onClick={() => setOfferFormPkgs(prev => prev.filter((_, j) => j !== i))} style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", borderRadius: 6, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 14 }}>×</button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 10 }}>
+                          <button onClick={() => setOfferFormOpen(false)} className="flex-1 py-2.5 rounded-lg text-sm font-semibold" style={{ background: "rgba(255,255,255,0.07)", color: "#9ca3af", border: "none", cursor: "pointer" }}>Cancel</button>
+                          <button onClick={saveOffer} disabled={offerSaving || !offerForm.name.trim()} className="flex-1 py-2.5 rounded-lg text-sm font-bold" style={{ background: offerSaving || !offerForm.name.trim() ? "#374151" : "linear-gradient(135deg,#f59e0b,#ef4444)", color: "#fff", border: "none", cursor: offerSaving ? "not-allowed" : "pointer" }}>
+                            {offerSaving ? "Saving…" : editingOffer ? "Save Changes" : "Create Offer"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Offers list */}
+                  <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                    {offersLoading ? (
+                      <div className="text-gray-500 text-sm text-center py-10">Loading offers…</div>
+                    ) : adminOffers.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                        <div style={{ fontSize: 32, marginBottom: 8 }}>🏷️</div>
+                        <div className="text-gray-400 text-sm font-semibold">No offers yet</div>
+                        <div className="text-gray-600 text-xs mt-1">Create your first offer to give discounts to eligible users.</div>
+                      </div>
+                    ) : adminOffers.map(offer => (
+                      <div key={offer.id} style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${offer.is_active ? "rgba(245,158,11,0.25)" : "rgba(255,255,255,0.08)"}`, borderRadius: 14, padding: 16 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span className="text-white text-sm font-bold">{offer.name}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: offer.is_active ? "rgba(34,197,94,0.15)" : "rgba(107,114,128,0.2)", color: offer.is_active ? "#4ade80" : "#6b7280" }}>
+                                {offer.is_active ? "ACTIVE" : "INACTIVE"}
+                              </span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: "rgba(139,92,246,0.15)", color: "#a78bfa" }}>
+                                {offer.eligibility === "first_time" ? "1st-time only" : offer.eligibility === "all_once" ? "All · once" : "Unlimited"}
+                              </span>
+                            </div>
+                            {offer.description && <div className="text-gray-500 text-xs mt-0.5">{offer.description}</div>}
+                            <div className="text-gray-500 text-xs mt-1">
+                              {offer.total_claims} claim{offer.total_claims !== 1 ? "s" : ""}
+                              {offer.max_claims != null ? ` / ${offer.max_claims} max` : ""}
+                              {" · "}{offer.packages.length} package{offer.packages.length !== 1 ? "s" : ""}
+                            </div>
+                            {offer.packages.length > 0 && (
+                              <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                {offer.packages.map(p => (
+                                  <span key={p.package_id} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)" }}>
+                                    {p.pkg_name || `${p.pkg_diamonds + p.pkg_bonus}💎`} · ₹{parseFloat(p.offer_price).toFixed(0)} <span style={{ color: "rgba(245,158,11,0.5)", textDecoration: "line-through" }}>₹{parseFloat(p.pkg_price).toFixed(0)}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+                          <button onClick={() => toggleOfferActive(offer)} style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 8, background: offer.is_active ? "rgba(107,114,128,0.15)" : "rgba(34,197,94,0.12)", color: offer.is_active ? "#9ca3af" : "#4ade80", border: `1px solid ${offer.is_active ? "rgba(107,114,128,0.25)" : "rgba(34,197,94,0.25)"}`, cursor: "pointer" }}>
+                            {offer.is_active ? "Deactivate" : "Activate"}
+                          </button>
+                          <button onClick={() => openEditOffer(offer)} style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 8, background: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "1px solid rgba(139,92,246,0.25)", cursor: "pointer" }}>
+                            Edit
+                          </button>
+                          <button onClick={() => resetOfferClaims(offer.id)} disabled={offerResetting === offer.id} style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 8, background: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.25)", cursor: "pointer" }}>
+                            {offerResetting === offer.id ? "Resetting…" : "Reset Claims"}
+                          </button>
+                          <button onClick={() => deleteOffer(offer.id)} disabled={offerDeleting === offer.id} style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer" }}>
+                            {offerDeleting === offer.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

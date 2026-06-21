@@ -8,6 +8,7 @@ import verifyRouter from "./verify";
 import pushRouter from "./push";
 import notificationsRouter from "./notifications";
 import leaderboardRouter from "./leaderboard";
+import offersRouter from "./offers";
 import pool from "../lib/db";
 import { sendInquiryEmail } from "../lib/email";
 import { createClerkClient } from "@clerk/express";
@@ -23,6 +24,7 @@ router.use("/verify", verifyRouter);
 router.use("/push", pushRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/leaderboard", leaderboardRouter);
+router.use("/offers", offersRouter);
 
 router.get("/settings/category_popular", async (_req, res) => {
   try {
@@ -177,13 +179,13 @@ router.get("/settings/maintenance", async (_req, res) => {
 router.get("/packages", async (req, res) => {
   try {
     const gameId = req.query.game_id ? parseInt(req.query.game_id as string, 10) : null;
-    let query = "SELECT * FROM packages";
+    let query = "SELECT p.*, g.name AS game_name FROM packages p LEFT JOIN games g ON g.id = p.game_id";
     const params: unknown[] = [];
     if (gameId && !isNaN(gameId)) {
-      query += " WHERE game_id = $1";
+      query += " WHERE p.game_id = $1";
       params.push(gameId);
     }
-    query += " ORDER BY sort_order ASC, diamonds ASC";
+    query += " ORDER BY p.sort_order ASC, p.diamonds ASC";
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch {

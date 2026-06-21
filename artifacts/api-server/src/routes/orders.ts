@@ -44,6 +44,70 @@ async function assignAvailableStaff(): Promise<number | null> {
   return staffList[assignedIdx].id;
 }
 
+interface OfferResult {
+  offerId: number;
+  offerPrice: string;
+  eligibility: string;
+}
+
+async function resolveOffer(
+  client: { query: (...args: any[]) => Promise<any> },
+  offerId: number,
+  packageId: number,
+  clerkUserId: string
+): Promise<OfferResult | null> {
+  const { rows } = await client.query(
+    `SELECT o.id, o.eligibility, o.max_claims, o.total_claims, o.is_active, op.offer_price
+     FROM offers o
+     JOIN offer_packages op ON op.offer_id = o.id AND op.package_id = $2
+     WHERE o.id = $1`,
+    [offerId, packageId]
+  );
+  if (!rows[0]) return null;
+  const offer = rows[0];
+  if (!offer.is_active) return null;
+  if (offer.max_claims !== null && parseInt(offer.total_claims) >= offer.max_claims) return null;
+
+  if (offer.eligibility === "first_time") {
+    const { rows: prevOrders } = await client.query(
+      "SELECT 1 FROM orders WHERE clerk_user_id = $1 AND status != 'cancelled' LIMIT 1",
+      [clerkUserId]
+    );
+    if (prevOrders.length > 0) return null;
+    const { rows: claimed } = await client.query(
+      "SELECT 1 FROM claimed_offers WHERE offer_id = $1 AND user_id = $2",
+      [offerId, clerkUserId]
+    );
+    if (claimed.length > 0) return null;
+  } else if (offer.eligibility === "all_once") {
+    const { rows: claimed } = await client.query(
+      "SELECT 1 FROM claimed_offers WHERE offer_id = $1 AND user_id = $2",
+      [offerId, clerkUserId]
+    );
+    if (claimed.length > 0) return null;
+  }
+
+  return { offerId, offerPrice: parseFloat(offer.offer_price).toFixed(2), eligibility: offer.eligibility };
+}
+
+async function recordOfferClaim(
+  client: { query: (...args: any[]) => Promise<any> },
+  offerId: number,
+  userId: string,
+  eligibility: string
+) {
+  if (eligibility !== "unlimited") {
+    await client.query(
+      "INSERT INTO claimed_offers (offer_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      [offerId, userId]
+    );
+  }
+  await client.query(
+    "UPDATE offers SET total_claims = total_claims + 1 WHERE id = $1",
+    [offerId]
+  );
+}
+
 function fireNotifications(displayId: string, orderId: number, _staffId: number | null, pkg: { diamonds: number; price: string }, mlbbId: string | null, remark: string | null, _extra: { serverId: string | null; ign: string | null; isForFriend: boolean }) {
   const diamonds = Number(pkg.diamonds).toLocaleString("en-IN");
   const price = parseFloat(pkg.price).toFixed(0);
@@ -85,29 +149,45 @@ router.get("/my", requireAuth, async (req: any, res): Promise<void> => {
 router.post("/", requireAuth, async (req: any, res): Promise<void> => {
   console.log("[notify] ORDER_API_HIT — POST /api/orders");
   const clerkUserId = req.clerkUserId as string;
-  const { packageId, refId, remark, mlbbUserId, mlbbServerId, mlbbIgn, isForFriend } = req.body;
+  const { packageId, refId, remark, mlbbUserId, mlbbServerId, mlbbIgn, isForFriend, offerId } = req.body;
 
   if (!packageId) {
     res.status(400).json({ ok: false, error: "packageId is required." });
     return;
   }
 
+  const client = await pool.connect();
   try {
-    const { rows: pkgs } = await pool.query(
+    await client.query("BEGIN");
+
+    const { rows: pkgs } = await client.query(
       "SELECT id, diamonds, price FROM packages WHERE id = $1",
       [packageId]
     );
     if (pkgs.length === 0) {
+      await client.query("ROLLBACK");
       res.status(404).json({ ok: false, error: "Package not found." });
       return;
     }
     const pkg = pkgs[0];
 
+    let finalPrice = pkg.price;
+    let appliedOffer: OfferResult | null = null;
+    if (offerId) {
+      appliedOffer = await resolveOffer(client, parseInt(offerId), pkg.id, clerkUserId);
+      if (!appliedOffer) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ ok: false, error: "This offer is no longer available or you have already used it." });
+        return;
+      }
+      finalPrice = appliedOffer.offerPrice;
+    }
+
     let mlbbId = mlbbUserId || null;
     let serverId = mlbbServerId || null;
     let ign = mlbbIgn || null;
     if (!mlbbId) {
-      const { rows: accounts } = await pool.query(
+      const { rows: accounts } = await client.query(
         "SELECT mlbb_user_id, mlbb_server_id, mlbb_ign FROM mlbb_accounts WHERE clerk_user_id = $1",
         [clerkUserId]
       );
@@ -125,23 +205,32 @@ router.post("/", requireAuth, async (req: any, res): Promise<void> => {
     const displayId = await getNextDisplayId();
     const staffId = await assignAvailableStaff();
 
-    const { rows: inserted } = await pool.query(
+    const { rows: inserted } = await client.query(
       `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign, is_for_friend, status, note, display_id, assigned_staff_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11)
        RETURNING id`,
-      [clerkUserId, pkg.id, pkg.diamonds, pkg.price, mlbbId, serverId, ign, isForFriend || false, note, displayId, staffId]
+      [clerkUserId, pkg.id, pkg.diamonds, finalPrice, mlbbId, serverId, ign, isForFriend || false, note, displayId, staffId]
     );
 
     const orderId = inserted[0].id;
-    console.log(`[notify] ORDER_SAVED — id: ${orderId}, displayId: ${displayId}, staffId: ${staffId ?? "none"}`);
 
+    if (appliedOffer) {
+      await recordOfferClaim(client, appliedOffer.offerId, clerkUserId, appliedOffer.eligibility);
+    }
+
+    await client.query("COMMIT");
+
+    console.log(`[notify] ORDER_SAVED — id: ${orderId}, displayId: ${displayId}, staffId: ${staffId ?? "none"}${appliedOffer ? `, offer: ${appliedOffer.offerId}` : ""}`);
     res.json({ ok: true, id: orderId, displayId });
 
-    fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: pkg.price }, mlbbId, remark ?? null, { serverId, ign, isForFriend: isForFriend || false });
+    fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: finalPrice }, mlbbId, remark ?? null, { serverId, ign, isForFriend: isForFriend || false });
 
   } catch (err: any) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error("[orders] POST / failed:", err?.message, err?.stack);
     res.status(500).json({ ok: false, error: "DB error. Please try again." });
+  } finally {
+    client.release();
   }
 });
 
@@ -178,22 +267,34 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
     const staffId = await assignAvailableStaff();
 
     for (const item of items) {
-      const { packageId, quantity = 1 } = item;
+      const { packageId, quantity = 1, offerId: itemOfferId } = item;
       const { rows: pkgs } = await pool.query(
         "SELECT id, diamonds, price FROM packages WHERE id = $1", [packageId]
       );
       if (!pkgs[0]) continue;
       const pkg = pkgs[0];
+
+      let finalPrice = pkg.price;
+      let appliedOffer: OfferResult | null = null;
+      if (itemOfferId) {
+        appliedOffer = await resolveOffer(pool as any, parseInt(itemOfferId), pkg.id, clerkUserId);
+        if (appliedOffer) finalPrice = appliedOffer.offerPrice;
+      }
+
       for (let q = 0; q < quantity; q++) {
         const note = noteBase ? noteBase + friendNote : friendNote || null;
         const displayId = await getNextDisplayId();
         const { rows: inserted } = await pool.query(
           `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign, is_for_friend, status, note, display_id, assigned_staff_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11) RETURNING id`,
-          [clerkUserId, pkg.id, pkg.diamonds, pkg.price, mlbbId, serverId, ign, isForFriend || false, note, displayId, staffId]
+          [clerkUserId, pkg.id, pkg.diamonds, finalPrice, mlbbId, serverId, ign, isForFriend || false, note, displayId, staffId]
         );
         orderIds.push(inserted[0].id);
         displayIds.push(displayId);
+      }
+
+      if (appliedOffer) {
+        await recordOfferClaim(pool as any, appliedOffer.offerId, clerkUserId, appliedOffer.eligibility);
       }
     }
 
@@ -227,7 +328,7 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
 router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => {
   console.log("[notify] ORDER_API_HIT — POST /api/orders/wallet-pay");
   const clerkUserId = req.clerkUserId as string;
-  const { packageId, mlbbUserId, mlbbServerId, mlbbIgn, isForFriend } = req.body;
+  const { packageId, mlbbUserId, mlbbServerId, mlbbIgn, isForFriend, offerId } = req.body;
 
   if (!packageId) {
     res.status(400).json({ ok: false, error: "packageId is required." });
@@ -248,7 +349,20 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
       return;
     }
     const pkg = pkgs[0];
-    const price = parseFloat(pkg.price);
+
+    let finalPriceStr = pkg.price;
+    let appliedOffer: OfferResult | null = null;
+    if (offerId) {
+      appliedOffer = await resolveOffer(client, parseInt(offerId), pkg.id, clerkUserId);
+      if (!appliedOffer) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ ok: false, error: "This offer is no longer available or you have already used it." });
+        return;
+      }
+      finalPriceStr = appliedOffer.offerPrice;
+    }
+
+    const price = parseFloat(finalPriceStr);
 
     const { rows: wallets } = await client.query(
       "SELECT balance FROM wallets WHERE clerk_user_id = $1 FOR UPDATE",
@@ -290,13 +404,17 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
     const { rows: inserted } = await client.query(
       `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign, is_for_friend, status, note, display_id, assigned_staff_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'Paid via wallet', $9, $10) RETURNING id`,
-      [clerkUserId, pkg.id, pkg.diamonds, pkg.price, mlbbId, serverId, ign, isForFriend || false, displayId, staffId]
+      [clerkUserId, pkg.id, pkg.diamonds, finalPriceStr, mlbbId, serverId, ign, isForFriend || false, displayId, staffId]
     );
+
+    if (appliedOffer) {
+      await recordOfferClaim(client, appliedOffer.offerId, clerkUserId, appliedOffer.eligibility);
+    }
 
     await client.query("COMMIT");
 
     const orderId = inserted[0].id;
-    console.log(`[notify] WALLET_ORDER_SAVED — id: ${orderId}, displayId: ${displayId}`);
+    console.log(`[notify] WALLET_ORDER_SAVED — id: ${orderId}, displayId: ${displayId}${appliedOffer ? `, offer: ${appliedOffer.offerId}` : ""}`);
     res.json({ ok: true, id: orderId, displayId });
 
     const pkgName = pkg.name || `${pkg.diamonds} Diamonds`;
@@ -307,7 +425,7 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
       `₹${price.toFixed(0)} was deducted from your wallet for "${pkgName}" (${pkg.diamonds} diamonds). Order ID: ${displayId}.`
     );
 
-    fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: pkg.price }, mlbbId, "Wallet payment", { serverId, ign, isForFriend: isForFriend || false });
+    fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: finalPriceStr }, mlbbId, "Wallet payment", { serverId, ign, isForFriend: isForFriend || false });
 
   } catch (err: any) {
     await client.query("ROLLBACK").catch(() => {});
