@@ -121,7 +121,24 @@ router.get("/settings/daily_offer_packages", async (_req, res) => {
     const ids: number[] = JSON.parse(settRows[0]?.value || "[]");
     if (ids.length === 0) return res.json([]);
     const { rows } = await pool.query(
-      `SELECT p.*, g.name as game_name FROM packages p LEFT JOIN games g ON p.game_id = g.id WHERE p.id = ANY($1::int[]) ORDER BY array_position($1::int[], p.id)`,
+      `SELECT
+         p.id, p.name, p.diamonds, p.bonus_diamonds, p.category, p.label,
+         p.status, p.image, p.is_popular, p.sort_order, p.currency_label, p.game_id,
+         g.name AS game_name,
+         CASE WHEN oa.offer_price IS NOT NULL THEN oa.offer_price::text ELSE p.price::text END AS price,
+         CASE WHEN oa.offer_price IS NOT NULL THEN p.price::text ELSE p.old_price::text END AS old_price
+       FROM packages p
+       LEFT JOIN games g ON g.id = p.game_id
+       LEFT JOIN (
+         SELECT DISTINCT ON (op.package_id) op.package_id, op.offer_price
+         FROM offer_packages op
+         JOIN offers o ON o.id = op.offer_id
+         WHERE o.is_active = true
+           AND (o.max_claims IS NULL OR o.total_claims < o.max_claims)
+         ORDER BY op.package_id, o.created_at DESC
+       ) oa ON oa.package_id = p.id
+       WHERE p.id = ANY($1::int[])
+       ORDER BY array_position($1::int[], p.id)`,
       [ids]
     );
     res.json(rows);
