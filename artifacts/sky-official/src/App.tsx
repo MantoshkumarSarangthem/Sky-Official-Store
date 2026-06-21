@@ -1325,11 +1325,11 @@ function Footer() {
         </div>
         <div className="flex items-center gap-3 mt-1">
           {[
-            { label: "Terms of Service", to: "/terms" },
-            { label: "Privacy Policy",   to: "/privacy" },
-            { label: "Refund Policy",    to: "/refund" },
+            { label: "Terms & Conditions", to: "/terms" },
+            { label: "Privacy Policy",     to: "/privacy" },
+            { label: "Refund Policy",      to: "/refund" },
           ].map(({ label, to }) => (
-            <button key={to} onClick={() => setLocation(to)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "rgba(255,255,255,0.45)", fontSize: 9.5 }}>
+            <button key={to} onClick={() => setLocation(to)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "rgba(255,255,255,0.55)", fontSize: 9.5, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: "rgba(255,255,255,0.25)" }}>
               {label}
             </button>
           ))}
@@ -2099,8 +2099,8 @@ function PolicyPage({ title, children }: { title: string; children: React.ReactN
 
 function TermsPage() {
   return (
-    <PolicyPage title="Terms of Service">
-      <h2 style={{ color: "#A89482", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Terms of Service</h2>
+    <PolicyPage title="Terms & Conditions">
+      <h2 style={{ color: "#A89482", fontWeight: 800, fontSize: 18, margin: "0 0 12px" }}>Terms & Conditions</h2>
       <p style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginBottom: 20 }}>Last updated: June 2026</p>
 
       <p>By using Sky Official, you agree to the following terms. Please read them carefully before making any purchase.</p>
