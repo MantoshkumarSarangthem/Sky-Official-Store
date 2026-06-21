@@ -126,7 +126,7 @@ router.get("/settings/daily_offer_packages", async (_req, res) => {
          p.status, p.image, p.is_popular, p.sort_order, p.currency_label, p.game_id,
          g.name AS game_name,
          CASE WHEN oa.offer_price IS NOT NULL THEN oa.offer_price::text ELSE p.price::text END AS price,
-         CASE WHEN oa.offer_price IS NOT NULL THEN p.price::text ELSE p.old_price::text END AS old_price,
+         CASE WHEN oa.offer_price IS NOT NULL THEN COALESCE(p.old_price::text, p.price::text) ELSE p.old_price::text END AS old_price,
          (oa.offer_price IS NOT NULL) AS has_offer
        FROM packages p
        LEFT JOIN games g ON g.id = p.game_id
