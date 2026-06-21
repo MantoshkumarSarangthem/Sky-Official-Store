@@ -701,10 +701,12 @@ function isVidSrc(src: string) {
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(src) || src.startsWith("data:video/");
 }
 
+let _savedBannerIdx = 0;
+
 function PromoBannerSlider() {
   const bannerCacheKey = `${API}/settings/promo_banners`;
   const [banners, setBanners] = useState<PromoBannerItem[]>(() => getCached<PromoBannerItem[]>(bannerCacheKey) ?? []);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(_savedBannerIdx);
   const touchStartX = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
@@ -713,6 +715,7 @@ function PromoBannerSlider() {
   const [, setLocation] = useLocation();
 
   useEffect(() => { liveRef.current = { banners, activeIdx }; }, [banners, activeIdx]);
+  useEffect(() => { _savedBannerIdx = activeIdx; }, [activeIdx]);
 
   const fetchBanners = useCallback((force = false) => {
     if (force) invalidateCache(bannerCacheKey);
@@ -1746,6 +1749,8 @@ function DailyOfferCard({ pkg, onClick }: { pkg: DailyOfferPkg; onClick?: () => 
   );
 }
 
+let _savedDailyOfferIdx = 0;
+
 function DailyOfferSection() {
   const [, setLocation] = useLocation();
   const cacheKey = `${API}/settings/daily_offer_packages`;
@@ -1756,7 +1761,7 @@ function DailyOfferSection() {
     sessionStorage.setItem("pendingSelectPkgId", String(pkg.id));
     setLocation(`/game/${pkg.game_id}`);
   };
-  const [headIdx, setHeadIdx] = useState(0);
+  const [headIdx, setHeadIdx] = useState(_savedDailyOfferIdx);
   const rowRef  = useRef<HTMLDivElement>(null);
   const ref0    = useRef<HTMLDivElement>(null);
   const ref1    = useRef<HTMLDivElement>(null);
@@ -1778,6 +1783,8 @@ function DailyOfferSection() {
     window.addEventListener("skyAdminUpdate", onUpdate);
     return () => window.removeEventListener("skyAdminUpdate", onUpdate);
   }, [cacheKey]);
+
+  useEffect(() => { _savedDailyOfferIdx = headIdx; }, [headIdx]);
 
   useEffect(() => {
     const n = pkgs.length;
