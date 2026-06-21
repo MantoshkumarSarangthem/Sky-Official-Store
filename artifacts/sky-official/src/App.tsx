@@ -723,6 +723,10 @@ function PromoBannerSlider() {
       .catch(() => {});
   }, [bannerCacheKey]);
 
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+  }, []);
+
   useEffect(() => {
     fetchBanners();
     const onAdminUpdate = () => fetchBanners(true);
@@ -762,10 +766,6 @@ function PromoBannerSlider() {
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [fetchBanners]);
-
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-  }, []);
 
   // Called both by onEnded (video) and setTimeout (image)
   const doAdvance = useCallback(() => {
