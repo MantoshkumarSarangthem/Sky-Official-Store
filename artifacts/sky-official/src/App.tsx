@@ -951,8 +951,8 @@ function GameSelectSection() {
   const PANEL_GLOW = { glow: "rgba(139,92,246,0.12)", border: "rgba(168,85,247,0.18)", icon: "rgba(168,85,247,0.5)" };
 
   return (
-    <section style={{ background: "#FAF9F6", padding: "28px 16px 28px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+    <section style={{ background: "#FAF9F6", padding: "20px 16px 28px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
         <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#7F00FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 6H3a1 1 0 00-1 1v10a1 1 0 001 1h18a1 1 0 001-1V7a1 1 0 00-1-1zM7 12H5m2 0H5m2 0v-2m0 2v2M17 10l1 1 2-2" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
@@ -1819,12 +1819,12 @@ function DailyOfferSection() {
   const s = SCALE_SMALL;
 
   return (
-    <section style={{ padding: "4px 0 4px" }}>
+    <section style={{ padding: "0 0 4px" }}>
       <style>{`
         @keyframes doFadeIn { from { opacity: 0 } to { opacity: 1 } }
         .daily-s2-enter { animation: doFadeIn 0.42s ease forwards; }
       `}</style>
-      <div style={{ padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ padding: "0 16px 16px", display: "flex", alignItems: "center", gap: 8 }}>
         <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#7F00FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
             <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.3L12 17l-6.2 4.2 2.4-7.3L2 9.4h7.6z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
