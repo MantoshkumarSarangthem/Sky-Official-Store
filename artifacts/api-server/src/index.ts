@@ -217,12 +217,13 @@ async function initDb() {
 
   // Step 3: Create indexes for frequently queried columns (safe, idempotent)
   await pool.query(`
-    CREATE INDEX IF NOT EXISTS idx_orders_clerk_user_id ON orders(clerk_user_id);
     CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_wallet_tx_clerk_user_id ON wallet_transactions(clerk_user_id);
     CREATE INDEX IF NOT EXISTS idx_wallet_tx_created_at ON wallet_transactions(created_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_notifications_clerk_user_id ON user_notifications(clerk_user_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON user_notifications(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_orders_user_date ON orders(clerk_user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_wallet_tx_user_date ON wallet_transactions(clerk_user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_date ON user_notifications(clerk_user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_orders_user_status ON orders(clerk_user_id, status);
   `);
 }
 
