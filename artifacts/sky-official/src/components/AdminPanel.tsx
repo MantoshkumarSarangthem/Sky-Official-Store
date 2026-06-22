@@ -612,6 +612,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
   // Push notifications
   const [notifState, setNotifState] = useState<NotifState>("unknown");
+  const [notifError, setNotifError] = useState<string | null>(null);
   const swRegRef = useRef<ServiceWorkerRegistration | null>(null);
 
   const token = sessionStorage.getItem("admin_token") || "";
@@ -638,6 +639,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
   const enableNotifications = async () => {
     setNotifState("loading");
+    setNotifError(null);
     try {
       const reg = await registerSW();
       if (!reg) { setNotifState("unsupported"); return; }
@@ -646,14 +648,33 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const permission = await Notification.requestPermission();
       if (permission !== "granted") { setNotifState("denied"); return; }
 
-      const keyRes = await fetch(`${API}/push/vapid-public-key`);
-      const { publicKey } = await keyRes.json();
-      if (!publicKey) { setNotifState("unknown"); return; }
+      let publicKey: string | null = null;
+      try {
+        const keyRes = await fetch(`${API}/push/vapid-public-key`);
+        const json = await keyRes.json();
+        publicKey = json.publicKey ?? null;
+      } catch {
+        setNotifState("unknown");
+        setNotifError("Could not reach server — check your connection.");
+        return;
+      }
+      if (!publicKey) {
+        setNotifState("unknown");
+        setNotifError("Push key not configured on server. Check VAPID env vars.");
+        return;
+      }
 
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
+      let sub: PushSubscription;
+      try {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+      } catch (e: any) {
+        setNotifState("unknown");
+        setNotifError(e?.message?.includes("key") ? "VAPID key mismatch — regenerate keys." : "Subscription failed. Try reloading.");
+        return;
+      }
 
       await fetch(`${API}/push/subscribe`, {
         method: "POST",
@@ -661,9 +682,11 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
         body: JSON.stringify(sub.toJSON()),
       });
 
+      setNotifError(null);
       setNotifState("subscribed");
     } catch {
       setNotifState("unknown");
+      setNotifError("Unexpected error. Try again.");
     }
   };
 
@@ -1385,13 +1408,20 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       </button>
     );
     return (
-      <button
-        onClick={enableNotifications}
-        className="flex items-center gap-1.5 text-xs font-bold transition-all"
-        style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(245,158,11,0.10)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)", flexShrink: 0 }}
-      >
-        <span>🔕</span> Enable Notifs
-      </button>
+      <div className="flex flex-col items-end gap-1">
+        <button
+          onClick={enableNotifications}
+          className="flex items-center gap-1.5 text-xs font-bold transition-all"
+          style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(245,158,11,0.10)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.25)", flexShrink: 0 }}
+        >
+          <span>🔕</span> Enable Notifs
+        </button>
+        {notifError && (
+          <span style={{ fontSize: 10, color: "#f87171", maxWidth: 180, textAlign: "right", lineHeight: 1.3 }}>
+            {notifError}
+          </span>
+        )}
+      </div>
     );
   };
 

@@ -2695,7 +2695,7 @@ export default function App() {
     <WouterRouter base={basePath}>
       <CartProvider>
         <div style={{ background: "#0d0d0d", minHeight: "100vh", overflowX: "hidden" }}>
-          {loading && <LoadingScreen isOffline={isOffline} onRetry={() => window.dispatchEvent(new Event("skyRetryFetch"))} />}
+          {loading && <LoadingScreen isOffline={isOffline} onRetry={() => window.location.reload()} />}
           <AppRoutes />
         </div>
       </CartProvider>
