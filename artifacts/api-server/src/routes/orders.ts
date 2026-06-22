@@ -2,7 +2,6 @@ import { Router } from "express";
 import pool from "../lib/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { sendPushToAll } from "./push";
-import { sendOrderEmail } from "../lib/email";
 import { insertNotification } from "../lib/notifications";
 
 const router = Router();
@@ -118,10 +117,6 @@ function fireNotifications(displayId: string, orderId: number, _staffId: number 
     tag: "new-order",
     url: "/staff",
     icon: "/icon-notif.png",
-  });
-
-  sendOrderEmail({ orderId, diamonds: pkg.diamonds, price: pkg.price, mlbbId, remark }).catch((err) => {
-    console.error(`[notify] EMAIL_FAILED — owner email for order ${displayId}:`, err?.message);
   });
 }
 
@@ -304,16 +299,6 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
     const totalPrice = items.reduce((s: number, i: any) => s + parseFloat(i.price || "0") * (i.quantity || 1), 0);
 
     sendPushToAll({ title: "🛒 Cart Order!", body: `${orderIds.length} items · ₹${totalPrice.toFixed(0)}`, tag: "new-order", url: "/admin" });
-
-    sendOrderEmail({
-      orderId: orderIds[0] ?? 0,
-      diamonds: totalDiamonds,
-      price: totalPrice.toFixed(2),
-      mlbbId,
-      remark: remark ?? `${orderIds.length} cart items — ${displayIds.join(", ")}`,
-    }).catch((err: any) => {
-      console.error(`[notify] EMAIL_FAILED — owner cart email: ${err?.message}`);
-    });
 
   } catch (err: any) {
     await client.query("ROLLBACK").catch(() => {});
