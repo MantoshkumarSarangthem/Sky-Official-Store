@@ -750,7 +750,10 @@ function PromoBannerSlider() {
     };
   }, [fetchBanners, stopTimer]);
 
-  // Restart suspended video when user returns to the tab
+  // Restart suspended video when user returns to the tab / unlocks screen.
+  // NOTE: on Android Chrome, muted videos are NOT paused when the screen locks,
+  // so v.paused is false even though the GPU froze the frame (shows black).
+  // We must force a repaint + play unconditionally, not guarded by v.paused.
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
@@ -759,7 +762,12 @@ function PromoBannerSlider() {
       const cur = bs[idx];
       if (cur && isVidSrc(cur.image)) {
         const v = videoRefs.current.get(cur.id);
-        if (v && v.paused) { v.currentTime = 0; v.play().catch(() => {}); }
+        if (v) {
+          // Force the browser to decode and repaint the current frame,
+          // then resume playback — fixes the black-frame-after-screen-lock bug.
+          v.currentTime = v.currentTime;
+          v.play().catch(() => {});
+        }
       }
     };
     document.addEventListener("visibilitychange", onVisible);
