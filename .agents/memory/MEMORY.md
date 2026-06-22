@@ -1,0 +1,1 @@
+- [User workflow preference](user-workflow-preference.md) — always wait for explicit "go" confirmation before making any code edits or file changes
