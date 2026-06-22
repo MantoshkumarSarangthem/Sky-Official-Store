@@ -5,13 +5,10 @@ import { createClerkClient } from "@clerk/express";
 import multer from "multer";
 import crypto from "crypto";
 import { insertNotification } from "../lib/notifications";
+import { uploadToCloudinary } from "../lib/cloudinary";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
-
-function fileToDataUrl(file: Express.Multer.File): string {
-  return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
-}
 
 const router = Router();
 
@@ -542,14 +539,26 @@ router.put("/settings/starlight_images", requireAdmin, async (req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
-router.post("/upload-image", requireAdmin, upload.single("image"), (req: any, res: any) => {
+router.post("/upload-image", requireAdmin, upload.single("image"), async (req: any, res: any) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  res.json({ url: fileToDataUrl(req.file) });
+  try {
+    const url = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    res.json({ url });
+  } catch (err: any) {
+    console.error("[cloudinary] upload-image failed:", err?.message);
+    res.status(500).json({ error: "Image upload failed" });
+  }
 });
 
-router.post("/upload-media", requireAdmin, mediaUpload.single("file"), (req: any, res: any) => {
+router.post("/upload-media", requireAdmin, mediaUpload.single("file"), async (req: any, res: any) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  res.json({ url: fileToDataUrl(req.file) });
+  try {
+    const url = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    res.json({ url });
+  } catch (err: any) {
+    console.error("[cloudinary] upload-media failed:", err?.message);
+    res.status(500).json({ error: "Media upload failed" });
+  }
 });
 
 router.get("/settings/category_availability", requireAdmin, async (_req, res) => {
@@ -790,7 +799,7 @@ router.get("/staff", requireAdmin, async (_req, res) => {
 router.post("/staff", requireAdmin, upload.single("qr_image"), async (req: any, res: any) => {
   const { name, email, whatsapp, status, shift_hours, sort_order, staff_pin, notify_orders, upi_id } = req.body;
   if (!name) { res.status(400).json({ error: "name is required" }); return; }
-  const qrImage = req.file ? fileToDataUrl(req.file) : (req.body.qr_image || null);
+  const qrImage = req.file ? await uploadToCloudinary(req.file.buffer, req.file.mimetype) : (req.body.qr_image || null);
   const notifyOrders = notify_orders === "false" || notify_orders === false ? false : true;
   try {
     const { rows } = await pool.query(
@@ -805,7 +814,7 @@ router.post("/staff", requireAdmin, upload.single("qr_image"), async (req: any, 
 router.put("/staff/:id", requireAdmin, upload.single("qr_image"), async (req: any, res: any): Promise<void> => {
   const { id } = req.params;
   const { name, email, whatsapp, status, shift_hours, sort_order, qr_image, notify_orders, upi_id } = req.body;
-  const qrImage = req.file ? fileToDataUrl(req.file) : (qr_image || null);
+  const qrImage = req.file ? await uploadToCloudinary(req.file.buffer, req.file.mimetype) : (qr_image || null);
   const notifyOrders = notify_orders === "false" || notify_orders === false ? false : true;
   try {
     const { rows } = await pool.query(
@@ -1079,7 +1088,7 @@ router.post("/games", requireAdmin, upload.single("image"), async (req, res): Pr
   try {
     const { name, sort_order, region } = req.body;
     if (!name?.trim()) { res.status(400).json({ error: "Name is required" }); return; }
-    const image = req.file ? fileToDataUrl(req.file) : null;
+    const image = req.file ? await uploadToCloudinary(req.file.buffer, req.file.mimetype) : null;
     const { rows } = await pool.query(
       "INSERT INTO games (name, image, sort_order, region) VALUES ($1, $2, $3, $4) RETURNING id, name, image, sort_order, region",
       [name.trim(), image, parseInt(sort_order) || 0, region?.trim() || null]
@@ -1094,7 +1103,7 @@ router.put("/games/:id", requireAdmin, upload.single("image"), async (req, res):
     const id = parseInt(String(req.params.id));
     if (!name?.trim()) { res.status(400).json({ error: "Name is required" }); return; }
     if (req.file) {
-      const image = fileToDataUrl(req.file);
+      const image = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
       await pool.query("UPDATE games SET name=$1, image=$2, sort_order=$3, region=$4 WHERE id=$5", [name.trim(), image, parseInt(sort_order) || 0, region?.trim() || null, id]);
     } else {
       await pool.query("UPDATE games SET name=$1, sort_order=$2, region=$3 WHERE id=$4", [name.trim(), parseInt(sort_order) || 0, region?.trim() || null, id]);
