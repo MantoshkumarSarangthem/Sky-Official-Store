@@ -664,6 +664,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
         return;
       }
 
+      // Clear any stale subscription (e.g. from a previous site/dev env with different VAPID keys)
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe().catch(() => {});
+
       let sub: PushSubscription;
       try {
         sub = await reg.pushManager.subscribe({
@@ -672,7 +676,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
         });
       } catch (e: any) {
         setNotifState("unknown");
-        setNotifError(e?.message?.includes("key") ? "VAPID key mismatch — regenerate keys." : "Subscription failed. Try reloading.");
+        setNotifError("Subscription failed: " + (e?.message ?? "unknown error"));
         return;
       }
 
