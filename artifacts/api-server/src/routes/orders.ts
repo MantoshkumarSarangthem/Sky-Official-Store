@@ -112,8 +112,6 @@ function fireNotifications(displayId: string, orderId: number, _staffId: number 
   const diamonds = Number(pkg.diamonds).toLocaleString("en-IN");
   const price = parseFloat(pkg.price).toFixed(0);
 
-  console.log(`[notify] NOTIFICATION_TRIGGERED — order ${displayId} (db id: ${orderId})`);
-
   sendPushToAll({
     title: "New Order",
     body: `${displayId} · ${diamonds} diamonds · ₹${price}`,
@@ -233,7 +231,6 @@ router.post("/", requireAuth, async (req: any, res): Promise<void> => {
 });
 
 router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
-  console.log("[notify] ORDER_API_HIT — POST /api/orders/cart");
   const clerkUserId = req.clerkUserId as string;
   const { items, refId, remark, mlbbUserId, mlbbServerId, mlbbIgn, isForFriend } = req.body;
 
@@ -242,12 +239,15 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
     return;
   }
 
+  const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+
     let mlbbId = mlbbUserId || null;
     let serverId = mlbbServerId || null;
     let ign = mlbbIgn || null;
     if (!mlbbId) {
-      const { rows: accounts } = await pool.query(
+      const { rows: accounts } = await client.query(
         "SELECT mlbb_user_id, mlbb_server_id, mlbb_ign FROM mlbb_accounts WHERE clerk_user_id = $1",
         [clerkUserId]
       );
@@ -266,7 +266,7 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
 
     for (const item of items) {
       const { packageId, quantity = 1, offerId: itemOfferId } = item;
-      const { rows: pkgs } = await pool.query(
+      const { rows: pkgs } = await client.query(
         "SELECT id, diamonds, price FROM packages WHERE id = $1", [packageId]
       );
       if (!pkgs[0]) continue;
@@ -275,14 +275,14 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
       let finalPrice = pkg.price;
       let appliedOffer: OfferResult | null = null;
       if (itemOfferId) {
-        appliedOffer = await resolveOffer(pool as any, parseInt(itemOfferId), pkg.id, clerkUserId);
+        appliedOffer = await resolveOffer(client, parseInt(itemOfferId), pkg.id, clerkUserId);
         if (appliedOffer) finalPrice = appliedOffer.offerPrice;
       }
 
       for (let q = 0; q < quantity; q++) {
         const note = noteBase ? noteBase + friendNote : friendNote || null;
         const displayId = await getNextDisplayId();
-        const { rows: inserted } = await pool.query(
+        const { rows: inserted } = await client.query(
           `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign, is_for_friend, status, note, display_id, assigned_staff_id)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11) RETURNING id`,
           [clerkUserId, pkg.id, pkg.diamonds, finalPrice, mlbbId, serverId, ign, isForFriend || false, note, displayId, staffId]
@@ -292,9 +292,11 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
       }
 
       if (appliedOffer) {
-        await recordOfferClaim(pool as any, appliedOffer.offerId, clerkUserId, appliedOffer.eligibility);
+        await recordOfferClaim(client, appliedOffer.offerId, clerkUserId, appliedOffer.eligibility);
       }
     }
+
+    await client.query("COMMIT");
 
     res.json({ ok: true, ids: orderIds, displayIds });
 
@@ -314,8 +316,11 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
     });
 
   } catch (err: any) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error("[orders] POST /cart failed:", err?.message, err?.stack);
     res.status(500).json({ ok: false, error: "DB error. Please try again." });
+  } finally {
+    client.release();
   }
 });
 

@@ -256,7 +256,7 @@ function Navbar() {
   const { signOut } = useClerk();
   const { getToken, isSignedIn } = useAuth();
 
-  const hideWallet = location === "/mlbb-target" || location === "/pay";
+  const hideWallet = location === "/mlbb-target" || location.startsWith("/pay");
 
   useEffect(() => {
     const interval = setInterval(() => {
