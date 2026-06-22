@@ -16,12 +16,18 @@ export function invalidateCache(...keys: string[]): void {
   keys.forEach(k => _cache.delete(k));
 }
 
-export async function cachedFetch<T>(url: string): Promise<T> {
+export async function cachedFetch<T>(url: string, timeoutMs = 10000): Promise<T> {
   const cached = getCached<T>(url);
   if (cached !== undefined) return cached;
-  const res = await fetch(url);
-  if (!res.ok) throw res;
-  const data: T = await res.json();
-  setCached(url, data);
-  return data;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw res;
+    const data: T = await res.json();
+    setCached(url, data);
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
 }

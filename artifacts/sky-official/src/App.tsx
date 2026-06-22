@@ -521,7 +521,85 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
-// ── Username Setup Page ────────────────────────────────────────────────────────
+// ── Password Setup Page (shown after Google/OAuth sign-up before username) ───
+function PasswordSetupPage({ onDone }: { onDone: () => void }) {
+  const { user } = useUser();
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const ready = newPassword.length >= 8 && newPassword === confirmPassword;
+
+  const submit = async () => {
+    if (!ready || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await user!.updatePassword({ newPassword, signOutOfOtherSessions: false });
+      onDone();
+    } catch (e: any) {
+      setError(e?.errors?.[0]?.message ?? "Failed to set password. Try again.");
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#FAF9F6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ marginBottom: 32, textAlign: "center" }}>
+        <div style={{ fontSize: 26, fontWeight: 900, color: "#3D2B1F", letterSpacing: "-0.01em" }}>Sky Official</div>
+        <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginTop: 2, letterSpacing: "0.08em" }}>MLBB DIAMOND TOP-UP</div>
+      </div>
+      <div style={{ width: "100%", maxWidth: 360, background: "#FFFFFF", borderRadius: 20, padding: "28px 24px 32px", boxShadow: "0 8px 40px rgba(61,43,31,0.12)" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(127,0,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#7F00FF" strokeWidth="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="#7F00FF" strokeWidth="2" strokeLinecap="round"/></svg>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#3D2B1F", marginBottom: 8 }}>Set your password</div>
+          <div style={{ fontSize: 13, color: "rgba(61,43,31,0.5)", lineHeight: 1.55 }}>
+            Create a password so you can sign in with email anytime, even without Google.
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={e => { setNewPassword(e.target.value); setError(null); }}
+            placeholder="Password (min. 8 characters)"
+            autoComplete="new-password"
+            style={{ padding: "13px 14px", borderRadius: 12, border: `1.5px solid rgba(61,43,31,0.15)`, background: "#FAF9F6", color: "#3D2B1F", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={e => { setConfirmPassword(e.target.value); setError(null); }}
+            placeholder="Confirm password"
+            autoComplete="new-password"
+            onKeyDown={e => { if (e.key === "Enter") submit(); }}
+            style={{ padding: "13px 14px", borderRadius: 12, border: `1.5px solid ${confirmPassword && newPassword !== confirmPassword ? "#ef4444" : "rgba(61,43,31,0.15)"}`, background: "#FAF9F6", color: "#3D2B1F", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+          />
+          <div style={{ minHeight: 18 }}>
+            {error && <div style={{ fontSize: 11.5, color: "#ef4444" }}>{error}</div>}
+            {!error && confirmPassword && newPassword !== confirmPassword && <div style={{ fontSize: 11.5, color: "#ef4444" }}>Passwords don't match.</div>}
+            {!error && newPassword.length > 0 && newPassword.length < 8 && <div style={{ fontSize: 11.5, color: "rgba(61,43,31,0.4)" }}>At least 8 characters needed.</div>}
+            {!error && ready && <div style={{ fontSize: 11.5, color: "#22c55e", fontWeight: 600 }}>Looks good!</div>}
+          </div>
+        </div>
+        <button
+          onClick={submit}
+          disabled={!ready || submitting}
+          style={{ width: "100%", padding: "14px 0", borderRadius: 12, background: ready && !submitting ? "#7F00FF" : "rgba(127,0,255,0.15)", border: "none", color: ready && !submitting ? "#FFFFFF" : "rgba(127,0,255,0.4)", fontSize: 15, fontWeight: 700, cursor: ready && !submitting ? "pointer" : "not-allowed", transition: "all 0.2s" }}
+        >
+          {submitting ? "Setting up…" : "Set Password →"}
+        </button>
+        <div style={{ marginTop: 14, fontSize: 11, color: "rgba(61,43,31,0.3)", textAlign: "center" }}>
+          Stored securely · used to sign in with email
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UsernameSetupPage({ onDone }: { onDone: () => void }) {
   const { getToken } = useAuth();
   const [username, setUsername] = useState("");
@@ -642,8 +720,10 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
 // ── Username Gate (shown after sign-in if no username set) ──────────────────
 function UsernameGate({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { user } = useUser();
   const [location] = useLocation();
   const [usernameStatus, setUsernameStatus] = useState<"loading" | "set" | "unset">("loading");
+  const [passwordDone, setPasswordDone] = useState(false);
 
   const isExcluded = location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/sign-");
 
@@ -660,6 +740,11 @@ function UsernameGate({ children }: { children: React.ReactNode }) {
   }, [isLoaded, isSignedIn]);
 
   if (usernameStatus === "unset" && !isExcluded) {
+    // OAuth users (Google etc.) have no password — show password setup first
+    const isOAuthUser = user && !user.passwordEnabled;
+    if (isOAuthUser && !passwordDone) {
+      return <PasswordSetupPage onDone={() => setPasswordDone(true)} />;
+    }
     return <UsernameSetupPage onDone={() => setUsernameStatus("set")} />;
   }
   return <>{children}</>;
@@ -1994,7 +2079,7 @@ function PackagesPage() {
 }
 
 // ── Auth Page Shell ─────────────────────────────────────────────────────────
-function AuthPageShell({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle: string }) {
+function AuthPageShell({ children, title, subtitle, isSignUp = false }: { children: React.ReactNode; title: string; subtitle: string; isSignUp?: boolean }) {
   const [, setLocation] = useLocation();
 
   const diag = (delay: number): React.CSSProperties => ({
@@ -2077,12 +2162,18 @@ function AuthPageShell({ children, title, subtitle }: { children: React.ReactNod
 
           {/* Title */}
           <div style={diag(0.14)}>
+            {isSignUp && (
+              <div className="inline-flex items-center gap-1.5 mb-3" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 20, padding: "4px 12px" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
+                <span style={{ color: "#22c55e", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>New Account</span>
+              </div>
+            )}
             <h1 className="font-bold text-white leading-tight" style={{ fontSize: "clamp(1.5rem,6vw,1.85rem)", letterSpacing: "-0.02em" }}>{title}</h1>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: "#6b7280" }}>{subtitle}</p>
           </div>
 
           {/* Divider */}
-          <div className="mt-7 mb-6" style={{ height: 1, background: "linear-gradient(90deg, rgba(245,158,11,0.25) 0%, rgba(255,255,255,0.05) 100%)", ...diag(0.21) }} />
+          <div className="mt-7 mb-6" style={{ height: 1, background: isSignUp ? "linear-gradient(90deg, rgba(34,197,94,0.25) 0%, rgba(255,255,255,0.05) 100%)" : "linear-gradient(90deg, rgba(245,158,11,0.25) 0%, rgba(255,255,255,0.05) 100%)", ...diag(0.21) }} />
 
           {/* Clerk form */}
           <div style={diag(0.28)}>
@@ -2117,8 +2208,9 @@ function SignInPage() {
 function SignUpPage() {
   return (
     <AuthPageShell
-      title="Create an account"
-      subtitle="Join Sky Official and start topping up in seconds."
+      title="Create your account"
+      subtitle="New to Sky Official? Sign up to start topping up."
+      isSignUp
     >
       <SignUp
         routing="path"
