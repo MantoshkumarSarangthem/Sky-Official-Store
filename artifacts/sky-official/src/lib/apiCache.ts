@@ -1,5 +1,5 @@
 const _cache = new Map<string, { data: unknown; ts: number }>();
-const TTL = 60_000;
+const TTL = 300_000;
 
 export function getCached<T>(key: string): T | undefined {
   const entry = _cache.get(key);

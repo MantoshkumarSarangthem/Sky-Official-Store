@@ -3,6 +3,7 @@ import { useAuth, useUser } from "@clerk/react";
 import RankBoostPage from "./RankBoostPage";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
+import { cachedFetch } from "../lib/apiCache";
 
 interface Package {
   id: number;
@@ -884,32 +885,25 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
   }, [isSignedIn]);
 
   useEffect(() => {
-    fetch(`${API}/packages`)
-      .then(r => r.json())
+    cachedFetch<any[]>(`${API}/packages`)
       .then(data => { setPackages(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-    fetch(`${API}/settings/category_popular`)
-      .then(r => r.json())
+    cachedFetch<Record<string, any>>(`${API}/settings/category_popular`)
       .then(data => setCategoryPopular(data || {}))
       .catch(() => {});
-    fetch(`${API}/settings/category_availability`)
-      .then(r => r.json())
+    cachedFetch<Record<string, any>>(`${API}/settings/category_availability`)
       .then(data => { if (data && typeof data === "object") setCategoryAvailability(data); })
       .catch(() => {});
-    fetch(`${API}/settings/pack_images`)
-      .then(r => r.json())
+    cachedFetch<any[]>(`${API}/settings/pack_images`)
       .then(data => { if (Array.isArray(data) && data.length > 0) setPackImagesCfg(data); })
       .catch(() => {});
-    fetch(`${API}/settings/pass_images`)
-      .then(r => r.json())
+    cachedFetch<Record<string, any>>(`${API}/settings/pass_images`)
       .then(data => { if (data && typeof data === "object" && !Array.isArray(data)) setPassImagesCfg(data); })
       .catch(() => {});
-    fetch(`${API}/settings/starlight_images`)
-      .then(r => r.json())
+    cachedFetch<Record<string, any>>(`${API}/settings/starlight_images`)
       .then(data => { if (data && typeof data === "object" && !Array.isArray(data)) setStarlightImagesCfg(data); })
       .catch(() => {});
-    fetch(`${API}/settings/qr`)
-      .then(r => r.json())
+    cachedFetch<Record<string, any>>(`${API}/settings/qr`)
       .then(d => { if (d.whatsapp) setStaffWA(d.whatsapp); })
       .catch(() => {});
   }, []);

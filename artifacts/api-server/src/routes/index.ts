@@ -15,6 +15,11 @@ import { createClerkClient } from "@clerk/express";
 
 const router: IRouter = Router();
 
+router.use((req, res, next) => {
+  if (req.method === "GET") res.set("Cache-Control", "public, max-age=300");
+  next();
+});
+
 router.use(healthRouter);
 router.use("/admin", adminRouter);
 router.use("/orders", ordersRouter);
