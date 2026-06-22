@@ -483,18 +483,19 @@ router.put("/settings/trustpilot", requireAdmin, async (req, res) => {
 
 router.get("/settings/community_links", requireAdmin, async (_req, res) => {
   try {
-    const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('community_whatsapp','community_instagram')");
+    const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('community_whatsapp','community_instagram','community_support_wa')");
     const m: Record<string, string> = {};
     rows.forEach((r: any) => { m[r.key] = r.value; });
-    res.json({ whatsapp: m["community_whatsapp"] || "", instagram: m["community_instagram"] || "" });
+    res.json({ whatsapp: m["community_whatsapp"] || "", instagram: m["community_instagram"] || "", support_wa: m["community_support_wa"] || "" });
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
 router.put("/settings/community_links", requireAdmin, async (req, res) => {
-  const { whatsapp, instagram } = req.body;
+  const { whatsapp, instagram, support_wa } = req.body;
   try {
     await pool.query(`INSERT INTO settings (key,value) VALUES ('community_whatsapp',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [whatsapp || ""]);
     await pool.query(`INSERT INTO settings (key,value) VALUES ('community_instagram',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [instagram || ""]);
+    await pool.query(`INSERT INTO settings (key,value) VALUES ('community_support_wa',$1) ON CONFLICT (key) DO UPDATE SET value=$1`, [support_wa || ""]);
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "DB error" }); }
 });

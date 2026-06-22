@@ -101,10 +101,10 @@ router.get("/settings/trustpilot", async (_req, res) => {
 
 router.get("/settings/community_links", async (_req, res) => {
   try {
-    const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('community_whatsapp','community_instagram')");
+    const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('community_whatsapp','community_instagram','community_support_wa')");
     const m: Record<string, string> = {};
     rows.forEach((r: any) => { m[r.key] = r.value; });
-    res.json({ whatsapp: m["community_whatsapp"] || "", instagram: m["community_instagram"] || "" });
+    res.json({ whatsapp: m["community_whatsapp"] || "", instagram: m["community_instagram"] || "", support_wa: m["community_support_wa"] || "" });
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 

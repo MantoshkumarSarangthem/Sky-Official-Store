@@ -149,8 +149,6 @@ function LoadingScreen({ isOffline, onRetry }: { isOffline: boolean; onRetry: ()
   return (
     <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#FAF9F6", zIndex: 9999 }}>
       <div style={{ position: "relative", width: 84, height: 84 }}>
-        {/* Faint track ring */}
-        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid rgba(245,158,11,0.13)" }} />
         {/* Comet arc — SVG rotates continuously, dasharray pulses in sync */}
         <svg width="84" height="84" viewBox="0 0 84 84"
           style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", animation: "skyComet 1.4s linear infinite" }}>
