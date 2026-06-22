@@ -16,7 +16,28 @@ import { createClerkClient } from "@clerk/express";
 const router: IRouter = Router();
 
 router.use((req, res, next) => {
-  if (req.method === "GET") res.set("Cache-Control", "public, max-age=300");
+  if (req.method !== "GET") return next();
+  const p = req.path;
+  if (
+    p.startsWith("/wallet") || p.startsWith("/orders") ||
+    p.startsWith("/notifications") || p.startsWith("/profile") ||
+    p.startsWith("/verify") || p.startsWith("/push")
+  ) {
+    res.set("Cache-Control", "no-store");
+  } else if (p === "/packages" || p.startsWith("/games")) {
+    res.set("Cache-Control", "public, max-age=3600");
+  } else if (p.startsWith("/settings/category")) {
+    res.set("Cache-Control", "public, max-age=86400");
+  } else if (p === "/settings/promo_banners") {
+    res.set("Cache-Control", "public, max-age=600");
+  } else if (
+    p === "/settings/pack_images" || p === "/settings/pass_images" ||
+    p === "/settings/starlight_images" || p.startsWith("/games")
+  ) {
+    res.set("Cache-Control", "public, max-age=3600");
+  } else {
+    res.set("Cache-Control", "public, max-age=300");
+  }
   next();
 });
 
