@@ -1,8 +1,3 @@
-databases:
-  - name: sky-official-db
-    databaseName: sky_official
-    plan: free
-
 services:
   - type: web
     name: sky-official
@@ -13,10 +8,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Set this manually in the Render dashboard to your Neon connection string:
       - key: DATABASE_URL
-        fromDatabase:
-          name: sky-official-db
-          property: connectionString
+        sync: false
       # Fill these in on the Render dashboard after deploying:
       - key: CLERK_SECRET_KEY
         sync: false
