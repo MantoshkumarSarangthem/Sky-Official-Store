@@ -885,25 +885,25 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
   }, [isSignedIn]);
 
   useEffect(() => {
-    cachedFetch<any[]>(`${API}/packages`, 3_600_000)
+    cachedFetch<any[]>(`${API}/packages`)
       .then(data => { setPackages(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-    cachedFetch<Record<string, any>>(`${API}/settings/category_popular`, 86_400_000)
+    cachedFetch<Record<string, any>>(`${API}/settings/category_popular`)
       .then(data => setCategoryPopular(data || {}))
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/category_availability`, 86_400_000)
+    cachedFetch<Record<string, any>>(`${API}/settings/category_availability`)
       .then(data => { if (data && typeof data === "object") setCategoryAvailability(data); })
       .catch(() => {});
-    cachedFetch<any[]>(`${API}/settings/pack_images`, 3_600_000)
+    cachedFetch<any[]>(`${API}/settings/pack_images`)
       .then(data => { if (Array.isArray(data) && data.length > 0) setPackImagesCfg(data); })
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/pass_images`, 3_600_000)
+    cachedFetch<Record<string, any>>(`${API}/settings/pass_images`)
       .then(data => { if (data && typeof data === "object" && !Array.isArray(data)) setPassImagesCfg(data); })
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/starlight_images`, 3_600_000)
+    cachedFetch<Record<string, any>>(`${API}/settings/starlight_images`)
       .then(data => { if (data && typeof data === "object" && !Array.isArray(data)) setStarlightImagesCfg(data); })
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/qr`, 300_000)
+    cachedFetch<Record<string, any>>(`${API}/settings/qr`)
       .then(d => { if (d.whatsapp) setStaffWA(d.whatsapp); })
       .catch(() => {});
   }, []);

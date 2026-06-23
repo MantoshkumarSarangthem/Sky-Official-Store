@@ -875,6 +875,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const saveCategoryAvailability = async (updated: Record<string, string>) => {
     setCatAvailSaving(true);
     await fetch(`${API}/admin/settings/category_availability`, { method: "PUT", headers, body: JSON.stringify(updated) });
+    window.dispatchEvent(new Event("skyAdminUpdate"));
     setCatAvailSaved(true);
     setTimeout(() => setCatAvailSaved(false), 2500);
     setCatAvailSaving(false);
@@ -889,6 +890,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setLatestEventSaving(true);
     await fetch(`${API}/admin/settings/latest_event`, { method: "PUT", headers, body: JSON.stringify(data) });
     setLatestEvent(data);
+    window.dispatchEvent(new Event("skyAdminUpdate"));
     setLatestEventSaved(true);
     setTimeout(() => setLatestEventSaved(false), 3000);
     setLatestEventSaving(false);
@@ -914,6 +916,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
         message: maintenanceMessage,
       }),
     });
+    window.dispatchEvent(new Event("skyAdminUpdate"));
     setMaintenanceSaved(true);
     setTimeout(() => setMaintenanceSaved(false), 3000);
     setMaintenanceSaving(false);
@@ -928,6 +931,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     await fetch(`${API}/admin/settings/pack_images`, { method: "PUT", headers, body: JSON.stringify(packImages) });
     await fetch(`${API}/admin/settings/pass_images`, { method: "PUT", headers, body: JSON.stringify(passImages) });
     await saveStarlightImages(starlightImages);
+    window.dispatchEvent(new Event("skyAdminUpdate"));
     setImagesSaved(true);
     setTimeout(() => setImagesSaved(false), 3000);
     setImagesSaving(false);
@@ -1312,6 +1316,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
         setStarlightImages(updated);
         await saveStarlightImages(updated);
       }
+      window.dispatchEvent(new Event("skyAdminUpdate"));
       await fetchPackages();
       setEditingPkg(null);
       setEditingPkgImage("");
@@ -1323,6 +1328,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const deletePkg = async (id: number) => {
     if (!confirm("Delete this package?")) return;
     await fetch(`${API}/admin/packages/${id}`, { method: "DELETE", headers });
+    window.dispatchEvent(new Event("skyAdminUpdate"));
     await fetchPackages();
   };
 
@@ -1353,6 +1359,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setNewPkgStep("game");
       setNewPkgCurrencyType("");
       setShowAddPkg(false);
+      window.dispatchEvent(new Event("skyAdminUpdate"));
       await fetchPackages();
     } finally {
       setLoading(false);

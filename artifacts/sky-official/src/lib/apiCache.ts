@@ -1,15 +1,11 @@
-const _cache = new Map<string, { data: unknown; ts: number; ttl: number }>();
-
-const DEFAULT_TTL = 300_000;
+const _cache = new Map<string, unknown>();
 
 export function getCached<T>(key: string): T | undefined {
-  const entry = _cache.get(key);
-  if (entry && Date.now() - entry.ts < entry.ttl) return entry.data as T;
-  return undefined;
+  return _cache.has(key) ? (_cache.get(key) as T) : undefined;
 }
 
-export function setCached(key: string, data: unknown, ttl = DEFAULT_TTL): void {
-  _cache.set(key, { data, ts: Date.now(), ttl });
+export function setCached(key: string, data: unknown): void {
+  _cache.set(key, data);
 }
 
 export function invalidateCache(...keys: string[]): void {
@@ -17,7 +13,7 @@ export function invalidateCache(...keys: string[]): void {
   keys.forEach(k => _cache.delete(k));
 }
 
-export async function cachedFetch<T>(url: string, cacheTtlMs = DEFAULT_TTL, fetchTimeoutMs = 10000): Promise<T> {
+export async function cachedFetch<T>(url: string, fetchTimeoutMs = 10000): Promise<T> {
   const cached = getCached<T>(url);
   if (cached !== undefined) return cached;
   const ctrl = new AbortController();
@@ -26,7 +22,7 @@ export async function cachedFetch<T>(url: string, cacheTtlMs = DEFAULT_TTL, fetc
     const res = await fetch(url, { signal: ctrl.signal });
     if (!res.ok) throw res;
     const data: T = await res.json();
-    setCached(url, data, cacheTtlMs);
+    setCached(url, data);
     return data;
   } finally {
     clearTimeout(timer);

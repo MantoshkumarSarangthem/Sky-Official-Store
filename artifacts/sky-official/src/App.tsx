@@ -802,7 +802,7 @@ function PromoBannerSlider() {
 
   const fetchBanners = useCallback((force = false) => {
     if (force) invalidateCache(bannerCacheKey);
-    cachedFetch<PromoBannerItem[]>(bannerCacheKey, 600_000)
+    cachedFetch<PromoBannerItem[]>(bannerCacheKey)
       .then(d => setBanners(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [bannerCacheKey]);
@@ -994,8 +994,8 @@ function GameSelectSection() {
   const fetchGames = useCallback((force = false) => {
     if (force) invalidateCache(gamesCacheKey, availCacheKey);
     Promise.all([
-      cachedFetch<GameItem[]>(gamesCacheKey, 3_600_000),
-      cachedFetch<Record<string, string>>(availCacheKey, 86_400_000),
+      cachedFetch<GameItem[]>(gamesCacheKey),
+      cachedFetch<Record<string, string>>(availCacheKey),
     ])
       .then(([d, avail]) => {
         if (!mountedRef.current) return;
@@ -1013,7 +1013,7 @@ function GameSelectSection() {
 
   useEffect(() => {
     fetchGames();
-    const onUpdate = () => fetchGames(true);
+    const onUpdate = () => { invalidateCache(); fetchGames(true); };
     const onRetry = () => fetchGames();
     window.addEventListener("skyAdminUpdate", onUpdate);
     window.addEventListener("skyRetryFetch", onRetry);
@@ -1234,7 +1234,7 @@ function StatsSection() {
   const [real, setReal] = useState<StatsData | null>(() => getCached<StatsData>(statsCacheKey) ?? null);
 
   useEffect(() => {
-    cachedFetch<StatsData>(statsCacheKey, 300_000)
+    cachedFetch<StatsData>(statsCacheKey)
       .then(d => { if (d) setReal(d); })
       .catch(() => {});
   }, []);
