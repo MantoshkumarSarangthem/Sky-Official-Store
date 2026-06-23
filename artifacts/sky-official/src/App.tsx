@@ -540,6 +540,79 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
+// ── Onboarding Step Indicator ────────────────────────────────────────────────
+function OnboardingSteps({ current, total }: { current: number; total: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 22 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} style={{
+          width: i < current ? 28 : 10,
+          height: 10,
+          borderRadius: 999,
+          background: i < current ? "#7F00FF" : "rgba(127,0,255,0.15)",
+          transition: "all 0.35s cubic-bezier(0.4,0,0.2,1)"
+        }} />
+      ))}
+      <div style={{ marginLeft: 6, fontSize: 11.5, color: "rgba(61,43,31,0.4)", fontWeight: 600 }}>
+        {current} / {total}
+      </div>
+    </div>
+  );
+}
+
+// ── Onboarding Complete Screen ───────────────────────────────────────────────
+function OnboardingCompleteScreen({ onEnter }: { onEnter: () => void }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 60); return () => clearTimeout(t); }, []);
+  return (
+    <>
+      <style>{`
+        @keyframes tickCircle { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes tickDraw { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+        @keyframes fadeUp { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      `}</style>
+      <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#FAF9F6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ marginBottom: 32, textAlign: "center" }}>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#3D2B1F", letterSpacing: "-0.01em" }}>Sky Official</div>
+          <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginTop: 2, letterSpacing: "0.08em" }}>MLBB DIAMOND TOP-UP</div>
+        </div>
+        <div style={{ width: "100%", maxWidth: 360, background: "#FFFFFF", borderRadius: 20, padding: "36px 24px 36px", boxShadow: "0 8px 40px rgba(61,43,31,0.12)", textAlign: "center" }}>
+          <OnboardingSteps current={3} total={3} />
+          <div style={{
+            width: 80, height: 80, borderRadius: "50%", background: "#22c55e",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 24px",
+            animation: visible ? "tickCircle 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards" : "none",
+            opacity: visible ? 1 : 0,
+            boxShadow: "0 8px 24px rgba(34,197,94,0.35)"
+          }}>
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+              <path
+                d="M9 19l7 7 13-14"
+                stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"
+                strokeDasharray="40"
+                style={{ animation: visible ? "tickDraw 0.4s 0.35s ease forwards" : "none", strokeDashoffset: visible ? 0 : 40 }}
+              />
+            </svg>
+          </div>
+          <div style={{ animation: visible ? "fadeUp 0.4s 0.5s ease both" : "none", opacity: visible ? 1 : 0 }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#3D2B1F", marginBottom: 8 }}>Account setup complete!</div>
+            <div style={{ fontSize: 14, color: "rgba(61,43,31,0.5)", lineHeight: 1.6, marginBottom: 28 }}>
+              Welcome to Sky Official. You're all set to start topping up.
+            </div>
+            <button
+              onClick={onEnter}
+              style={{ width: "100%", padding: "15px 0", borderRadius: 12, background: "#7F00FF", border: "none", color: "#FFFFFF", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(127,0,255,0.3)" }}
+            >
+              Go to website →
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Password Setup Page (shown after username setup for OAuth/Google users) ───
 function PasswordSetupPage({ onDone, onSkip }: { onDone: () => void; onSkip?: () => void }) {
   const { user } = useUser();
@@ -574,6 +647,7 @@ function PasswordSetupPage({ onDone, onSkip }: { onDone: () => void; onSkip?: ()
         <div style={{ color: "rgba(61,43,31,0.4)", fontSize: 12, marginTop: 2, letterSpacing: "0.08em" }}>MLBB DIAMOND TOP-UP</div>
       </div>
       <div style={{ width: "100%", maxWidth: 360, background: "#FFFFFF", borderRadius: 20, padding: "28px 24px 32px", boxShadow: "0 8px 40px rgba(61,43,31,0.12)" }}>
+        <OnboardingSteps current={2} total={3} />
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(127,0,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="#7F00FF" strokeWidth="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="#7F00FF" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -685,6 +759,7 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
       </div>
 
       <div style={{ width: "100%", maxWidth: 360, background: "#FFFFFF", borderRadius: 20, padding: "28px 24px 32px", boxShadow: "0 8px 40px rgba(61,43,31,0.12)" }}>
+        <OnboardingSteps current={1} total={3} />
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(127,0,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#7F00FF" strokeWidth="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#7F00FF" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -754,7 +829,7 @@ function UsernameGate({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const [location] = useLocation();
   const [usernameStatus, setUsernameStatus] = useState<"loading" | "set" | "unset">("loading");
-  const [onboardingPhase, setOnboardingPhase] = useState<"username" | "password" | "done">("username");
+  const [onboardingPhase, setOnboardingPhase] = useState<"username" | "password" | "complete" | "done">("username");
   const isExcluded = location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/sign-");
 
   useEffect(() => {
@@ -780,7 +855,11 @@ function UsernameGate({ children }: { children: React.ReactNode }) {
   }
 
   if (onboardingPhase === "password" && !isExcluded) {
-    return <PasswordSetupPage onDone={() => setOnboardingPhase("done")} onSkip={() => setOnboardingPhase("done")} />;
+    return <PasswordSetupPage onDone={() => setOnboardingPhase("complete")} onSkip={() => setOnboardingPhase("complete")} />;
+  }
+
+  if (onboardingPhase === "complete" && !isExcluded) {
+    return <OnboardingCompleteScreen onEnter={() => setOnboardingPhase("done")} />;
   }
 
   return <>{children}</>;
