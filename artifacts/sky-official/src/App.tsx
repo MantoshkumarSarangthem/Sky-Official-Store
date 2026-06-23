@@ -21,7 +21,6 @@ import { CartProvider, useCart } from "./context/CartContext";
 import {
   ClerkProvider,
   SignIn,
-  SignUp,
   Show,
   useUser,
   useClerk,
@@ -614,13 +613,12 @@ function OnboardingCompleteScreen({ onEnter }: { onEnter: () => void }) {
 }
 
 // ── Password Setup Page (shown after username setup for OAuth/Google users) ───
-function PasswordSetupPage({ onDone, onSkip }: { onDone: () => void; onSkip?: () => void }) {
+function PasswordSetupPage({ onDone }: { onDone: () => void }) {
   const { user } = useUser();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSkip, setShowSkip] = useState(false);
 
   const ready = newPassword.length >= 8 && newPassword === confirmPassword;
 
@@ -633,9 +631,7 @@ function PasswordSetupPage({ onDone, onSkip }: { onDone: () => void; onSkip?: ()
       onDone();
     } catch (e: any) {
       const msg: string = e?.errors?.[0]?.message ?? e?.message ?? "Failed to set password.";
-      const isReverif = msg.toLowerCase().includes("reverif") || msg.toLowerCase().includes("re-verif") || msg.toLowerCase().includes("session");
-      setError(isReverif ? "Your session needs re-verification before setting a password. You can set it later from your Profile." : msg);
-      if (isReverif) setShowSkip(true);
+      setError(msg);
       setSubmitting(false);
     }
   };
@@ -689,14 +685,6 @@ function PasswordSetupPage({ onDone, onSkip }: { onDone: () => void; onSkip?: ()
         >
           {submitting ? "Setting up…" : "Set Password →"}
         </button>
-        {showSkip && (
-          <button
-            onClick={() => { onSkip ? onSkip() : onDone(); }}
-            style={{ width: "100%", marginTop: 10, padding: "12px 0", borderRadius: 12, background: "none", border: "1.5px solid rgba(61,43,31,0.15)", color: "rgba(61,43,31,0.5)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
-          >
-            Set it later in Profile →
-          </button>
-        )}
         <div style={{ marginTop: 14, fontSize: 11, color: "rgba(61,43,31,0.3)", textAlign: "center" }}>
           Stored securely · used to sign in with email
         </div>
@@ -855,7 +843,7 @@ function UsernameGate({ children }: { children: React.ReactNode }) {
   }
 
   if (onboardingPhase === "password" && !isExcluded) {
-    return <PasswordSetupPage onDone={() => setOnboardingPhase("complete")} onSkip={() => setOnboardingPhase("complete")} />;
+    return <PasswordSetupPage onDone={() => setOnboardingPhase("complete")} />;
   }
 
   if (onboardingPhase === "complete" && !isExcluded) {
@@ -2311,7 +2299,7 @@ function SignInPage() {
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
+        signUpUrl={`${basePath}/sign-in`}
         fallbackRedirectUrl={basePath || "/"}
         appearance={clerkAppearance}
       />
@@ -2319,23 +2307,11 @@ function SignInPage() {
   );
 }
 
-// ── Sign Up Page ───────────────────────────────────────────────────────────
+// ── Sign Up Page — redirect to sign-in (onboarding handled post-auth) ────────
 function SignUpPage() {
-  return (
-    <AuthPageShell
-      title="Create your account"
-      subtitle="New to Sky Official? Sign up to start topping up."
-      isSignUp
-    >
-      <SignUp
-        routing="path"
-        path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
-        fallbackRedirectUrl={basePath || "/"}
-        appearance={clerkAppearance}
-      />
-    </AuthPageShell>
-  );
+  const [, setLocation] = useLocation();
+  useEffect(() => { setLocation("/sign-in"); }, []);
+  return null;
 }
 
 // ── Policy Page Shell ────────────────────────────────────────────────────────
