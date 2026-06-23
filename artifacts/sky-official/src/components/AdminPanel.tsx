@@ -317,7 +317,9 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   interface Game { id: number; name: string; image: string | null; sort_order: number; region?: string | null; }
   const [games, setGames] = useState<Game[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
-  const [newGame, setNewGame] = useState({ name: "", sort_order: "0", region: "" });
+  const [newGame, setNewGame] = useState({ name: "", region: "" });
+  const [dragGameIdx, setDragGameIdx] = useState<number | null>(null);
+  const [overGameIdx, setOverGameIdx] = useState<number | null>(null);
   const [gamesSaving, setGamesSaving] = useState(false);
   const gameImgRef = useRef<HTMLInputElement>(null);
   const adminCurrLabel = (gameId: number | null) => {
@@ -350,14 +352,14 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     try {
       const fd = new FormData();
       fd.append("name", newGame.name.trim());
-      fd.append("sort_order", newGame.sort_order);
+      fd.append("sort_order", String(games.length));
       fd.append("region", newGame.region.trim());
       if (gameImgRef.current?.files?.[0]) fd.append("image", gameImgRef.current.files[0]);
       const res = await fetch(`${API}/admin/games`, { method: "POST", headers: { Authorization: headers.Authorization }, body: fd });
       if (res.ok) {
         const g = await res.json();
         setGames(prev => [...prev, g]);
-        setNewGame({ name: "", sort_order: "0", region: "" });
+        setNewGame({ name: "", region: "" });
         if (gameImgRef.current) gameImgRef.current.value = "";
         window.dispatchEvent(new Event("skyAdminUpdate"));
       }
@@ -370,6 +372,16 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setGames(prev => prev.filter(g => g.id !== id));
       window.dispatchEvent(new Event("skyAdminUpdate"));
     } catch {}
+  };
+
+  const reorderGames = async (reordered: Game[]) => {
+    const updates = reordered.map((g, i) => ({ id: g.id, sort_order: i }));
+    setGames(reordered);
+    await fetch(`${API}/admin/games/reorder`, {
+      method: "POST", headers,
+      body: JSON.stringify(updates),
+    });
+    window.dispatchEvent(new Event("skyAdminUpdate"));
   };
 
   const updateGameImage = async (file: File, gameId: number) => {
@@ -1662,31 +1674,70 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     ) : games.length === 0 ? (
                       <div className="text-gray-500 text-xs py-4 text-center">No games added yet. Add one below.</div>
                     ) : (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                        {games.map((g) => (
-                          <div key={g.id} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px", border: editingGameMeta?.id === g.id ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: 8 }}>
-                            <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 8, background: g.image ? "transparent" : "rgba(255,255,255,0.06)", border: g.image ? "none" : "1px dashed rgba(255,255,255,0.15)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {g.image ? <img src={g.image} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 11 }}>No image</span>}
-                            </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {games.map((g, idx, arr) => (
+                          <div
+                            key={g.id}
+                            draggable={!editingGameMeta}
+                            onDragStart={() => { setDragGameIdx(idx); setOverGameIdx(idx); }}
+                            onDragOver={e => { e.preventDefault(); setOverGameIdx(idx); }}
+                            onDrop={() => {
+                              if (dragGameIdx === null || dragGameIdx === idx) { setDragGameIdx(null); setOverGameIdx(null); return; }
+                              const reordered = [...arr];
+                              const [moved] = reordered.splice(dragGameIdx, 1);
+                              reordered.splice(idx, 0, moved);
+                              setDragGameIdx(null); setOverGameIdx(null);
+                              reorderGames(reordered);
+                            }}
+                            onDragEnd={() => { setDragGameIdx(null); setOverGameIdx(null); }}
+                            style={{
+                              background: "rgba(255,255,255,0.04)",
+                              borderRadius: 12,
+                              padding: "10px 12px",
+                              border: dragGameIdx !== null && overGameIdx === idx && dragGameIdx !== idx
+                                ? "1px solid rgba(245,158,11,0.6)"
+                                : editingGameMeta?.id === g.id
+                                  ? "1px solid rgba(245,158,11,0.3)"
+                                  : "1px solid rgba(255,255,255,0.08)",
+                              opacity: dragGameIdx === idx ? 0.4 : 1,
+                              cursor: editingGameMeta ? "default" : "grab",
+                              transition: "border-color 0.15s, opacity 0.15s",
+                            }}
+                          >
                             {editingGameMeta?.id === g.id ? (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                <input value={editingGameMeta.name} onChange={e => setEditingGameMeta(m => m ? { ...m, name: e.target.value } : m)} placeholder="Game name" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.4)", borderRadius: 7, padding: "6px 8px", color: "#fff", fontSize: 12, outline: "none", width: "100%", boxSizing: "border-box" }} />
-                                <input value={editingGameMeta.region} onChange={e => setEditingGameMeta(m => m ? { ...m, region: e.target.value } : m)} placeholder="Region (e.g. Global)" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 7, padding: "6px 8px", color: "#fff", fontSize: 11, outline: "none", width: "100%", boxSizing: "border-box" }} />
-                                <div style={{ display: "flex", gap: 5 }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: g.image ? "transparent" : "rgba(255,255,255,0.06)", border: g.image ? "none" : "1px dashed rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    {g.image ? <img src={g.image} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10 }}>No img</span>}
+                                  </div>
+                                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
+                                    <input value={editingGameMeta.name} onChange={e => setEditingGameMeta(m => m ? { ...m, name: e.target.value } : m)} placeholder="Game name" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.4)", borderRadius: 7, padding: "5px 8px", color: "#fff", fontSize: 12, outline: "none", width: "100%", boxSizing: "border-box" }} />
+                                    <input value={editingGameMeta.region} onChange={e => setEditingGameMeta(m => m ? { ...m, region: e.target.value } : m)} placeholder="Region (e.g. Global)" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 7, padding: "5px 8px", color: "#fff", fontSize: 11, outline: "none", width: "100%", boxSizing: "border-box" }} />
+                                  </div>
+                                </div>
+                                <div style={{ display: "flex", gap: 6 }}>
                                   <button onClick={() => saveGameMeta(g.id, editingGameMeta.name, editingGameMeta.region)} disabled={gamesSaving} style={{ flex: 1, fontSize: 11, padding: "5px 0", borderRadius: 7, background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)", cursor: "pointer" }}>{gamesSaving ? "Saving…" : "Save"}</button>
                                   <button onClick={() => setEditingGameMeta(null)} style={{ flex: 1, fontSize: 11, padding: "5px 0", borderRadius: 7, background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>Cancel</button>
                                 </div>
                               </div>
                             ) : (
-                              <>
-                                <div style={{ color: "#fff", fontSize: 12, fontWeight: 700, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                                {g.region && <div style={{ color: "rgba(245,158,11,0.65)", fontSize: 10, textAlign: "center", marginTop: -4 }}>{g.region}</div>}
-                                <button onClick={() => setEditingGameMeta({ id: g.id, name: g.name, region: g.region ?? "" })} style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", width: "100%" }}>Edit Name / Region</button>
-                                <button onClick={() => { setUpdatingGameId(g.id); gameUpdateImgRef.current?.click(); }} disabled={gamesSaving} style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)", cursor: "pointer", width: "100%" }}>
-                                  {gamesSaving && updatingGameId === g.id ? "Saving…" : "Upload Image"}
-                                </button>
-                                <button onClick={() => deleteGame(g.id)} style={{ fontSize: 11, padding: "4px 0", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer", width: "100%" }}>Delete</button>
-                              </>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 16, flexShrink: 0, lineHeight: 1, userSelect: "none" }}>⠿</div>
+                                <div style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: g.image ? "transparent" : "rgba(255,255,255,0.06)", border: g.image ? "none" : "1px dashed rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {g.image ? <img src={g.image} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10 }}>No img</span>}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ color: "#fff", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                                  {g.region && <div style={{ color: "rgba(245,158,11,0.65)", fontSize: 10, marginTop: 1 }}>{g.region}</div>}
+                                </div>
+                                <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                                  <button onClick={() => setEditingGameMeta({ id: g.id, name: g.name, region: g.region ?? "" })} style={{ fontSize: 10, padding: "4px 8px", borderRadius: 7, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", whiteSpace: "nowrap" }}>Edit</button>
+                                  <button onClick={() => { setUpdatingGameId(g.id); gameUpdateImgRef.current?.click(); }} disabled={gamesSaving} style={{ fontSize: 10, padding: "4px 8px", borderRadius: 7, background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)", cursor: "pointer", whiteSpace: "nowrap" }}>
+                                    {gamesSaving && updatingGameId === g.id ? "…" : "Image"}
+                                  </button>
+                                  <button onClick={() => deleteGame(g.id)} style={{ fontSize: 10, padding: "4px 8px", borderRadius: 7, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer" }}>Delete</button>
+                                </div>
+                              </div>
                             )}
                           </div>
                         ))}
@@ -1711,14 +1762,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         placeholder="Region (e.g. Global, SEA, India — optional)"
                         value={newGame.region}
                         onChange={e => setNewGame(g => ({ ...g, region: e.target.value }))}
-                        className="px-3 py-2 rounded-lg text-white text-sm outline-none"
-                        style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                      />
-                      <input
-                        placeholder="Sort order (0 = first)"
-                        type="number"
-                        value={newGame.sort_order}
-                        onChange={e => setNewGame(g => ({ ...g, sort_order: e.target.value }))}
                         className="px-3 py-2 rounded-lg text-white text-sm outline-none"
                         style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
                       />

@@ -1139,6 +1139,25 @@ router.delete("/games/:id", requireAdmin, async (req, res): Promise<void> => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+router.post("/games/reorder", requireAdmin, async (req, res): Promise<void> => {
+  const updates: { id: number; sort_order: number }[] = req.body;
+  if (!Array.isArray(updates)) { res.status(400).json({ error: "Expected array" }); return; }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const { id, sort_order } of updates) {
+      await client.query("UPDATE games SET sort_order=$1 WHERE id=$2", [sort_order, id]);
+    }
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch {
+    await client.query("ROLLBACK");
+    res.status(500).json({ error: "DB error" });
+  } finally {
+    client.release();
+  }
+});
+
 // ── Latest Event popup setting ────────────────────────────────────────────────
 router.get("/settings/latest_event", requireAdmin, async (_req, res): Promise<void> => {
   try {
