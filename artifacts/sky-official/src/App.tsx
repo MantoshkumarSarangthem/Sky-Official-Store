@@ -40,6 +40,25 @@ const NAV_SUBTITLES = [
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
+const WARM_URLS = [
+  `${API}/packages`,
+  `${API}/games`,
+  `${API}/settings/category_availability`,
+  `${API}/settings/category_popular`,
+  `${API}/settings/pack_images`,
+  `${API}/settings/pass_images`,
+  `${API}/settings/starlight_images`,
+  `${API}/settings/promo_banners`,
+  `${API}/settings/qr`,
+  `${API}/settings/latest_event`,
+  `${API}/settings/maintenance`,
+  `${API}/stats`,
+];
+
+function warmCache() {
+  WARM_URLS.forEach(url => cachedFetch(url).catch(() => {}));
+}
+
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
 function stripBase(path: string): string {
@@ -1013,7 +1032,7 @@ function GameSelectSection() {
 
   useEffect(() => {
     fetchGames();
-    const onUpdate = () => { invalidateCache(); fetchGames(true); };
+    const onUpdate = () => { invalidateCache(); warmCache(); fetchGames(true); };
     const onRetry = () => fetchGames();
     window.addEventListener("skyAdminUpdate", onUpdate);
     window.addEventListener("skyRetryFetch", onRetry);
