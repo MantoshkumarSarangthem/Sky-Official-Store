@@ -144,6 +144,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [storeStats, setStoreStats] = useState<{ total_orders: number; total_diamonds: number; total_users: number } | null>(null);
   const [recentOrders, setRecentOrders] = useState<{ mlbb_ign: string | null; diamonds: number; created_at: string; pack_name: string | null; currency_label: string | null; user_display_name: string | null }[]>([]);
   const [editingPkg, setEditingPkg] = useState<Package | null>(null);
+  const [dragPkgIdx, setDragPkgIdx] = useState<number | null>(null);
+  const [overPkgIdx, setOverPkgIdx] = useState<number | null>(null);
   const [newPkg, setNewPkg] = useState({ name: "", diamonds: "", bonus_diamonds: "", price: "", label: "", is_popular: false, category: "small", status: "available" });
   const [loading, setLoading] = useState(false);
   const [showAddPkg, setShowAddPkg] = useState(false);
@@ -1332,6 +1334,16 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     await fetchPackages();
   };
 
+  const reorderPackages = async (reordered: Package[]) => {
+    const updates = reordered.map((p, i) => ({ id: p.id, sort_order: i }));
+    await fetch(`${API}/admin/packages/reorder`, {
+      method: "POST", headers,
+      body: JSON.stringify(updates),
+    });
+    window.dispatchEvent(new Event("skyAdminUpdate"));
+    await fetchPackages();
+  };
+
   const addPkg = async () => {
     if (!newPkg.diamonds || !newPkg.price) return;
     setLoading(true);
@@ -1869,8 +1881,32 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                       {packages.filter(p => p.game_id === selectedPkgGame.id).length === 0 && !showAddPkg && (
                         <div className="text-xs text-gray-500 py-8 text-center">No packages yet for this game. Tap "+ Add Package" to add one.</div>
                       )}
-                      {packages.filter(p => p.game_id === selectedPkgGame.id).map((pkg) => (
-                        <div key={pkg.id} className="rounded-xl p-4" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)" }}>
+                      {packages.filter(p => p.game_id === selectedPkgGame.id).map((pkg, idx, arr) => (
+                        <div
+                          key={pkg.id}
+                          draggable={!editingPkg}
+                          onDragStart={() => { setDragPkgIdx(idx); setOverPkgIdx(idx); }}
+                          onDragOver={e => { e.preventDefault(); setOverPkgIdx(idx); }}
+                          onDrop={() => {
+                            if (dragPkgIdx === null || dragPkgIdx === idx) { setDragPkgIdx(null); setOverPkgIdx(null); return; }
+                            const reordered = [...arr];
+                            const [moved] = reordered.splice(dragPkgIdx, 1);
+                            reordered.splice(idx, 0, moved);
+                            setDragPkgIdx(null); setOverPkgIdx(null);
+                            reorderPackages(reordered);
+                          }}
+                          onDragEnd={() => { setDragPkgIdx(null); setOverPkgIdx(null); }}
+                          className="rounded-xl p-4"
+                          style={{
+                            background: "#1a1a1a",
+                            border: dragPkgIdx !== null && overPkgIdx === idx && dragPkgIdx !== idx
+                              ? "1px solid rgba(245,158,11,0.6)"
+                              : "1px solid rgba(255,255,255,0.07)",
+                            opacity: dragPkgIdx === idx ? 0.4 : 1,
+                            cursor: editingPkg ? "default" : "grab",
+                            transition: "border-color 0.15s, opacity 0.15s",
+                          }}
+                        >
                           {editingPkg?.id === pkg.id ? (
                             <div className="flex flex-col gap-3">
                               <div className="grid grid-cols-2 gap-2">
@@ -1897,10 +1933,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                                 <div>
                                   <div className="text-xs text-gray-400 mb-1">Label</div>
                                   <input value={editingPkg.label || ""} onChange={(e) => setEditingPkg(p => p ? { ...p, label: e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
-                                </div>
-                                <div>
-                                  <div className="text-xs text-gray-400 mb-1">Sort Order</div>
-                                  <input type="number" value={editingPkg.sort_order} onChange={(e) => setEditingPkg(p => p ? { ...p, sort_order: +e.target.value } : p)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(245,158,11,0.3)" }} />
                                 </div>
                               </div>
                               <div>
@@ -1946,6 +1978,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                           ) : (
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
+                                <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 16, cursor: "grab", flexShrink: 0, lineHeight: 1, userSelect: "none" }}>⠿</div>
                                 <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden" style={{ background: pkg.image ? "rgba(255,255,255,0.05)" : "rgba(56,189,248,0.12)", border: "1px solid rgba(255,255,255,0.07)" }}>
                                   {pkg.image
                                     ? <img src={pkg.image} alt="icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
