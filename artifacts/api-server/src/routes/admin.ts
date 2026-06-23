@@ -277,6 +277,63 @@ router.post("/packages/reorder", requireAdmin, async (req, res): Promise<void> =
   }
 });
 
+router.post("/packages/bulk-update", requireAdmin, async (req, res): Promise<void> => {
+  const updates: { id: number; price: string; old_price: string | null; status: string }[] = req.body;
+  if (!Array.isArray(updates)) { res.status(400).json({ error: "Expected array" }); return; }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const { id, price, old_price, status } of updates) {
+      await client.query(
+        "UPDATE packages SET price=$1, old_price=$2, status=$3, updated_at=NOW() WHERE id=$4",
+        [price, old_price || null, status || "available", id]
+      );
+    }
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch {
+    await client.query("ROLLBACK");
+    res.status(500).json({ error: "DB error" });
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/packages/copy-from-game", requireAdmin, async (req, res): Promise<void> => {
+  const { source_game_id, target_game_id, price_multiplier } = req.body;
+  if (!source_game_id || !target_game_id) { res.status(400).json({ error: "source_game_id and target_game_id required" }); return; }
+  const multiplier = parseFloat(price_multiplier) || 1;
+  const client = await pool.connect();
+  try {
+    const { rows: sourcePkgs } = await pool.query(
+      "SELECT * FROM packages WHERE game_id=$1 ORDER BY sort_order ASC",
+      [source_game_id]
+    );
+    const { rows: maxRow } = await pool.query(
+      "SELECT COALESCE(MAX(sort_order), -1) AS max_sort FROM packages WHERE game_id=$1",
+      [target_game_id]
+    );
+    let sortStart = (maxRow[0]?.max_sort ?? -1) + 1;
+    await client.query("BEGIN");
+    for (const pkg of sourcePkgs) {
+      const newPrice = (parseFloat(pkg.price) * multiplier).toFixed(2);
+      const newOldPrice = pkg.old_price ? (parseFloat(pkg.old_price) * multiplier).toFixed(2) : null;
+      await client.query(
+        `INSERT INTO packages (diamonds, bonus_diamonds, price, old_price, label, is_popular, sort_order, name, category, status, game_id, image, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())`,
+        [pkg.diamonds, pkg.bonus_diamonds, newPrice, newOldPrice, pkg.label, pkg.is_popular, sortStart++, pkg.name, pkg.category, pkg.status, target_game_id, pkg.image]
+      );
+    }
+    await client.query("COMMIT");
+    res.json({ ok: true, copied: sourcePkgs.length });
+  } catch {
+    await client.query("ROLLBACK");
+    res.status(500).json({ error: "DB error" });
+  } finally {
+    client.release();
+  }
+});
+
 router.get("/orders", requireAdmin, async (_req, res) => {
   try {
     const { rows: orders } = await pool.query(

@@ -153,6 +153,14 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [newPkgGameId, setNewPkgGameId] = useState<number | null>(null);
   const [selectedPkgGame, setSelectedPkgGame] = useState<{ id: number; name: string; image: string | null } | null>(null);
   const [newPkgCurrencyType, setNewPkgCurrencyType] = useState("");
+  type BulkEditRow = { id: number; price: string; old_price: string; status: string; name: string | null; diamonds: number; enabled: boolean; };
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [bulkEdits, setBulkEdits] = useState<BulkEditRow[]>([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [showCopyFrom, setShowCopyFrom] = useState(false);
+  const [copyFromGameId, setCopyFromGameId] = useState<number | null>(null);
+  const [copyMultiplier, setCopyMultiplier] = useState("1");
+  const [copyLoading, setCopyLoading] = useState(false);
   const [newOrder, setNewOrder] = useState({ diamonds: "", price: "", mlbb_id: "", status: "completed", note: "" });
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [walletRequests, setWalletRequests] = useState<WalletRequest[]>([]);
@@ -1356,6 +1364,72 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     await fetchPackages();
   };
 
+  const openBulkEdit = () => {
+    if (!selectedPkgGame) return;
+    const gamePkgs = packages.filter(p => p.game_id === selectedPkgGame.id);
+    setBulkEdits(gamePkgs.map(p => ({
+      id: p.id,
+      name: p.name,
+      diamonds: p.diamonds,
+      price: parseFloat(p.price).toFixed(0),
+      old_price: p.old_price ? parseFloat(p.old_price).toFixed(0) : "",
+      status: p.status || "available",
+      enabled: (p.status || "available") === "available",
+    })));
+    setShowBulkEdit(true);
+    setShowAddPkg(false);
+    setShowCopyFrom(false);
+  };
+
+  const bulkSavePrices = async () => {
+    setBulkSaving(true);
+    try {
+      const updates = bulkEdits.map(r => ({
+        id: r.id,
+        price: r.price,
+        old_price: r.old_price || null,
+        status: r.enabled ? "available" : "out_of_stock",
+      }));
+      const res = await fetch(`${API}/admin/packages/bulk-update`, {
+        method: "POST", headers,
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        window.dispatchEvent(new Event("skyAdminUpdate"));
+        await fetchPackages();
+        setShowBulkEdit(false);
+      } else {
+        alert("Failed to save prices.");
+      }
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
+  const copyFromGame = async () => {
+    if (!selectedPkgGame || !copyFromGameId) return;
+    setCopyLoading(true);
+    try {
+      const res = await fetch(`${API}/admin/packages/copy-from-game`, {
+        method: "POST", headers,
+        body: JSON.stringify({ source_game_id: copyFromGameId, target_game_id: selectedPkgGame.id, price_multiplier: parseFloat(copyMultiplier) || 1 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        window.dispatchEvent(new Event("skyAdminUpdate"));
+        await fetchPackages();
+        setShowCopyFrom(false);
+        setCopyFromGameId(null);
+        setCopyMultiplier("1");
+        alert(`Copied ${data.copied} package${data.copied !== 1 ? "s" : ""} successfully.`);
+      } else {
+        alert("Failed to copy packages.");
+      }
+    } finally {
+      setCopyLoading(false);
+    }
+  };
+
   const addPkg = async () => {
     if (!newPkg.diamonds || !newPkg.price) return;
     setLoading(true);
@@ -1812,20 +1886,36 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     /* ── Game Packages View ── */
                     <>
                       {/* Header */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => { setSelectedPkgGame(null); setShowAddPkg(false); setNewPkgStep("game"); setNewPkgGameId(null); setNewPkgCurrencyType(""); setEditingPkg(null); }} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 0, fontSize: 20, lineHeight: 1 }}>←</button>
+                          <button onClick={() => { setSelectedPkgGame(null); setShowAddPkg(false); setNewPkgStep("game"); setNewPkgGameId(null); setNewPkgCurrencyType(""); setEditingPkg(null); setShowBulkEdit(false); setShowCopyFrom(false); }} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 0, fontSize: 20, lineHeight: 1 }}>←</button>
                           {selectedPkgGame.image && <img src={selectedPkgGame.image} alt={selectedPkgGame.name} style={{ width: 26, height: 26, objectFit: "contain", borderRadius: 6 }} />}
                           <span className="text-white font-bold text-sm">{selectedPkgGame.name}</span>
                           <span className="text-gray-500 text-xs">({packages.filter(p => p.game_id === selectedPkgGame.id).length})</span>
                         </div>
-                        <button
-                          onClick={() => { setShowAddPkg(true); setNewPkgGameId(selectedPkgGame.id); setNewPkgStep("form"); setNewPkgCurrencyType(""); setNewPkg({ name: "", diamonds: "", bonus_diamonds: "", price: "", label: "", is_popular: false, category: "small", status: "available" }); setNewPkgOldPrice(""); setNewPkgIconUrl(""); setNewPkgImage(""); }}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-black"
-                          style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
-                        >
-                          + Add Package
-                        </button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => { setShowCopyFrom(v => !v); setShowAddPkg(false); setShowBulkEdit(false); setCopyFromGameId(null); setCopyMultiplier("1"); }}
+                            className="px-3 py-2 rounded-xl text-xs font-bold"
+                            style={{ background: showCopyFrom ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.3)" }}
+                          >
+                            Copy from Game
+                          </button>
+                          <button
+                            onClick={openBulkEdit}
+                            className="px-3 py-2 rounded-xl text-xs font-bold"
+                            style={{ background: showBulkEdit ? "rgba(245,158,11,0.25)" : "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" }}
+                          >
+                            Bulk Edit Prices
+                          </button>
+                          <button
+                            onClick={() => { setShowAddPkg(true); setShowBulkEdit(false); setShowCopyFrom(false); setNewPkgGameId(selectedPkgGame.id); setNewPkgStep("form"); setNewPkgCurrencyType(""); setNewPkg({ name: "", diamonds: "", bonus_diamonds: "", price: "", label: "", is_popular: false, category: "small", status: "available" }); setNewPkgOldPrice(""); setNewPkgIconUrl(""); setNewPkgImage(""); }}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-black"
+                            style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}
+                          >
+                            + Add Package
+                          </button>
+                        </div>
                       </div>
 
                       {/* Add package form */}
@@ -1920,11 +2010,86 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                         </div>
                       )}
 
+                      {/* Copy from Game form */}
+                      {showCopyFrom && (
+                        <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(99,102,241,0.25)" }}>
+                          <div className="text-indigo-300 text-sm font-bold">Copy Packages from Another Game</div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Source Game</div>
+                            <select value={copyFromGameId ?? ""} onChange={e => setCopyFromGameId(Number(e.target.value) || null)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}>
+                              <option value="">Select a game…</option>
+                              {games.filter(g => g.id !== selectedPkgGame.id).map(g => {
+                                const count = packages.filter(p => p.game_id === g.id).length;
+                                return <option key={g.id} value={g.id}>{g.name} ({count} pkg{count !== 1 ? "s" : ""})</option>;
+                              })}
+                            </select>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Price Multiplier</div>
+                            <input type="number" step="0.01" min="0.01" value={copyMultiplier} onChange={e => setCopyMultiplier(e.target.value)} className="w-full px-3 py-2 rounded-lg text-white text-sm outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }} placeholder="1.0" />
+                            <div className="text-xs text-gray-500 mt-1">e.g. 1.2 = all prices ×1.2 · 1 = copy exact prices · Images reused as-is</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={copyFromGame} disabled={!copyFromGameId || copyLoading} className="flex-1 py-2 rounded-lg text-xs font-bold" style={{ background: copyFromGameId ? "#6366f1" : "#333", color: copyFromGameId ? "#fff" : "#555", cursor: copyFromGameId ? "pointer" : "not-allowed" }}>{copyLoading ? "Copying…" : "Copy Packages"}</button>
+                            <button onClick={() => { setShowCopyFrom(false); setCopyFromGameId(null); setCopyMultiplier("1"); }} className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bulk Edit Prices panel */}
+                      {showBulkEdit && (
+                        <div className="flex flex-col gap-2">
+                          <div className="text-xs text-gray-400 pb-1">Edit prices and toggle availability. Disabled packages are shown at 45% opacity. Click <span className="text-amber-400 font-bold">Save All</span> to apply.</div>
+                          {bulkEdits.map((row, i) => (
+                            <div key={row.id} className="rounded-xl px-4 py-3 flex items-center gap-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.07)", opacity: row.enabled ? 1 : 0.45, transition: "opacity 0.2s" }}>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-white text-xs font-semibold truncate mb-2">{row.name || `${row.diamonds.toLocaleString()} diamonds`}</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Cut Price (₹)</div>
+                                    <input
+                                      type="number"
+                                      value={row.old_price}
+                                      onChange={e => setBulkEdits(prev => prev.map((r, idx) => idx === i ? { ...r, old_price: e.target.value } : r))}
+                                      placeholder="—"
+                                      className="w-full px-2 py-1.5 rounded-lg text-white text-xs outline-none"
+                                      style={{ background: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">Price (₹)</div>
+                                    <input
+                                      type="number"
+                                      value={row.price}
+                                      onChange={e => setBulkEdits(prev => prev.map((r, idx) => idx === i ? { ...r, price: e.target.value } : r))}
+                                      className="w-full px-2 py-1.5 rounded-lg text-white text-xs outline-none"
+                                      style={{ background: "#111", border: "1px solid rgba(245,158,11,0.2)" }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setBulkEdits(prev => prev.map((r, idx) => idx === i ? { ...r, enabled: !r.enabled } : r))}
+                                className="flex-shrink-0 rounded-full text-xs font-bold px-3 py-1.5 transition-all"
+                                style={{ background: row.enabled ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.12)", color: row.enabled ? "#22c55e" : "#ef4444", border: `1px solid ${row.enabled ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.3)"}`, minWidth: 40, cursor: "pointer" }}
+                              >
+                                {row.enabled ? "On" : "Off"}
+                              </button>
+                            </div>
+                          ))}
+                          {bulkEdits.length === 0 && <div className="text-xs text-gray-500 py-4 text-center">No packages in this game.</div>}
+                          <div className="flex gap-2 pt-2">
+                            <button onClick={bulkSavePrices} disabled={bulkSaving} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-black" style={{ background: "linear-gradient(135deg,#fbbf24,#f59e0b)" }}>{bulkSaving ? "Saving…" : "Save All"}</button>
+                            <button onClick={() => setShowBulkEdit(false)} className="flex-1 py-2.5 rounded-xl text-xs font-bold text-gray-400" style={{ background: "#222" }}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Package list for this game only */}
-                      {packages.filter(p => p.game_id === selectedPkgGame.id).length === 0 && !showAddPkg && (
+                      {!showBulkEdit && packages.filter(p => p.game_id === selectedPkgGame.id).length === 0 && !showAddPkg && (
                         <div className="text-xs text-gray-500 py-8 text-center">No packages yet for this game. Tap "+ Add Package" to add one.</div>
                       )}
-                      {packages.filter(p => p.game_id === selectedPkgGame.id).map((pkg, idx, arr) => (
+                      {!showBulkEdit && packages.filter(p => p.game_id === selectedPkgGame.id).map((pkg, idx, arr) => (
                         <div
                           key={pkg.id}
                           draggable={!editingPkg}
