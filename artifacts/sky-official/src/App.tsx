@@ -739,11 +739,8 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
 // ── Username Gate (shown after sign-in if no username set) ──────────────────
 function UsernameGate({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded, getToken } = useAuth();
-  const { user } = useUser();
   const [location] = useLocation();
   const [usernameStatus, setUsernameStatus] = useState<"loading" | "set" | "unset">("loading");
-  const [passwordDone, setPasswordDone] = useState(false);
-
   const isExcluded = location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/sign-");
 
   useEffect(() => {
@@ -759,11 +756,6 @@ function UsernameGate({ children }: { children: React.ReactNode }) {
   }, [isLoaded, isSignedIn]);
 
   if (usernameStatus === "unset" && !isExcluded) {
-    // OAuth users (Google etc.) have no password — show password setup first
-    const isOAuthUser = user && !user.passwordEnabled;
-    if (isOAuthUser && !passwordDone) {
-      return <PasswordSetupPage onDone={() => setPasswordDone(true)} />;
-    }
     return <UsernameSetupPage onDone={() => setUsernameStatus("set")} />;
   }
   return <>{children}</>;
