@@ -540,13 +540,14 @@ function AnimatedPage({ children, skipPageAnim = false }: { children: React.Reac
   );
 }
 
-// ── Password Setup Page (shown after Google/OAuth sign-up before username) ───
-function PasswordSetupPage({ onDone }: { onDone: () => void }) {
+// ── Password Setup Page (shown after username setup for OAuth/Google users) ───
+function PasswordSetupPage({ onDone, onSkip }: { onDone: () => void; onSkip?: () => void }) {
   const { user } = useUser();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSkip, setShowSkip] = useState(false);
 
   const ready = newPassword.length >= 8 && newPassword === confirmPassword;
 
@@ -558,7 +559,10 @@ function PasswordSetupPage({ onDone }: { onDone: () => void }) {
       await user!.updatePassword({ newPassword, signOutOfOtherSessions: false });
       onDone();
     } catch (e: any) {
-      setError(e?.errors?.[0]?.message ?? "Failed to set password. Try again.");
+      const msg: string = e?.errors?.[0]?.message ?? e?.message ?? "Failed to set password.";
+      const isReverif = msg.toLowerCase().includes("reverif") || msg.toLowerCase().includes("re-verif") || msg.toLowerCase().includes("session");
+      setError(isReverif ? "Your session needs re-verification before setting a password. You can set it later from your Profile." : msg);
+      if (isReverif) setShowSkip(true);
       setSubmitting(false);
     }
   };
@@ -611,6 +615,14 @@ function PasswordSetupPage({ onDone }: { onDone: () => void }) {
         >
           {submitting ? "Setting up…" : "Set Password →"}
         </button>
+        {showSkip && (
+          <button
+            onClick={() => { onSkip ? onSkip() : onDone(); }}
+            style={{ width: "100%", marginTop: 10, padding: "12px 0", borderRadius: 12, background: "none", border: "1.5px solid rgba(61,43,31,0.15)", color: "rgba(61,43,31,0.5)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+          >
+            Set it later in Profile →
+          </button>
+        )}
         <div style={{ marginTop: 14, fontSize: 11, color: "rgba(61,43,31,0.3)", textAlign: "center" }}>
           Stored securely · used to sign in with email
         </div>
@@ -739,8 +751,10 @@ function UsernameSetupPage({ onDone }: { onDone: () => void }) {
 // ── Username Gate (shown after sign-in if no username set) ──────────────────
 function UsernameGate({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { user } = useUser();
   const [location] = useLocation();
   const [usernameStatus, setUsernameStatus] = useState<"loading" | "set" | "unset">("loading");
+  const [onboardingPhase, setOnboardingPhase] = useState<"username" | "password" | "done">("username");
   const isExcluded = location.startsWith("/admin") || location.startsWith("/staff") || location.startsWith("/sign-");
 
   useEffect(() => {
@@ -755,9 +769,20 @@ function UsernameGate({ children }: { children: React.ReactNode }) {
     });
   }, [isLoaded, isSignedIn]);
 
-  if (usernameStatus === "unset" && !isExcluded) {
-    return <UsernameSetupPage onDone={() => setUsernameStatus("set")} />;
+  if (usernameStatus === "unset" && !isExcluded && onboardingPhase === "username") {
+    return (
+      <UsernameSetupPage onDone={() => {
+        setUsernameStatus("set");
+        const isOAuthUser = user && !user.passwordEnabled;
+        setOnboardingPhase(isOAuthUser ? "password" : "done");
+      }} />
+    );
   }
+
+  if (onboardingPhase === "password" && !isExcluded) {
+    return <PasswordSetupPage onDone={() => setOnboardingPhase("done")} onSkip={() => setOnboardingPhase("done")} />;
+  }
+
   return <>{children}</>;
 }
 
