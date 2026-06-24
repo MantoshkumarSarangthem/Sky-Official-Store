@@ -25,6 +25,7 @@ import {
   useUser,
   useClerk,
   useAuth,
+  useSignUp,
 } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 
@@ -2298,7 +2299,7 @@ function SignInPage() {
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
         fallbackRedirectUrl={basePath || "/"}
         appearance={clerkAppearance}
       />
@@ -2306,11 +2307,323 @@ function SignInPage() {
   );
 }
 
-// ── Sign Up Page — redirect to sign-in (onboarding handled post-auth) ────────
+// ── Sign Up Page — three-phase custom flow ───────────────────────────────────
 function SignUpPage() {
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const { getToken } = useAuth();
   const [, setLocation] = useLocation();
-  useEffect(() => { setLocation("/sign-in"); }, []);
-  return null;
+  const [phase, setPhase] = useState<1 | 2 | 3>(1);
+
+  // Phase 1 state
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [p1Submitting, setP1Submitting] = useState(false);
+  const [p1Error, setP1Error] = useState<string | null>(null);
+  const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Phase 2 state
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  // Animate in
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 60); return () => clearTimeout(t); }, []);
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    setUsername(v);
+    setP1Error(null);
+    if (usernameTimer.current) clearTimeout(usernameTimer.current);
+    if (v.length === 0) { setUsernameStatus("idle"); return; }
+    if (v.length < 3 || !/^[a-z0-9_]{3,20}$/.test(v)) { setUsernameStatus("invalid"); return; }
+    setUsernameStatus("checking");
+    usernameTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API}/profile/username-check?username=${encodeURIComponent(v)}`);
+        const data = await res.json();
+        setUsernameStatus(data.available ? "available" : "taken");
+      } catch { setUsernameStatus("idle"); }
+    }, 500);
+  };
+
+  const p1Ready = usernameStatus === "available" && email.includes("@") && password.length >= 8 && password === confirmPassword;
+
+  const handlePhase1Submit = async () => {
+    if (!p1Ready || p1Submitting || !signUp) return;
+    setP1Submitting(true);
+    setP1Error(null);
+    try {
+      await signUp.create({ emailAddress: email, password });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setPhase(2);
+    } catch (e: any) {
+      const msg = e?.errors?.[0]?.longMessage ?? e?.errors?.[0]?.message ?? e?.message ?? "Failed to create account.";
+      setP1Error(msg);
+    } finally {
+      setP1Submitting(false);
+    }
+  };
+
+  const handlePhase2Submit = async () => {
+    if (!code || verifying || !signUp) return;
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      const result = await signUp.attemptEmailAddressVerification({ code });
+      if (result.status === "complete") {
+        if (setActive) await setActive({ session: result.createdSessionId });
+        try {
+          const token = await getToken();
+          if (token) {
+            await fetch(`${API}/profile/username`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              credentials: "include",
+              body: JSON.stringify({ username }),
+            });
+          }
+        } catch {}
+        setPhase(3);
+      } else {
+        setVerifyError("Verification incomplete. Please try again.");
+      }
+    } catch (e: any) {
+      const msg = e?.errors?.[0]?.longMessage ?? e?.errors?.[0]?.message ?? e?.message ?? "Invalid code. Try again.";
+      setVerifyError(msg);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  if (phase === 3) {
+    return <OnboardingCompleteScreen onEnter={() => setLocation("/")} />;
+  }
+
+  const inputStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: 10,
+    border: "1.5px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.06)",
+    color: "#f3f4f6",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    transition: "border-color 0.2s",
+    ...extra,
+  });
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.07em",
+    textTransform: "uppercase",
+    color: "rgba(243,244,246,0.45)",
+    marginBottom: 6,
+    display: "block",
+  };
+
+  const unameColor = usernameStatus === "available" ? "#22c55e" : (usernameStatus === "taken" || usernameStatus === "invalid") ? "#ef4444" : "rgba(255,255,255,0.12)";
+
+  return (
+    <AuthPageShell
+      title={phase === 1 ? "Create your account" : "Verify your email"}
+      subtitle={phase === 1 ? "Fill in your details below to get started." : `We sent a 6-digit code to ${email}`}
+      isSignUp
+    >
+      <style>{`
+        @keyframes suFadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .su-field { animation: suFadeUp 0.3s ease both; }
+      `}</style>
+
+      {/* Progress bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 24 }}>
+        {[1, 2, 3].map((n) => (
+          <div key={n} style={{
+            height: 4,
+            flex: n === phase ? 2 : 1,
+            borderRadius: 99,
+            background: n < phase ? "#22c55e" : n === phase ? "#f59e0b" : "rgba(255,255,255,0.1)",
+            transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
+          }} />
+        ))}
+        <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(243,244,246,0.35)", marginLeft: 4, flexShrink: 0 }}>
+          {phase} / 3
+        </span>
+      </div>
+
+      {/* Phase 1 — account details */}
+      {phase === 1 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="su-field" style={{ animationDelay: "0s" }}>
+            <label style={labelStyle}>Username</label>
+            <div style={{ position: "relative" }}>
+              <input
+                value={username}
+                onChange={handleUsernameChange}
+                maxLength={20}
+                placeholder="your_username"
+                autoFocus
+                autoComplete="username"
+                style={inputStyle({ paddingRight: 36, borderColor: unameColor })}
+              />
+              <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>
+                {usernameStatus === "checking" && <span style={{ color: "rgba(243,244,246,0.35)" }}>…</span>}
+                {usernameStatus === "available" && <span style={{ color: "#22c55e" }}>✓</span>}
+                {(usernameStatus === "taken" || usernameStatus === "invalid") && <span style={{ color: "#ef4444" }}>✕</span>}
+              </div>
+            </div>
+            <div style={{ marginTop: 5, minHeight: 16, fontSize: 11.5 }}>
+              {usernameStatus === "invalid" && username.length > 0 && username.length < 3 && <span style={{ color: "rgba(243,244,246,0.4)" }}>At least 3 characters needed.</span>}
+              {usernameStatus === "invalid" && username.length >= 3 && <span style={{ color: "#ef4444" }}>Only a–z, 0–9, underscores. Max 20 chars.</span>}
+              {usernameStatus === "available" && <span style={{ color: "#22c55e", fontWeight: 600 }}>@{username} is available!</span>}
+              {usernameStatus === "taken" && <span style={{ color: "#ef4444" }}>Username already taken.</span>}
+            </div>
+          </div>
+
+          <div className="su-field" style={{ animationDelay: "0.05s" }}>
+            <label style={labelStyle}>Email address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setP1Error(null); }}
+              placeholder="you@example.com"
+              autoComplete="email"
+              style={inputStyle()}
+            />
+          </div>
+
+          <div className="su-field" style={{ animationDelay: "0.1s" }}>
+            <label style={labelStyle}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setP1Error(null); }}
+              placeholder="Minimum 8 characters"
+              autoComplete="new-password"
+              style={inputStyle()}
+            />
+          </div>
+
+          <div className="su-field" style={{ animationDelay: "0.15s" }}>
+            <label style={labelStyle}>Confirm password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={e => { setConfirmPassword(e.target.value); setP1Error(null); }}
+              placeholder="Re-enter password"
+              autoComplete="new-password"
+              onKeyDown={e => { if (e.key === "Enter") handlePhase1Submit(); }}
+              style={inputStyle({ borderColor: confirmPassword && password !== confirmPassword ? "#ef4444" : "rgba(255,255,255,0.12)" })}
+            />
+            <div style={{ marginTop: 5, minHeight: 16, fontSize: 11.5 }}>
+              {confirmPassword && password !== confirmPassword && <span style={{ color: "#ef4444" }}>Passwords don't match.</span>}
+              {password.length > 0 && password.length < 8 && <span style={{ color: "rgba(243,244,246,0.4)" }}>At least 8 characters needed.</span>}
+            </div>
+          </div>
+
+          {p1Error && (
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171" }}>
+              {p1Error}
+            </div>
+          )}
+
+          <button
+            onClick={handlePhase1Submit}
+            disabled={!p1Ready || p1Submitting || !isLoaded}
+            className="su-field"
+            style={{
+              animationDelay: "0.2s",
+              width: "100%",
+              padding: "13px 0",
+              borderRadius: 10,
+              background: p1Ready && !p1Submitting ? "#f59e0b" : "rgba(245,158,11,0.15)",
+              border: "none",
+              color: p1Ready && !p1Submitting ? "#07080a" : "rgba(245,158,11,0.35)",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: p1Ready && !p1Submitting ? "pointer" : "not-allowed",
+              transition: "all 0.2s",
+              letterSpacing: "0.01em",
+            }}
+          >
+            {p1Submitting ? "Creating account…" : "Continue →"}
+          </button>
+
+          <div style={{ textAlign: "center", fontSize: 12.5, color: "rgba(243,244,246,0.35)", marginTop: 2 }}>
+            Already have an account?{" "}
+            <button
+              onClick={() => setLocation("/sign-in")}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#f59e0b", fontWeight: 600, fontSize: 12.5, padding: 0 }}
+            >
+              Sign in
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2 — email verification */}
+      {phase === 2 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "rgba(243,244,246,0.6)", lineHeight: 1.6 }}>
+            Check your inbox at <strong style={{ color: "#f3f4f6" }}>{email}</strong> for a verification code.
+          </div>
+
+          <div>
+            <label style={labelStyle}>6-digit verification code</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={code}
+              onChange={e => { setCode(e.target.value.replace(/\D/g, "")); setVerifyError(null); }}
+              placeholder="000000"
+              autoFocus
+              onKeyDown={e => { if (e.key === "Enter") handlePhase2Submit(); }}
+              style={inputStyle({ textAlign: "center", fontSize: 22, fontWeight: 700, letterSpacing: "0.25em" })}
+            />
+          </div>
+
+          {verifyError && (
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171" }}>
+              {verifyError}
+            </div>
+          )}
+
+          <button
+            onClick={handlePhase2Submit}
+            disabled={code.length !== 6 || verifying}
+            style={{
+              width: "100%",
+              padding: "13px 0",
+              borderRadius: 10,
+              background: code.length === 6 && !verifying ? "#f59e0b" : "rgba(245,158,11,0.15)",
+              border: "none",
+              color: code.length === 6 && !verifying ? "#07080a" : "rgba(245,158,11,0.35)",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: code.length === 6 && !verifying ? "pointer" : "not-allowed",
+              transition: "all 0.2s",
+            }}
+          >
+            {verifying ? "Verifying…" : "Verify & Continue →"}
+          </button>
+
+          <button
+            onClick={() => { setPhase(1); setCode(""); setVerifyError(null); }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(243,244,246,0.35)", fontSize: 12.5, padding: 0, textAlign: "center" }}
+          >
+            ← Go back and change email
+          </button>
+        </div>
+      )}
+    </AuthPageShell>
+  );
 }
 
 // ── Policy Page Shell ────────────────────────────────────────────────────────
