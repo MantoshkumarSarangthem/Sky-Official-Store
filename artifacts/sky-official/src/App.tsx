@@ -2328,6 +2328,33 @@ function SignUpPage() {
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || resending || !signUp) return;
+    setResending(true);
+    setResendSuccess(false);
+    setVerifyError(null);
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setResendCooldown(30);
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 4000);
+    } catch (e: any) {
+      const msg = e?.errors?.[0]?.message ?? e?.message ?? "Failed to resend. Try again.";
+      setVerifyError(msg);
+    } finally {
+      setResending(false);
+    }
+  };
 
   // Animate in
   const [visible, setVisible] = useState(false);
@@ -2613,6 +2640,30 @@ function SignUpPage() {
           >
             {verifying ? "Verifying…" : "Verify & Continue →"}
           </button>
+
+          <div style={{ textAlign: "center" }}>
+            {resendSuccess && (
+              <div style={{ fontSize: 12, color: "#22c55e", fontWeight: 600, marginBottom: 6 }}>
+                ✓ New code sent — check your inbox.
+              </div>
+            )}
+            <span style={{ fontSize: 12.5, color: "rgba(243,244,246,0.35)" }}>Didn't get it? </span>
+            <button
+              onClick={handleResend}
+              disabled={resendCooldown > 0 || resending}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: resendCooldown > 0 || resending ? "default" : "pointer",
+                color: resendCooldown > 0 || resending ? "rgba(245,158,11,0.3)" : "#f59e0b",
+                fontWeight: 600,
+                fontSize: 12.5,
+                padding: 0,
+              }}
+            >
+              {resending ? "Sending…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+            </button>
+          </div>
 
           <button
             onClick={() => { setPhase(1); setCode(""); setVerifyError(null); }}
