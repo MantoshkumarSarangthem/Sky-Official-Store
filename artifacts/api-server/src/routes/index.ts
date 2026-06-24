@@ -24,7 +24,9 @@ router.use((req, res, next) => {
     p.startsWith("/verify") || p.startsWith("/push")
   ) {
     res.set("Cache-Control", "no-store");
-  } else if (p === "/packages" || p.startsWith("/games")) {
+  } else if (p === "/packages") {
+    res.set("Cache-Control", "no-store");
+  } else if (p.startsWith("/games")) {
     res.set("Cache-Control", "public, max-age=3600");
   } else if (p.startsWith("/settings/category")) {
     res.set("Cache-Control", "public, max-age=86400");
