@@ -41,7 +41,6 @@ const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") 
 
 const WARM_URLS = [
   `${API}/packages`,
-  `${API}/games`,
   `${API}/settings/category_availability`,
   `${API}/settings/category_popular`,
   `${API}/settings/pack_images`,
@@ -1078,10 +1077,9 @@ interface GameItem { id: number; name: string; image: string | null; region?: st
 const GAME_SKELETON_COUNT = 6;
 
 function GameSelectSection() {
-  const gamesCacheKey = `${API}/games`;
   const availCacheKey = `${API}/settings/category_availability`;
-  const [games, setGames] = useState<GameItem[]>(() => getCached<GameItem[]>(gamesCacheKey) ?? []);
-  const [gamesLoading, setGamesLoading] = useState(() => !getCached(gamesCacheKey));
+  const [games, setGames] = useState<GameItem[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
   const [catAvailability, setCatAvailability] = useState<Record<string, string>>(() => getCached<Record<string, string>>(availCacheKey) ?? {});
   const { navigateTo } = usePageNav();
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1094,25 +1092,26 @@ function GameSelectSection() {
     };
   }, []);
 
-  const fetchGames = useCallback((force = false) => {
-    if (force) invalidateCache(gamesCacheKey, availCacheKey);
-    Promise.all([
-      cachedFetch<GameItem[]>(gamesCacheKey),
-      cachedFetch<Record<string, string>>(availCacheKey),
-    ])
-      .then(([d, avail]) => {
-        if (!mountedRef.current) return;
-        setGames(Array.isArray(d) ? d : []);
-        setCatAvailability(avail && typeof avail === "object" ? avail : {});
-        setGamesLoading(false);
-        window.dispatchEvent(new Event("skyContentReady"));
-      })
-      .catch(() => {
-        if (!mountedRef.current) return;
-        // Don't signal ready — retry after 3 s until it succeeds
-        retryRef.current = setTimeout(() => fetchGames(), 3000);
-      });
-  }, [gamesCacheKey, availCacheKey]);
+  const fetchGames = useCallback(async (force = false) => {
+    if (force) invalidateCache();
+    try {
+      const vRes = await fetch(`${API}/games-version`);
+      const vData = await vRes.json();
+      const versionedKey = `${API}/games?v=${vData.v ?? "1"}`;
+      const [d, avail] = await Promise.all([
+        cachedFetch<GameItem[]>(versionedKey),
+        cachedFetch<Record<string, string>>(availCacheKey),
+      ]);
+      if (!mountedRef.current) return;
+      setGames(Array.isArray(d) ? d : []);
+      setCatAvailability(avail && typeof avail === "object" ? avail : {});
+      setGamesLoading(false);
+      window.dispatchEvent(new Event("skyContentReady"));
+    } catch {
+      if (!mountedRef.current) return;
+      retryRef.current = setTimeout(() => fetchGames(), 3000);
+    }
+  }, [availCacheKey]);
 
   useEffect(() => {
     fetchGames();

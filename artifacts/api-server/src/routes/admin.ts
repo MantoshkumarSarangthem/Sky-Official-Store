@@ -1160,6 +1160,13 @@ router.get("/games", requireAdmin, async (_req, res): Promise<void> => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+async function incrementGamesVersion(): Promise<void> {
+  await pool.query(`
+    INSERT INTO settings (key, value) VALUES ('games_version', '1')
+    ON CONFLICT (key) DO UPDATE SET value = (CAST(settings.value AS BIGINT) + 1)::text
+  `);
+}
+
 router.post("/games", requireAdmin, upload.single("image"), async (req, res): Promise<void> => {
   try {
     const { name, sort_order, region } = req.body;
@@ -1169,6 +1176,7 @@ router.post("/games", requireAdmin, upload.single("image"), async (req, res): Pr
       "INSERT INTO games (name, image, sort_order, region) VALUES ($1, $2, $3, $4) RETURNING id, name, image, sort_order, region",
       [name.trim(), image, parseInt(sort_order) || 0, region?.trim() || null]
     );
+    await incrementGamesVersion();
     res.json(rows[0]);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
@@ -1185,6 +1193,7 @@ router.put("/games/:id", requireAdmin, upload.single("image"), async (req, res):
       await pool.query("UPDATE games SET name=$1, sort_order=$2, region=$3 WHERE id=$4", [name.trim(), parseInt(sort_order) || 0, region?.trim() || null, id]);
     }
     const { rows } = await pool.query("SELECT id, name, image, sort_order, region FROM games WHERE id=$1", [id]);
+    await incrementGamesVersion();
     res.json(rows[0]);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
@@ -1192,6 +1201,7 @@ router.put("/games/:id", requireAdmin, upload.single("image"), async (req, res):
 router.delete("/games/:id", requireAdmin, async (req, res): Promise<void> => {
   try {
     await pool.query("DELETE FROM games WHERE id=$1", [parseInt(req.params.id)]);
+    await incrementGamesVersion();
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "DB error" }); }
 });
@@ -1206,6 +1216,7 @@ router.post("/games/reorder", requireAdmin, async (req, res): Promise<void> => {
       await client.query("UPDATE games SET sort_order=$1 WHERE id=$2", [sort_order, id]);
     }
     await client.query("COMMIT");
+    await incrementGamesVersion();
     res.json({ ok: true });
   } catch {
     await client.query("ROLLBACK");

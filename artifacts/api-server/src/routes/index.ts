@@ -27,7 +27,11 @@ router.use((req, res, next) => {
   } else if (p === "/packages") {
     res.set("Cache-Control", "no-store");
   } else if (p.startsWith("/games")) {
-    res.set("Cache-Control", "public, max-age=3600");
+    if (req.query.v) {
+      res.set("Cache-Control", "public, max-age=31536000, immutable");
+    } else {
+      res.set("Cache-Control", "no-store");
+    }
   } else if (p.startsWith("/settings/category")) {
     res.set("Cache-Control", "public, max-age=86400");
   } else if (p === "/settings/promo_banners") {
@@ -294,6 +298,15 @@ router.get("/settings/promo_banners", async (_req, res) => {
     const banners = JSON.parse(rows[0]?.value || "[]");
     res.json(banners.filter((b: any) => b.active !== false));
   } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+// ── Games version (no-store, always fresh) ───────────────────────────────────
+router.get("/games-version", async (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  try {
+    const { rows } = await pool.query("SELECT value FROM settings WHERE key='games_version'");
+    res.json({ v: rows[0]?.value ?? "1" });
+  } catch { res.json({ v: "1" }); }
 });
 
 // ── Games (public) ────────────────────────────────────────────────────────────
