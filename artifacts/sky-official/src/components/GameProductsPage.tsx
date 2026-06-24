@@ -434,7 +434,7 @@ export default function GameProductsPage() {
                 const cardOfferActive = cardOffer && !cardOfferUsed;
                 const displayPrice = cardOfferActive ? cardOffer!.offer_price : pkg.price;
                 const hasOldPrice = cardOfferActive
-                  ? true
+                  ? false
                   : (pkg.old_price && parseFloat(pkg.old_price) > parseFloat(pkg.price));
                 const oldPriceVal = cardOfferActive ? pkg.price : pkg.old_price;
                 const isSelected = selectedPkgId === pkg.id;
