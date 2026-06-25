@@ -62,6 +62,12 @@ function warmCache() {
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
+// Module-level flag — set the moment skyContentReady fires, before any React
+// useEffect has a chance to attach a listener. This prevents the race condition
+// where cached content resolves so fast that the event fires before App mounts.
+let _skyContentFired = false;
+window.addEventListener("skyContentReady", () => { _skyContentFired = true; }, { once: true });
+
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
     ? path.slice(basePath.length) || "/"
