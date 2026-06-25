@@ -1095,6 +1095,7 @@ function GameSelectSection() {
   const { navigateTo } = usePageNav();
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -1104,7 +1105,7 @@ function GameSelectSection() {
   }, []);
 
   const fetchGames = useCallback(async (force = false) => {
-    if (force) invalidateCache();
+    if (force) { invalidateCache(); retryCountRef.current = 0; }
     try {
       const vRes = await fetch(`${API}/games-version`);
       const vData = await vRes.json();
@@ -1114,12 +1115,20 @@ function GameSelectSection() {
         cachedFetch<Record<string, string>>(availCacheKey),
       ]);
       if (!mountedRef.current) return;
+      retryCountRef.current = 0;
       setGames(Array.isArray(d) ? d : []);
       setCatAvailability(avail && typeof avail === "object" ? avail : {});
       setGamesLoading(false);
       window.dispatchEvent(new Event("skyContentReady"));
     } catch {
       if (!mountedRef.current) return;
+      retryCountRef.current += 1;
+      // After 2 failed attempts (~6s) unblock the loading screen so the user
+      // isn't stuck on a spinner — keep retrying in the background so content
+      // appears as soon as the network recovers
+      if (retryCountRef.current >= 2) {
+        window.dispatchEvent(new Event("skyContentReady"));
+      }
       retryRef.current = setTimeout(() => fetchGames(), 3000);
     }
   }, [availCacheKey]);
