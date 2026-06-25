@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { flushSync } from "react-dom";
 import { getCached, cachedFetch, invalidateCache } from "./lib/apiCache";
+import { startContentVersionPolling, getContentVersion } from "./lib/contentVersion";
 import AdminPanel from "./components/AdminPanel";
 import PackagesSection from "./components/PackagesSection";
 import OrderHistoryPage from "./components/OrderHistoryPage";
@@ -891,7 +892,7 @@ function isVidSrc(src: string) {
 let _savedBannerIdx = 0;
 
 function PromoBannerSlider() {
-  const [contentVersion, setContentVersion] = useState("1");
+  const [contentVersion, setContentVersion] = useState(getContentVersion);
   const bannerCacheKey = `${API}/settings/promo_banners?v=${contentVersion}`;
   const [banners, setBanners] = useState<PromoBannerItem[]>(() => getCached<PromoBannerItem[]>(bannerCacheKey) ?? []);
   const [activeIdx, setActiveIdx] = useState(_savedBannerIdx);
@@ -917,17 +918,10 @@ function PromoBannerSlider() {
   }, []);
 
   useEffect(() => {
-    const fetchVersion = () => {
-      fetch(`${API}/content-version`, { cache: "no-store" })
-        .then(r => r.json())
-        .then((d: { v: string }) => {
-          setContentVersion(prev => (d.v !== prev ? d.v : prev));
-        })
-        .catch(() => {});
-    };
-    fetchVersion();
-    const poll = setInterval(fetchVersion, 15000);
-    return () => clearInterval(poll);
+    startContentVersionPolling();
+    const h = (e: Event) => setContentVersion((e as CustomEvent<{ v: string }>).detail.v);
+    window.addEventListener("skyVersionChange", h);
+    return () => window.removeEventListener("skyVersionChange", h);
   }, []);
 
   useEffect(() => {

@@ -1551,6 +1551,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const cancelAddPkg = () => { setShowAddPkg(false); setNewPkgStep("game"); setNewPkgGameId(null); setNewPkgCurrencyType(""); };
 
   return (
+    <>
     <div
       className={fullPage
         ? "fixed inset-0 z-[100] flex flex-col"
@@ -3676,5 +3677,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
         </button>
       </div>
     )}
+    </>
   );
 }

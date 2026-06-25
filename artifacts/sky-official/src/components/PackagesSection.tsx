@@ -4,6 +4,7 @@ import RankBoostPage from "./RankBoostPage";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 import { cachedFetch } from "../lib/apiCache";
+import { getContentVersion } from "../lib/contentVersion";
 
 interface Package {
   id: number;
@@ -884,29 +885,37 @@ export default function PackagesSection({ onPackageSelect: _p, onBack, onBuy, on
     });
   }, [isSignedIn]);
 
+  const [contentVersion, setContentVersion] = useState(getContentVersion);
   useEffect(() => {
-    cachedFetch<any[]>(`${API}/packages`)
+    const h = (e: Event) => setContentVersion((e as CustomEvent<{ v: string }>).detail.v);
+    window.addEventListener("skyVersionChange", h);
+    return () => window.removeEventListener("skyVersionChange", h);
+  }, []);
+
+  useEffect(() => {
+    const v = contentVersion;
+    cachedFetch<any[]>(`${API}/packages?v=${v}`)
       .then(data => { setPackages(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-    cachedFetch<Record<string, any>>(`${API}/settings/category_popular`)
+    cachedFetch<Record<string, any>>(`${API}/settings/category_popular?v=${v}`)
       .then(data => setCategoryPopular(data || {}))
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/category_availability`)
+    cachedFetch<Record<string, any>>(`${API}/settings/category_availability?v=${v}`)
       .then(data => { if (data && typeof data === "object") setCategoryAvailability(data); })
       .catch(() => {});
-    cachedFetch<any[]>(`${API}/settings/pack_images`)
+    cachedFetch<any[]>(`${API}/settings/pack_images?v=${v}`)
       .then(data => { if (Array.isArray(data) && data.length > 0) setPackImagesCfg(data); })
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/pass_images`)
+    cachedFetch<Record<string, any>>(`${API}/settings/pass_images?v=${v}`)
       .then(data => { if (data && typeof data === "object" && !Array.isArray(data)) setPassImagesCfg(data); })
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/starlight_images`)
+    cachedFetch<Record<string, any>>(`${API}/settings/starlight_images?v=${v}`)
       .then(data => { if (data && typeof data === "object" && !Array.isArray(data)) setStarlightImagesCfg(data); })
       .catch(() => {});
-    cachedFetch<Record<string, any>>(`${API}/settings/qr`)
+    cachedFetch<Record<string, any>>(`${API}/settings/qr?v=${v}`)
       .then(d => { if (d.whatsapp) setStaffWA(d.whatsapp); })
       .catch(() => {});
-  }, []);
+  }, [contentVersion]);
 
   const categories = CATEGORIES.map(cat => {
     const override = categoryAvailability[cat.id];

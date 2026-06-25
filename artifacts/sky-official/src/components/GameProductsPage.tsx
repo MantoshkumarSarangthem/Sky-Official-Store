@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getCached, cachedFetch, setCached } from "../lib/apiCache";
+import { getContentVersion } from "../lib/contentVersion";
 import { useLocation } from "wouter";
 import { setMLBBTarget } from "./MLBBTargetPage";
 import { setSelectedPackage } from "./PaymentPage";
@@ -108,8 +109,14 @@ function HeartIcon({ filled }: { filled: boolean }) {
 export default function GameProductsPage() {
   const [location, setLocation] = useLocation();
   const gameId = location.split("/").filter(Boolean).pop();
-  const gameCacheKey = gameId ? `${API}/games/${gameId}` : null;
-  const pkgCacheKey = gameId ? `${API}/packages?game_id=${gameId}` : null;
+  const [contentVersion, setContentVersion] = useState(getContentVersion);
+  useEffect(() => {
+    const h = (e: Event) => setContentVersion((e as CustomEvent<{ v: string }>).detail.v);
+    window.addEventListener("skyVersionChange", h);
+    return () => window.removeEventListener("skyVersionChange", h);
+  }, []);
+  const gameCacheKey = gameId ? `${API}/games/${gameId}?v=${contentVersion}` : null;
+  const pkgCacheKey = gameId ? `${API}/packages?game_id=${gameId}&v=${contentVersion}` : null;
   const [game, setGame] = useState<GameInfo | null>(() => gameCacheKey ? getCached<GameInfo>(gameCacheKey) ?? null : null);
   const [packages, setPackages] = useState<GamePackage[]>(() => {
     if (!pkgCacheKey) return [];
