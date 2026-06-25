@@ -3364,6 +3364,14 @@ export default function App() {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
+    // Auth pages (sign-in, sign-up) never mount GameSelectSection so
+    // skyContentReady never fires — mark content ready immediately so
+    // only the minimum timer is needed before the loading screen dismisses
+    const path = window.location.pathname;
+    const isAuthPage = path.includes("/sign-in") || path.includes("/sign-up");
+    if (isAuthPage) {
+      contentReadyRef.current = true;
+    }
     // Minimum visible time so it doesn't flash on cache hits
     const t = setTimeout(() => {
       minPassedRef.current = true;
