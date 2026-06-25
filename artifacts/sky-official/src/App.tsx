@@ -891,7 +891,8 @@ function isVidSrc(src: string) {
 let _savedBannerIdx = 0;
 
 function PromoBannerSlider() {
-  const bannerCacheKey = `${API}/settings/promo_banners`;
+  const [contentVersion, setContentVersion] = useState("1");
+  const bannerCacheKey = `${API}/settings/promo_banners?v=${contentVersion}`;
   const [banners, setBanners] = useState<PromoBannerItem[]>(() => getCached<PromoBannerItem[]>(bannerCacheKey) ?? []);
   const [activeIdx, setActiveIdx] = useState(_savedBannerIdx);
   const touchStartX = useRef(0);
@@ -913,6 +914,20 @@ function PromoBannerSlider() {
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+  }, []);
+
+  useEffect(() => {
+    const fetchVersion = () => {
+      fetch(`${API}/content-version`, { cache: "no-store" })
+        .then(r => r.json())
+        .then((d: { v: string }) => {
+          setContentVersion(prev => (d.v !== prev ? d.v : prev));
+        })
+        .catch(() => {});
+    };
+    fetchVersion();
+    const poll = setInterval(fetchVersion, 15000);
+    return () => clearInterval(poll);
   }, []);
 
   useEffect(() => {

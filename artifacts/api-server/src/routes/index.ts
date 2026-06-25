@@ -300,6 +300,15 @@ router.get("/settings/promo_banners", async (_req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+// ── Content version (no-store, always fresh) — bumped on admin Publish ───────
+router.get("/content-version", async (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  try {
+    const { rows } = await pool.query("SELECT value FROM settings WHERE key='content_version'");
+    res.json({ v: rows[0]?.value ?? "1" });
+  } catch { res.json({ v: "1" }); }
+});
+
 // ── Games version (no-store, always fresh) ───────────────────────────────────
 router.get("/games-version", async (_req, res) => {
   res.set("Cache-Control", "no-store");

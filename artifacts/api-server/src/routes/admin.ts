@@ -1160,6 +1160,20 @@ router.get("/games", requireAdmin, async (_req, res): Promise<void> => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+async function incrementContentVersion(): Promise<void> {
+  await pool.query(`
+    INSERT INTO settings (key, value) VALUES ('content_version', '2')
+    ON CONFLICT (key) DO UPDATE SET value = (CAST(settings.value AS BIGINT) + 1)::text
+  `);
+}
+
+router.post("/publish", requireAdmin, async (_req, res): Promise<void> => {
+  try {
+    await incrementContentVersion();
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 async function incrementGamesVersion(): Promise<void> {
   await pool.query(`
     INSERT INTO settings (key, value) VALUES ('games_version', '1')
