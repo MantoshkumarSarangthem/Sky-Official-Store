@@ -1175,19 +1175,17 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     } catch {} finally { setStaffSaving(false); }
   };
 
-  const toggleStaffStatus = async (id: number, currentStatus: string) => {
+  const toggleStaffStatus = (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "available" ? "offline" : "available";
-    try {
-      await fetch(`${API}/admin/staff/${id}/status`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) });
-      await fetchStaff();
-    } catch {}
+    setStaffList(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s));
+    fetch(`${API}/admin/staff/${id}/status`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) })
+      .catch(() => setStaffList(prev => prev.map(s => s.id === id ? { ...s, status: currentStatus } : s)));
   };
 
-  const toggleStaffNotify = async (id: number, current: boolean) => {
-    try {
-      await fetch(`${API}/admin/staff/${id}/notify`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ notify_orders: !current }) });
-      await fetchStaff();
-    } catch {}
+  const toggleStaffNotify = (id: number, current: boolean) => {
+    setStaffList(prev => prev.map(s => s.id === id ? { ...s, notify_orders: !current } : s));
+    fetch(`${API}/admin/staff/${id}/notify`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ notify_orders: !current }) })
+      .catch(() => setStaffList(prev => prev.map(s => s.id === id ? { ...s, notify_orders: current } : s)));
   };
 
   const [testEmailStates, setTestEmailStates] = useState<Record<number, "idle" | "sending" | "ok" | "error">>({});
