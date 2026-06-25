@@ -74,7 +74,7 @@ const clerkAppearance = {
     logoPlacement: "none" as const,
   },
   variables: {
-    colorPrimary: "#A89482",
+    colorPrimary: "#25D366",
     colorForeground: "#3D2B1F",
     colorMutedForeground: "#7a6558",
     colorDanger: "#ef4444",
@@ -90,24 +90,24 @@ const clerkAppearance = {
     rootBox: "w-full",
     cardBox: "w-full !shadow-none !bg-transparent",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none !p-0",
-    footer: "!shadow-none !border-0 !bg-transparent !rounded-none !pt-4",
+    footer: "!shadow-none !border-0 !bg-transparent !rounded-none !pt-0",
     headerTitle: "hidden",
     headerSubtitle: "hidden",
     header: "hidden",
     socialButtonsBlockButtonArrow: "hidden",
-    socialButtonsBlockButton: "!bg-white !border-2 !border-[#C5B4A2]/50 hover:!border-[#A89482] hover:!bg-[#FAF9F6] !transition-all !rounded-lg !h-11 !shadow-none",
-    socialButtonsBlockButtonText: "!text-[#3D2B1F] !font-medium !text-sm",
-    formFieldLabel: "!text-[#7a6558] !font-medium !text-xs !uppercase !tracking-wide",
-    footerActionLink: "!text-[#A89482] !font-semibold hover:!text-[#8a7468]",
-    footerActionText: "!text-[#7a6558] !text-sm",
-    dividerText: "!text-[#7a6558] !text-xs",
-    identityPreviewEditButton: "!text-[#A89482]",
-    formFieldSuccessText: "!text-green-600",
-    alertText: "!text-red-500 !text-sm",
+    socialButtonsBlockButton: "!transition-all !rounded-lg !h-11",
+    socialButtonsBlockButtonText: "!font-medium !text-sm",
+    formFieldLabel: "!text-[#9ca3af] !font-medium !text-xs !uppercase !tracking-wide",
+    footerActionLink: "!text-[#25D366] !font-semibold",
+    footerActionText: "!text-[#9ca3af] !text-sm",
+    dividerText: "!text-[#6b7280] !text-xs",
+    identityPreviewEditButton: "!text-[#25D366]",
+    formFieldSuccessText: "!text-green-500",
+    alertText: "!text-red-400 !text-sm",
     socialButtonsBlockButtonIconBox: "!mr-2",
-    formButtonPrimary: "!bg-[#A89482] hover:!bg-[#8a7468] !text-white !font-bold !transition-colors !rounded-lg !h-11 !shadow-none",
-    formFieldInput: "!bg-white !border-[#C5B4A2] !text-[#3D2B1F] focus:!border-[#A89482] !rounded-lg !h-11 !text-sm",
-    footerAction: "!border-t !border-[#C5B4A2]/30 !mt-5",
+    formButtonPrimary: "!text-white !font-bold !transition-all !rounded-lg !h-11",
+    formFieldInput: "!bg-[#1a1d27] !border-[rgba(255,255,255,0.15)] !text-[#f3f4f6] focus:!border-[#25D366] !rounded-lg !h-11 !text-sm",
+    footerAction: "!border-t-0 !mt-0",
     dividerLine: "!bg-[#C5B4A2]/30",
     alert: "!border !border-red-300 !bg-red-50 !rounded-lg",
     otpCodeFieldInput: "!bg-white !border-[#C5B4A2] !text-[#3D2B1F]",
@@ -2200,32 +2200,45 @@ function AuthPageShell({ children, title, subtitle, isSignUp = false }: { childr
   });
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#07080a" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#07080a", overflowX: "clip" }}>
       <style>{`
         @keyframes authFadeIn {
-          from { opacity: 0; transform: translate(-18px, -18px); }
-          to   { opacity: 1; transform: translate(0, 0); }
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        /* Hide Clerk's "Secured by Clerk" branding footer */
+
+        /* ── Hide Clerk branding ── */
         [class*="powered-by-clerk"], .cl-footer__pages,
         .cl-internal-powered-by-clerk { display: none !important; }
 
-        /* Force Clerk social buttons to have visible outline */
+        /* ── Fix overflow so Last Used badge and edges never clip ── */
+        .cl-rootBox, .cl-cardBox, .cl-card,
+        .cl-main, .cl-socialButtonsRoot, .cl-socialButtons {
+          overflow: visible !important;
+        }
+
+        /* ── Social buttons: dark bg + subtle ambient glow ── */
         .cl-socialButtonsBlockButton {
           background: #13151c !important;
-          border: 2px solid rgba(255,255,255,0.38) !important;
+          border: 1.5px solid rgba(255,255,255,0.18) !important;
           border-radius: 10px !important;
           height: 44px !important;
           transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease !important;
-          box-shadow: 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+          box-shadow:
+            0 0 0 1px rgba(255,255,255,0.06),
+            0 0 18px 3px rgba(255,255,255,0.07),
+            inset 0 1px 0 rgba(255,255,255,0.06) !important;
         }
         .cl-socialButtonsBlockButton:hover {
-          border-color: rgba(245,158,11,0.7) !important;
-          background: #1b1d26 !important;
-          box-shadow: 0 0 0 1px rgba(245,158,11,0.15), 0 0 12px rgba(245,158,11,0.1) !important;
+          border-color: rgba(37,211,102,0.5) !important;
+          background: #181b22 !important;
+          box-shadow:
+            0 0 0 1px rgba(37,211,102,0.15),
+            0 0 18px 4px rgba(37,211,102,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.06) !important;
         }
         .cl-socialButtonsBlockButtonText {
-          color: #f3f4f6 !important;
+          color: #e5e7eb !important;
           font-weight: 500 !important;
           font-size: 0.875rem !important;
         }
@@ -2233,6 +2246,53 @@ function AuthPageShell({ children, title, subtitle, isSignUp = false }: { childr
         .cl-socialButtonsBlockButtonIconBox svg {
           width: 18px !important;
           height: 18px !important;
+        }
+
+        /* ── Continue / primary button: WhatsApp green glow ── */
+        .cl-formButtonPrimary {
+          background: #25D366 !important;
+          box-shadow:
+            0 4px 20px rgba(37,211,102,0.45),
+            0 0 0 1px rgba(37,211,102,0.25) !important;
+          color: #fff !important;
+          font-weight: 700 !important;
+        }
+        .cl-formButtonPrimary:hover {
+          background: #1fbc59 !important;
+          box-shadow:
+            0 4px 28px rgba(37,211,102,0.6),
+            0 0 0 1px rgba(37,211,102,0.35) !important;
+        }
+
+        /* ── Footer section: transparent bg, clearly separated ── */
+        .cl-footer, .cl-footerAction, .cl-footerActionRow {
+          background: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+        .cl-footer {
+          margin-top: 28px !important;
+          padding-top: 20px !important;
+          border-top: 1px solid rgba(255,255,255,0.08) !important;
+        }
+
+        /* ── Input fields on dark background ── */
+        .cl-formFieldInput::placeholder {
+          color: rgba(156,163,175,0.6) !important;
+        }
+
+        /* ── Divider ── */
+        .cl-dividerLine {
+          background: rgba(255,255,255,0.1) !important;
+        }
+        .cl-dividerText {
+          color: #6b7280 !important;
+        }
+
+        /* ── Last used badge: ensure it never clips ── */
+        .cl-badge {
+          overflow: visible !important;
+          white-space: nowrap !important;
         }
       `}</style>
 
@@ -2259,8 +2319,8 @@ function AuthPageShell({ children, title, subtitle, isSignUp = false }: { childr
       </div>
 
       {/* Centered content */}
-      <div className="relative z-10 flex flex-1 flex-col justify-center px-6 py-8">
-        <div className="w-full max-w-[380px] mx-auto">
+      <div className="relative z-10 flex flex-1 flex-col justify-center py-8" style={{ padding: "2rem 20px", overflow: "visible" }}>
+        <div className="w-full mx-auto" style={{ maxWidth: 380, overflow: "visible" }}>
 
           {/* Logo + wordmark */}
           <div className="flex items-center gap-3 mb-8" style={diag(0.07)}>
