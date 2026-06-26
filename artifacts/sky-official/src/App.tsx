@@ -2426,6 +2426,16 @@ function SignUpPage() {
     return () => clearInterval(t);
   }, [resendCooldown]);
 
+  // Fix 2: Detect when Clerk already completed OAuth (user came from Google on
+  // the sign-in page and was transferred here). If the session is ready, just
+  // activate it and go home — UsernameGate will handle username setup.
+  useEffect(() => {
+    if (!isLoaded || !signUp || !setActive) return;
+    if (signUp.status === "complete" && signUp.createdSessionId) {
+      setActive({ session: signUp.createdSessionId }).then(() => setLocation("/")).catch(() => {});
+    }
+  }, [isLoaded, signUp?.status, signUp?.createdSessionId]);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleOAuth = async (strategy: "oauth_google" | "oauth_apple" | "oauth_facebook") => {
@@ -2466,7 +2476,7 @@ function SignUpPage() {
     setP1Submitting(true);
     setP1Error(null);
     try {
-      await signUp.create({ emailAddress: email, password });
+      await signUp.create({ emailAddress: email, password, username });
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setPhase(2);
     } catch (e: any) {
@@ -2585,6 +2595,13 @@ function SignUpPage() {
       {/* Phase 1 — account details */}
       {phase === 1 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* Fix 1: Error shown at top so it's visible immediately */}
+          {p1Error && (
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171", marginBottom: 2 }}>
+              {p1Error}
+            </div>
+          )}
 
           {/* Social sign-up buttons */}
           <div style={{ display: "flex", gap: 10 }}>
@@ -2734,12 +2751,6 @@ function SignUpPage() {
               {password.length > 0 && password.length < 8 && <span style={{ color: "rgba(243,244,246,0.4)" }}>At least 8 characters needed.</span>}
             </div>
           </div>
-
-          {p1Error && (
-            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171" }}>
-              {p1Error}
-            </div>
-          )}
 
           <button
             onClick={handlePhase1Submit}
