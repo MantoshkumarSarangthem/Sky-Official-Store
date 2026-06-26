@@ -3384,7 +3384,9 @@ export default function App() {
     // only the minimum timer is needed before the loading screen dismisses
     const path = window.location.pathname;
     const isAuthPage = path.includes("/sign-in") || path.includes("/sign-up");
-    if (isAuthPage) {
+    // If skyContentReady already fired before this effect ran (race condition on
+    // cache hits or after OAuth full-page reload) mark content ready immediately
+    if (isAuthPage || _skyContentFired) {
       contentReadyRef.current = true;
     }
     // Minimum visible time so it doesn't flash on cache hits
