@@ -21,11 +21,10 @@ import RankBoostPage from "./components/RankBoostPage";
 import { CartProvider, useCart } from "./context/CartContext";
 import {
   ClerkProvider,
-  SignIn,
-  Show,
   useUser,
   useClerk,
   useAuth,
+  useSignIn,
   useSignUp,
   AuthenticateWithRedirectCallback,
 } from "@clerk/react";
@@ -2376,18 +2375,206 @@ function AuthPageShell({ children, title, subtitle, isSignUp = false }: { childr
 
 // ── Sign In Page ───────────────────────────────────────────────────────────
 function SignInPage() {
-  return (
-    <AuthPageShell
-      title="Welcome back"
-      subtitle="Log in to your Sky Official account."
-    >
-      <SignIn
-        routing="path"
-        path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-        fallbackRedirectUrl={basePath || "/"}
-        appearance={clerkAppearance}
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const [location, setLocation] = useLocation();
+
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | "facebook" | null>(null);
+
+  const handleSignIn = async () => {
+    if (!signIn || submitting || !identifier || !password) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await signIn.create({ identifier, password });
+      if (result.status === "complete") {
+        if (setActive) await setActive({ session: result.createdSessionId });
+        setLocation("/");
+      }
+    } catch (e: any) {
+      setError(e?.errors?.[0]?.longMessage ?? e?.errors?.[0]?.message ?? "Sign in failed. Check your details.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOAuth = async (strategy: "oauth_google" | "oauth_apple" | "oauth_facebook") => {
+    if (!signIn || oauthLoading) return;
+    setOauthLoading(strategy === "oauth_google" ? "google" : strategy === "oauth_apple" ? "apple" : "facebook");
+    setError(null);
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy,
+        redirectUrl: `${window.location.origin}${basePath}/sign-in/sso-callback`,
+        redirectUrlComplete: basePath || "/",
+      });
+    } catch (e: any) {
+      setError(e?.errors?.[0]?.message ?? "OAuth sign-in failed. Try again.");
+      setOauthLoading(null);
+    }
+  };
+
+  const siInputStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
+    width: "100%", padding: "12px 14px", borderRadius: 10,
+    border: "1.5px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)",
+    color: "#f3f4f6", fontSize: 14, outline: "none", boxSizing: "border-box",
+    fontFamily: "inherit", transition: "border-color 0.2s", ...extra,
+  });
+
+  const siLabelStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase",
+    color: "rgba(243,244,246,0.45)", marginBottom: 6, display: "block",
+  };
+
+  if (location.includes("sso-callback")) {
+    return (
+      <AuthenticateWithRedirectCallback
+        afterSignUpUrl={basePath || "/"}
+        afterSignInUrl={basePath || "/"}
       />
+    );
+  }
+
+  const ready = !!identifier && password.length >= 1;
+
+  return (
+    <AuthPageShell title="Welcome back" subtitle="Log in to your Sky Official account.">
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+        {error && (
+          <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171" }}>
+            {error}
+          </div>
+        )}
+
+        {/* Social buttons — icon only */}
+        <div style={{ display: "flex", gap: 10 }}>
+          {(["apple", "facebook", "google"] as const).map((provider) => (
+            <button
+              key={provider}
+              onClick={() => handleOAuth(`oauth_${provider}` as "oauth_google" | "oauth_apple" | "oauth_facebook")}
+              disabled={!!oauthLoading || !isLoaded}
+              style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "11px 0", borderRadius: 10,
+                background: oauthLoading === provider ? "rgba(255,255,255,0.12)" : "#13151c",
+                border: "1.5px solid rgba(255,255,255,0.18)", cursor: oauthLoading ? "default" : "pointer",
+                transition: "all 0.2s",
+                boxShadow: "0 0 0 1px rgba(255,255,255,0.06), 0 0 18px 3px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.06)",
+              }}
+            >
+              {oauthLoading === provider ? (
+                <span style={{ fontSize: 12, color: "rgba(243,244,246,0.5)" }}>…</span>
+              ) : provider === "apple" ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#f3f4f6">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+              ) : provider === "facebook" ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
+                  <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+          <span style={{ fontSize: 11, color: "rgba(243,244,246,0.3)", fontWeight: 600, letterSpacing: "0.05em" }}>or</span>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+        </div>
+
+        {/* Identifier */}
+        <div>
+          <label style={siLabelStyle}>Email address or username</label>
+          <input
+            value={identifier}
+            onChange={e => { setIdentifier(e.target.value); setError(null); }}
+            placeholder="Enter email or username"
+            autoComplete="username"
+            onKeyDown={e => { if (e.key === "Enter" && password) handleSignIn(); }}
+            style={siInputStyle()}
+          />
+        </div>
+
+        {/* Password with eye toggle */}
+        <div>
+          <label style={siLabelStyle}>Password</label>
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError(null); }}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              onKeyDown={e => { if (e.key === "Enter") handleSignIn(); }}
+              style={siInputStyle({ paddingRight: 44 })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              tabIndex={-1}
+              style={{
+                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                background: "none", border: "none", cursor: "pointer", padding: 0,
+                color: "rgba(243,244,246,0.4)", display: "flex", alignItems: "center",
+              }}
+            >
+              {showPassword ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Sign in button */}
+        <button
+          onClick={handleSignIn}
+          disabled={!ready || submitting || !isLoaded}
+          style={{
+            width: "100%", padding: "13px 0", borderRadius: 10,
+            background: ready && !submitting ? "#25D366" : "rgba(37,211,102,0.15)",
+            border: "none", color: ready && !submitting ? "#fff" : "rgba(37,211,102,0.35)",
+            fontSize: 14, fontWeight: 700, cursor: ready && !submitting ? "pointer" : "not-allowed",
+            transition: "all 0.2s", letterSpacing: "0.01em",
+            boxShadow: ready && !submitting ? "0 4px 20px rgba(37,211,102,0.45), 0 0 0 1px rgba(37,211,102,0.25)" : "none",
+          }}
+        >
+          {submitting ? "Signing in…" : "Continue ▶"}
+        </button>
+
+        <div style={{ textAlign: "center", fontSize: 12.5, color: "rgba(243,244,246,0.35)", marginTop: 2 }}>
+          Don't have an account?{" "}
+          <button
+            onClick={() => setLocation("/sign-up")}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#25D366", fontWeight: 600, fontSize: 12.5, padding: 0 }}
+          >
+            Sign up
+          </button>
+        </div>
+
+      </div>
     </AuthPageShell>
   );
 }
@@ -2407,6 +2594,8 @@ function SignUpPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [p1Submitting, setP1Submitting] = useState(false);
   const [p1Error, setP1Error] = useState<string | null>(null);
@@ -2603,80 +2792,43 @@ function SignUpPage() {
             </div>
           )}
 
-          {/* Social sign-up buttons */}
+          {/* Social sign-up buttons — icon only, matches sign-in style */}
           <div style={{ display: "flex", gap: 10 }}>
-            <button
-              onClick={() => handleOAuth("oauth_google")}
-              disabled={!!oauthLoading || !isLoaded}
-              className="su-field"
-              style={{
-                animationDelay: "0s", flex: 1, display: "flex", alignItems: "center",
-                justifyContent: "center", gap: 8, padding: "11px 0", borderRadius: 10,
-                background: oauthLoading === "google" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.07)",
-                border: "1.5px solid rgba(255,255,255,0.14)", cursor: oauthLoading ? "default" : "pointer",
-                transition: "all 0.2s", color: "#f3f4f6", fontSize: 13, fontWeight: 600,
-              }}
-            >
-              {oauthLoading === "google" ? (
-                <span style={{ fontSize: 12, color: "rgba(243,244,246,0.5)" }}>…</span>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24">
+            {(["apple", "facebook", "google"] as const).map((provider) => (
+              <button
+                key={provider}
+                onClick={() => handleOAuth(`oauth_${provider}` as "oauth_google" | "oauth_apple" | "oauth_facebook")}
+                disabled={!!oauthLoading || !isLoaded}
+                className="su-field"
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "11px 0", borderRadius: 10,
+                  background: oauthLoading === provider ? "rgba(255,255,255,0.12)" : "#13151c",
+                  border: "1.5px solid rgba(255,255,255,0.18)", cursor: oauthLoading ? "default" : "pointer",
+                  transition: "all 0.2s",
+                  boxShadow: "0 0 0 1px rgba(255,255,255,0.06), 0 0 18px 3px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.06)",
+                }}
+              >
+                {oauthLoading === provider ? (
+                  <span style={{ fontSize: 12, color: "rgba(243,244,246,0.5)" }}>…</span>
+                ) : provider === "apple" ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#f3f4f6">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                  </svg>
+                ) : provider === "facebook" ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
+                    <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  Google
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => handleOAuth("oauth_apple")}
-              disabled={!!oauthLoading || !isLoaded}
-              className="su-field"
-              style={{
-                animationDelay: "0.05s", flex: 1, display: "flex", alignItems: "center",
-                justifyContent: "center", gap: 8, padding: "11px 0", borderRadius: 10,
-                background: oauthLoading === "apple" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.07)",
-                border: "1.5px solid rgba(255,255,255,0.14)", cursor: oauthLoading ? "default" : "pointer",
-                transition: "all 0.2s", color: "#f3f4f6", fontSize: 13, fontWeight: 600,
-              }}
-            >
-              {oauthLoading === "apple" ? (
-                <span style={{ fontSize: 12, color: "rgba(243,244,246,0.5)" }}>…</span>
-              ) : (
-                <>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#f3f4f6">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                  </svg>
-                  Apple
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => handleOAuth("oauth_facebook")}
-              disabled={!!oauthLoading || !isLoaded}
-              className="su-field"
-              style={{
-                animationDelay: "0.08s", flex: 1, display: "flex", alignItems: "center",
-                justifyContent: "center", gap: 8, padding: "11px 0", borderRadius: 10,
-                background: oauthLoading === "facebook" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.07)",
-                border: "1.5px solid rgba(255,255,255,0.14)", cursor: oauthLoading ? "default" : "pointer",
-                transition: "all 0.2s", color: "#f3f4f6", fontSize: 13, fontWeight: 600,
-              }}
-            >
-              {oauthLoading === "facebook" ? (
-                <span style={{ fontSize: 12, color: "rgba(243,244,246,0.5)" }}>…</span>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#1877F2">
-                    <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
-                  </svg>
-                  Facebook
-                </>
-              )}
-            </button>
+                )}
+              </button>
+            ))}
           </div>
 
           {/* Divider */}
@@ -2725,27 +2877,77 @@ function SignUpPage() {
 
           <div className="su-field" style={{ animationDelay: "0.2s" }}>
             <label style={labelStyle}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => { setPassword(e.target.value); setP1Error(null); }}
-              placeholder="Minimum 8 characters"
-              autoComplete="new-password"
-              style={inputStyle()}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => { setPassword(e.target.value); setP1Error(null); }}
+                placeholder="Minimum 8 characters"
+                autoComplete="new-password"
+                style={inputStyle({ paddingRight: 44 })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                tabIndex={-1}
+                style={{
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", padding: 0,
+                  color: "rgba(243,244,246,0.4)", display: "flex", alignItems: "center",
+                }}
+              >
+                {showPassword ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="su-field" style={{ animationDelay: "0.25s" }}>
             <label style={labelStyle}>Confirm password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={e => { setConfirmPassword(e.target.value); setP1Error(null); }}
-              placeholder="Re-enter password"
-              autoComplete="new-password"
-              onKeyDown={e => { if (e.key === "Enter") handlePhase1Submit(); }}
-              style={inputStyle({ borderColor: confirmPassword && password !== confirmPassword ? "#ef4444" : "rgba(255,255,255,0.12)" })}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={e => { setConfirmPassword(e.target.value); setP1Error(null); }}
+                placeholder="Re-enter password"
+                autoComplete="new-password"
+                onKeyDown={e => { if (e.key === "Enter") handlePhase1Submit(); }}
+                style={inputStyle({ paddingRight: 44, borderColor: confirmPassword && password !== confirmPassword ? "#ef4444" : "rgba(255,255,255,0.12)" })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(v => !v)}
+                tabIndex={-1}
+                style={{
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", padding: 0,
+                  color: "rgba(243,244,246,0.4)", display: "flex", alignItems: "center",
+                }}
+              >
+                {showConfirmPassword ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
+            </div>
             <div style={{ marginTop: 5, minHeight: 16, fontSize: 11.5 }}>
               {confirmPassword && password !== confirmPassword && <span style={{ color: "#ef4444" }}>Passwords don't match.</span>}
               {password.length > 0 && password.length < 8 && <span style={{ color: "rgba(243,244,246,0.4)" }}>At least 8 characters needed.</span>}
