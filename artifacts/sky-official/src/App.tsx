@@ -2256,11 +2256,6 @@ function AuthPageShell({ children, title, subtitle, isSignUp = false }: { childr
           font-weight: 500 !important;
           font-size: 0.875rem !important;
         }
-        .cl-socialButtonsBlockButtonIconBox img,
-        .cl-socialButtonsBlockButtonIconBox svg {
-          width: 18px !important;
-          height: 18px !important;
-        }
 
         /* ── Continue / primary button: WhatsApp green glow ── */
         .cl-formButtonPrimary {
