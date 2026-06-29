@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "python-3.12"]
+modules = ["nodejs-20", "python-3.12", "web"]
 
   [deployment]
   router = "application"
@@ -35,7 +35,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/sky-official run dev"
+args = "pnpm install && pnpm --filter @workspace/sky-official run dev"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -47,7 +47,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm --filter @workspace/api-server run dev"
+args = "pnpm install && pnpm --filter @workspace/api-server run dev"
 waitForPort = 8080
 
   [agent]
