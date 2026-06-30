@@ -404,8 +404,7 @@ export default function ProfilePage() {
                           if (!signIn || !fpCode || fpNewPw.length < 8) { setSettingsMsg({ ok: false, text: "Enter the code and a password of at least 8 characters." }); return; }
                           setFpLoading(true);
                           try {
-                            await (signIn as any).attemptFirstFactor({ strategy: "reset_password_email_code", code: fpCode });
-                            await (signIn as any).resetPassword({ password: fpNewPw });
+                            await (signIn as any).attemptFirstFactor({ strategy: "reset_password_email_code", code: fpCode, password: fpNewPw });
                             setSettingsMsg({ ok: true, text: "Password reset! You can now sign in with your new password." });
                             setFpStep(0); setFpCode(""); setFpNewPw("");
                           } catch (e: any) {
