@@ -2245,6 +2245,16 @@ function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | "facebook" | null>(null);
 
+  const [forgotMode, setForgotMode] = useState<"off" | "email" | "reset">("off");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotCode, setForgotCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+
   const handleSignIn = async () => {
     if (!signIn || submitting || !identifier || !password) return;
     setSubmitting(true);
@@ -2278,6 +2288,41 @@ function SignInPage() {
     }
   };
 
+  const handleForgotSend = async () => {
+    if (!signIn || forgotSubmitting || !forgotEmail.trim()) return;
+    setForgotSubmitting(true);
+    setForgotError(null);
+    try {
+      await signIn.create({ strategy: "reset_password_email_code", identifier: forgotEmail.trim() });
+      setForgotMode("reset");
+    } catch (e: any) {
+      setForgotError(e?.errors?.[0]?.longMessage ?? e?.errors?.[0]?.message ?? "Couldn't send reset code. Check the email and try again.");
+    } finally {
+      setForgotSubmitting(false);
+    }
+  };
+
+  const handleForgotReset = async () => {
+    if (!signIn || forgotSubmitting || forgotCode.length !== 6 || newPassword.length < 8 || newPassword !== confirmNewPassword) return;
+    setForgotSubmitting(true);
+    setForgotError(null);
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: "reset_password_email_code",
+        code: forgotCode,
+        password: newPassword,
+      });
+      if (result.status === "complete") {
+        if (setActive) await setActive({ session: result.createdSessionId });
+        setLocation("/");
+      }
+    } catch (e: any) {
+      setForgotError(e?.errors?.[0]?.longMessage ?? e?.errors?.[0]?.message ?? "Reset failed. Check the code and try again.");
+    } finally {
+      setForgotSubmitting(false);
+    }
+  };
+
   const siInputStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
     width: "100%", padding: "12px 14px", borderRadius: 10,
     border: "1.5px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)",
@@ -2300,6 +2345,156 @@ function SignInPage() {
   }
 
   const ready = !!identifier && password.length >= 1;
+  const forgotSendReady = forgotEmail.includes("@") && forgotEmail.includes(".");
+  const forgotResetReady = forgotCode.length === 6 && newPassword.length >= 8 && newPassword === confirmNewPassword;
+
+  const eyeIcon = (visible: boolean) => visible ? (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  ) : (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+
+  if (forgotMode === "email") {
+    return (
+      <AuthPageShell title="Reset password" subtitle="Enter your account email and we'll send you a reset code.">
+        <form onSubmit={e => { e.preventDefault(); handleForgotSend(); }} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {forgotError && (
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171" }}>
+              {forgotError}
+            </div>
+          )}
+          <div>
+            <label style={siLabelStyle}>Email address</label>
+            <input
+              type="email"
+              value={forgotEmail}
+              onChange={e => { setForgotEmail(e.target.value); setForgotError(null); }}
+              placeholder="you@example.com"
+              autoComplete="email"
+              autoFocus
+              style={siInputStyle()}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!forgotSendReady || forgotSubmitting || !isLoaded}
+            style={{
+              width: "100%", padding: "13px 0", borderRadius: 10,
+              background: forgotSendReady && !forgotSubmitting ? "#25D366" : "rgba(37,211,102,0.15)",
+              border: "none", color: forgotSendReady && !forgotSubmitting ? "#fff" : "rgba(37,211,102,0.35)",
+              fontSize: 14, fontWeight: 700, cursor: forgotSendReady && !forgotSubmitting ? "pointer" : "not-allowed",
+              transition: "all 0.2s", letterSpacing: "0.01em",
+              boxShadow: forgotSendReady && !forgotSubmitting ? "0 4px 20px rgba(37,211,102,0.45), 0 0 0 1px rgba(37,211,102,0.25)" : "none",
+            }}
+          >
+            {forgotSubmitting ? "Sending…" : "Send reset code ▶"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setForgotMode("off"); setForgotError(null); setForgotEmail(""); }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(243,244,246,0.35)", fontSize: 12.5, padding: 0, textAlign: "center" }}
+          >
+            ← Back to sign in
+          </button>
+        </form>
+      </AuthPageShell>
+    );
+  }
+
+  if (forgotMode === "reset") {
+    return (
+      <AuthPageShell title="Set new password" subtitle={`Enter the 6-digit code sent to ${forgotEmail} and choose a new password.`}>
+        <form onSubmit={e => { e.preventDefault(); handleForgotReset(); }} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {forgotError && (
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171" }}>
+              {forgotError}
+            </div>
+          )}
+          <div>
+            <label style={siLabelStyle}>6-digit reset code</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={forgotCode}
+              onChange={e => { setForgotCode(e.target.value.replace(/\D/g, "")); setForgotError(null); }}
+              placeholder="000000"
+              autoFocus
+              style={siInputStyle({ textAlign: "center", fontSize: 22, fontWeight: 700, letterSpacing: "0.25em" })}
+            />
+          </div>
+          <div>
+            <label style={siLabelStyle}>New password</label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showNewPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={e => { setNewPassword(e.target.value); setForgotError(null); }}
+                placeholder="Minimum 8 characters"
+                autoComplete="new-password"
+                style={siInputStyle({ paddingRight: 44 })}
+              />
+              <button type="button" onClick={() => setShowNewPassword(v => !v)} tabIndex={-1}
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, color: "rgba(243,244,246,0.4)", display: "flex", alignItems: "center" }}>
+                {eyeIcon(showNewPassword)}
+              </button>
+            </div>
+            {newPassword.length > 0 && newPassword.length < 8 && (
+              <div style={{ marginTop: 5, fontSize: 11.5, color: "rgba(243,244,246,0.4)" }}>At least 8 characters needed.</div>
+            )}
+          </div>
+          <div>
+            <label style={siLabelStyle}>Confirm new password</label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showConfirmNewPassword ? "text" : "password"}
+                value={confirmNewPassword}
+                onChange={e => { setConfirmNewPassword(e.target.value); setForgotError(null); }}
+                placeholder="Re-enter new password"
+                autoComplete="new-password"
+                style={siInputStyle({ paddingRight: 44, borderColor: confirmNewPassword && newPassword !== confirmNewPassword ? "#ef4444" : "rgba(255,255,255,0.12)" })}
+              />
+              <button type="button" onClick={() => setShowConfirmNewPassword(v => !v)} tabIndex={-1}
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, color: "rgba(243,244,246,0.4)", display: "flex", alignItems: "center" }}>
+                {eyeIcon(showConfirmNewPassword)}
+              </button>
+            </div>
+            {confirmNewPassword && newPassword !== confirmNewPassword && (
+              <div style={{ marginTop: 5, fontSize: 11.5, color: "#ef4444" }}>Passwords don't match.</div>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={!forgotResetReady || forgotSubmitting || !isLoaded}
+            style={{
+              width: "100%", padding: "13px 0", borderRadius: 10,
+              background: forgotResetReady && !forgotSubmitting ? "#25D366" : "rgba(37,211,102,0.15)",
+              border: "none", color: forgotResetReady && !forgotSubmitting ? "#fff" : "rgba(37,211,102,0.35)",
+              fontSize: 14, fontWeight: 700, cursor: forgotResetReady && !forgotSubmitting ? "pointer" : "not-allowed",
+              transition: "all 0.2s", letterSpacing: "0.01em",
+              boxShadow: forgotResetReady && !forgotSubmitting ? "0 4px 20px rgba(37,211,102,0.45), 0 0 0 1px rgba(37,211,102,0.25)" : "none",
+            }}
+          >
+            {forgotSubmitting ? "Resetting…" : "Reset & sign in ▶"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setForgotMode("email"); setForgotCode(""); setNewPassword(""); setConfirmNewPassword(""); setForgotError(null); }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(243,244,246,0.35)", fontSize: 12.5, padding: 0, textAlign: "center" }}
+          >
+            ← Use a different email
+          </button>
+        </form>
+      </AuthPageShell>
+    );
+  }
 
   return (
     <AuthPageShell title="Welcome back" subtitle="Log in to your Sky Official account.">
@@ -2365,14 +2560,22 @@ function SignInPage() {
             onChange={e => { setIdentifier(e.target.value); setError(null); }}
             placeholder="Enter email or username"
             autoComplete="username"
-            onKeyDown={e => { if (e.key === "Enter" && password) handleSignIn(); }}
             style={siInputStyle()}
           />
         </div>
 
         {/* Password with eye toggle */}
         <div>
-          <label style={siLabelStyle}>Password</label>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <label style={{ ...siLabelStyle, marginBottom: 0 }}>Password</label>
+            <button
+              type="button"
+              onClick={() => { setForgotEmail(identifier.includes("@") ? identifier : ""); setForgotMode("email"); setError(null); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(37,211,102,0.7)", fontSize: 11, fontWeight: 600, padding: 0, letterSpacing: "0.03em" }}
+            >
+              Forgot password?
+            </button>
+          </div>
           <div style={{ position: "relative" }}>
             <input
               type={showPassword ? "text" : "password"}
@@ -2380,7 +2583,6 @@ function SignInPage() {
               onChange={e => { setPassword(e.target.value); setError(null); }}
               placeholder="Enter your password"
               autoComplete="current-password"
-              onKeyDown={e => { if (e.key === "Enter") handleSignIn(); }}
               style={siInputStyle({ paddingRight: 44 })}
             />
             <button
@@ -2393,18 +2595,7 @@ function SignInPage() {
                 color: "rgba(243,244,246,0.4)", display: "flex", alignItems: "center",
               }}
             >
-              {showPassword ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              )}
+              {eyeIcon(showPassword)}
             </button>
           </div>
         </div>
