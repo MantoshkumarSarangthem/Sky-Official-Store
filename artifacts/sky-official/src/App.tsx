@@ -3574,6 +3574,7 @@ function AppRoutes() {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
+      proxyUrl={clerkPubKey?.startsWith("pk_live_") ? `${window.location.origin}/api/__clerk` : undefined}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       routerPush={(to) => setLocation(stripBase(to))}
