@@ -1,47 +1,12 @@
 import { Router } from "express";
 import pool from "../lib/db";
 import { requireAuth } from "../middlewares/requireAuth";
-import { sendPushToAll } from "./push";
-import { insertNotification } from "../lib/notifications";
+import * as orderService from "../services/orderService";
+import * as walletService from "../services/walletService";
+import * as notif from "../services/notificationService";
+import { assignAvailableStaff } from "../services/staffService";
 
 const router = Router();
-
-
-async function getNextDisplayId(): Promise<string> {
-  const year = new Date().getFullYear();
-  const key = `order_seq_${year}`;
-  await pool.query(
-    `INSERT INTO settings (key, value) VALUES ($1, '0') ON CONFLICT (key) DO NOTHING`,
-    [key]
-  );
-  const { rows } = await pool.query(
-    `UPDATE settings SET value = (value::int + 1)::text WHERE key = $1 RETURNING value`,
-    [key]
-  );
-  const seq = parseInt(rows[0]?.value ?? "1");
-  return `SKY-${year}-${seq.toString().padStart(6, "0")}`;
-}
-
-async function assignAvailableStaff(): Promise<number | null> {
-  const { rows: staffList } = await pool.query(
-    `SELECT id FROM recharge_staff WHERE status = 'available' ORDER BY sort_order ASC, id ASC`
-  );
-  if (staffList.length === 0) return null;
-
-  await pool.query(
-    `INSERT INTO settings (key, value) VALUES ('staff_rr_idx', '0') ON CONFLICT (key) DO NOTHING`
-  );
-  const { rows: idxRows } = await pool.query(
-    `SELECT value FROM settings WHERE key = 'staff_rr_idx'`
-  );
-  const currentIdx = parseInt(idxRows[0]?.value ?? "0");
-  const assignedIdx = currentIdx % staffList.length;
-  await pool.query(
-    `UPDATE settings SET value = $1 WHERE key = 'staff_rr_idx'`,
-    [(assignedIdx + 1).toString()]
-  );
-  return staffList[assignedIdx].id;
-}
 
 interface OfferResult {
   offerId: number;
@@ -107,19 +72,6 @@ async function recordOfferClaim(
   );
 }
 
-function fireNotifications(displayId: string, orderId: number, _staffId: number | null, pkg: { diamonds: number; price: string }, mlbbId: string | null, remark: string | null, _extra: { serverId: string | null; ign: string | null; isForFriend: boolean }) {
-  const diamonds = Number(pkg.diamonds).toLocaleString("en-IN");
-  const price = parseFloat(pkg.price).toFixed(0);
-
-  sendPushToAll({
-    title: "New Order",
-    body: `${displayId} · ${diamonds} diamonds · ₹${price}`,
-    tag: "new-order",
-    url: "/staff",
-    icon: "/icon-notif.png",
-  });
-}
-
 router.get("/my", requireAuth, async (req: any, res): Promise<void> => {
   const userId = req.clerkUserId as string;
   try {
@@ -135,6 +87,22 @@ router.get("/my", requireAuth, async (req: any, res): Promise<void> => {
     res.json(rows);
   } catch (err: any) {
     console.error("[orders] GET /my failed:", err?.message);
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.get("/:id/events", requireAuth, async (req: any, res): Promise<void> => {
+  const userId = req.clerkUserId as string;
+  const orderId = parseInt(req.params.id);
+  try {
+    const { rows: orders } = await pool.query(
+      "SELECT id FROM orders WHERE id = $1 AND clerk_user_id = $2",
+      [orderId, userId]
+    );
+    if (!orders[0]) { res.status(404).json({ error: "Order not found" }); return; }
+    const events = await orderService.getOrderEvents(orderId);
+    res.json(events);
+  } catch (err: any) {
     res.status(500).json({ error: "DB error" });
   }
 });
@@ -156,7 +124,7 @@ router.post("/", requireAuth, async (req: any, res): Promise<void> => {
       "SELECT id, diamonds, price FROM packages WHERE id = $1",
       [packageId]
     );
-    if (pkgs.length === 0) {
+    if (!pkgs[0]) {
       await client.query("ROLLBACK");
       res.status(404).json({ ok: false, error: "Package not found." });
       return;
@@ -183,28 +151,24 @@ router.post("/", requireAuth, async (req: any, res): Promise<void> => {
         "SELECT mlbb_user_id, mlbb_server_id, mlbb_ign FROM mlbb_accounts WHERE clerk_user_id = $1",
         [clerkUserId]
       );
-      if (accounts.length > 0) {
-        mlbbId = accounts[0].mlbb_user_id;
-        serverId = accounts[0].mlbb_server_id;
-        ign = accounts[0].mlbb_ign;
-      }
+      if (accounts[0]) { mlbbId = accounts[0].mlbb_user_id; serverId = accounts[0].mlbb_server_id; ign = accounts[0].mlbb_ign; }
     }
 
     const noteBase = remark ? `Ref: ${remark}` : refId ? `Ref: ${refId}` : null;
     const friendNote = isForFriend ? " [For Friend]" : "";
     const note = noteBase ? noteBase + friendNote : friendNote || null;
 
-    const displayId = await getNextDisplayId();
-    const staffId = await assignAvailableStaff();
+    const displayId = await orderService.getNextDisplayId(client);
 
     const { rows: inserted } = await client.query(
-      `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign, is_for_friend, status, note, display_id, assigned_staff_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11)
-       RETURNING id`,
-      [clerkUserId, pkg.id, pkg.diamonds, finalPrice, mlbbId, serverId, ign, isForFriend || false, note, displayId, staffId]
+      `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign,
+                           is_for_friend, status, note, display_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending_payment',$9,$10) RETURNING id`,
+      [clerkUserId, pkg.id, pkg.diamonds, finalPrice, mlbbId, serverId, ign, isForFriend || false, note, displayId]
     );
-
     const orderId = inserted[0].id;
+
+    await orderService.logOrderEvent(orderId, "created", "pending_payment", "system:order_create", "Order created — awaiting payment", client);
 
     if (appliedOffer) {
       await recordOfferClaim(client, appliedOffer.offerId, clerkUserId, appliedOffer.eligibility);
@@ -214,7 +178,7 @@ router.post("/", requireAuth, async (req: any, res): Promise<void> => {
 
     res.json({ ok: true, id: orderId, displayId });
 
-    fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: finalPrice }, mlbbId, remark ?? null, { serverId, ign, isForFriend: isForFriend || false });
+    notif.notifyNewOrder({ displayId, diamonds: pkg.diamonds, price: finalPrice });
 
   } catch (err: any) {
     await client.query("ROLLBACK").catch(() => {});
@@ -246,18 +210,14 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
         "SELECT mlbb_user_id, mlbb_server_id, mlbb_ign FROM mlbb_accounts WHERE clerk_user_id = $1",
         [clerkUserId]
       );
-      if (accounts.length > 0) {
-        mlbbId = accounts[0].mlbb_user_id;
-        serverId = accounts[0].mlbb_server_id;
-        ign = accounts[0].mlbb_ign;
-      }
+      if (accounts[0]) { mlbbId = accounts[0].mlbb_user_id; serverId = accounts[0].mlbb_server_id; ign = accounts[0].mlbb_ign; }
     }
 
     const noteBase = remark ? `Ref: ${remark}` : refId ? `Ref: ${refId}` : null;
     const friendNote = isForFriend ? " [For Friend]" : "";
     const orderIds: number[] = [];
     const displayIds: string[] = [];
-    const staffId = await assignAvailableStaff();
+    let totalPrice = 0;
 
     for (const item of items) {
       const { packageId, quantity = 1, offerId: itemOfferId } = item;
@@ -276,14 +236,18 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
 
       for (let q = 0; q < quantity; q++) {
         const note = noteBase ? noteBase + friendNote : friendNote || null;
-        const displayId = await getNextDisplayId();
+        const displayId = await orderService.getNextDisplayId(client);
         const { rows: inserted } = await client.query(
-          `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign, is_for_friend, status, note, display_id, assigned_staff_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11) RETURNING id`,
-          [clerkUserId, pkg.id, pkg.diamonds, finalPrice, mlbbId, serverId, ign, isForFriend || false, note, displayId, staffId]
+          `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign,
+                               is_for_friend, status, note, display_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending_payment',$9,$10) RETURNING id`,
+          [clerkUserId, pkg.id, pkg.diamonds, finalPrice, mlbbId, serverId, ign, isForFriend || false, note, displayId]
         );
-        orderIds.push(inserted[0].id);
+        const orderId = inserted[0].id;
+        await orderService.logOrderEvent(orderId, "created", "pending_payment", "system:cart_create", "Cart order created — awaiting payment", client);
+        orderIds.push(orderId);
         displayIds.push(displayId);
+        totalPrice += parseFloat(finalPrice);
       }
 
       if (appliedOffer) {
@@ -295,10 +259,7 @@ router.post("/cart", requireAuth, async (req: any, res): Promise<void> => {
 
     res.json({ ok: true, ids: orderIds, displayIds });
 
-    const totalDiamonds = items.reduce((s: number, i: any) => s + (i.diamonds || 0) * (i.quantity || 1), 0);
-    const totalPrice = items.reduce((s: number, i: any) => s + parseFloat(i.price || "0") * (i.quantity || 1), 0);
-
-    sendPushToAll({ title: "🛒 Cart Order!", body: `${orderIds.length} items · ₹${totalPrice.toFixed(0)}`, tag: "new-order", url: "/admin" });
+    notif.notifyCartOrder({ itemCount: orderIds.length, totalPrice });
 
   } catch (err: any) {
     await client.query("ROLLBACK").catch(() => {});
@@ -346,29 +307,21 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
     }
 
     const price = parseFloat(finalPriceStr);
+    const pkgName = pkg.name || `${pkg.diamonds} Diamonds`;
 
-    const { rows: wallets } = await client.query(
-      "SELECT balance FROM wallets WHERE clerk_user_id = $1 FOR UPDATE",
-      [clerkUserId]
+    // Atomic wallet debit via walletService (includes ledger + balance update)
+    const debitResult = await walletService.debitWallet(
+      clerkUserId,
+      price,
+      `Diamond purchase: ${pkgName}`,
+      undefined,
+      client
     );
-    const balance = parseFloat(wallets[0]?.balance ?? "0");
-
-    if (balance < price) {
+    if (!debitResult.ok) {
       await client.query("ROLLBACK");
-      res.status(400).json({ ok: false, error: `Insufficient wallet balance. You have ₹${balance.toFixed(0)}, need ₹${price.toFixed(0)}.` });
+      res.status(400).json({ ok: false, error: debitResult.error });
       return;
     }
-
-    await client.query(
-      "UPDATE wallets SET balance = balance - $1 WHERE clerk_user_id = $2",
-      [price, clerkUserId]
-    );
-
-    await client.query(
-      `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description)
-       VALUES ($1, $2, 'debit', 'approved', 'Diamond purchase via wallet')`,
-      [clerkUserId, price.toFixed(2)]
-    );
 
     let mlbbId = mlbbUserId || null;
     let serverId = mlbbServerId || null;
@@ -381,14 +334,18 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
       if (accounts[0]) { mlbbId = accounts[0].mlbb_user_id; serverId = accounts[0].mlbb_server_id; ign = accounts[0].mlbb_ign; }
     }
 
-    const displayId = await getNextDisplayId();
-    const staffId = await assignAvailableStaff();
+    const displayId = await orderService.getNextDisplayId(client);
+    const staffId = await assignAvailableStaff(client);
 
     const { rows: inserted } = await client.query(
-      `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign, is_for_friend, status, note, display_id, assigned_staff_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'Paid via wallet', $9, $10) RETURNING id`,
+      `INSERT INTO orders (clerk_user_id, package_id, diamonds, price, mlbb_id, mlbb_server_id, mlbb_ign,
+                           is_for_friend, status, note, display_id, assigned_staff_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'payment_confirmed','Paid via wallet',$9,$10) RETURNING id`,
       [clerkUserId, pkg.id, pkg.diamonds, finalPriceStr, mlbbId, serverId, ign, isForFriend || false, displayId, staffId]
     );
+    const orderId = inserted[0].id;
+
+    await orderService.logOrderEvent(orderId, "created", "payment_confirmed", "system:wallet_pay", "Wallet payment — instant confirmation", client);
 
     if (appliedOffer) {
       await recordOfferClaim(client, appliedOffer.offerId, clerkUserId, appliedOffer.eligibility);
@@ -396,18 +353,15 @@ router.post("/wallet-pay", requireAuth, async (req: any, res): Promise<void> => 
 
     await client.query("COMMIT");
 
-    const orderId = inserted[0].id;
     res.json({ ok: true, id: orderId, displayId });
 
-    const pkgName = pkg.name || `${pkg.diamonds} Diamonds`;
-    insertNotification(
-      clerkUserId,
-      "wallet_deducted",
-      `Wallet Balance Deducted -₹${price.toFixed(0)}`,
-      `₹${price.toFixed(0)} was deducted from your wallet for "${pkgName}" (${pkg.diamonds} diamonds). Order ID: ${displayId}.`
-    );
+    // Fire notifications and trigger processing pipeline in background
+    notif.notifyWalletDebited(clerkUserId, price, pkgName, displayId);
+    notif.notifyNewOrder({ displayId, diamonds: pkg.diamonds, price: finalPriceStr });
 
-    fireNotifications(displayId, orderId, staffId, { diamonds: pkg.diamonds, price: finalPriceStr }, mlbbId, "Wallet payment", { serverId, ign, isForFriend: isForFriend || false });
+    orderService.processAfterPayment(orderId).catch((err: any) => {
+      console.error("[orders] processAfterPayment (wallet) failed:", err?.message);
+    });
 
   } catch (err: any) {
     await client.query("ROLLBACK").catch(() => {});

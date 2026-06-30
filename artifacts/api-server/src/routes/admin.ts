@@ -6,6 +6,11 @@ import multer from "multer";
 import crypto from "crypto";
 import { insertNotification } from "../lib/notifications";
 import { uploadToCloudinary } from "../lib/cloudinary";
+import * as walletService from "../services/walletService";
+import * as orderService from "../services/orderService";
+import * as notif from "../services/notificationService";
+import { getPaymentProvider } from "../providers/payment";
+import { getRechargeProvider } from "../providers/recharge";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -369,48 +374,51 @@ router.post("/orders", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/orders/:id", requireAdmin, async (req, res): Promise<void> => {
+router.put("/orders/:id", requireAdmin, async (req: any, res): Promise<void> => {
   const { id } = req.params;
   const { status, note } = req.body;
+  const actor = `admin:${req.isSuperAdmin ? "superadmin" : "admin"}`;
   try {
-    const { rows } = await pool.query(
-      `UPDATE orders SET status=$1, note=$2 WHERE id=$3 RETURNING *`,
-      [status, note || null, id]
-    );
-    if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
-    const order = rows[0];
+    const result = await orderService.adminOverrideStatus(parseInt(id), status, actor, note || undefined);
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    const order = result.order!;
 
-    // Send completion email when order is marked as completed
+    // Note field update (separate from status)
+    if (note !== undefined) {
+      await pool.query("UPDATE orders SET note = $1 WHERE id = $2", [note || null, id]);
+    }
+
     if (status === "completed" && order.clerk_user_id) {
-      const orderId = order.display_id || `#${order.id}`;
-      const diamonds = Number(order.diamonds).toLocaleString("en-IN");
-      insertNotification(
-        order.clerk_user_id,
-        "order_completed",
-        "Order Delivered",
-        `Your order ${orderId} (${diamonds} diamonds) has been delivered to your account.`
-      );
       getClerkUserProfile(order.clerk_user_id).then(({ email, name }) => {
-        if (email) {
-          sendOrderCompletedEmail(email, order, name).catch(() => {});
-        }
+        if (email) sendOrderCompletedEmail(email, { ...order, status }, name).catch(() => {});
       }).catch(() => {});
     }
 
-    if (status === "failed" && order.clerk_user_id) {
-      const orderId = order.display_id || `#${order.id}`;
-      insertNotification(
-        order.clerk_user_id,
-        "payment_failed",
-        "Payment Issue ⚠️",
-        `There was an issue with your order ${orderId}. Please contact support if you need help.`
-      );
-    }
-
-    res.json(order);
+    res.json({ ...order, status });
   } catch (err) {
     res.status(500).json({ error: "DB error" });
   }
+});
+
+router.post("/orders/:id/confirm-payment", requireAdmin, async (req: any, res): Promise<void> => {
+  const { id } = req.params;
+  const { upiRef } = req.body;
+  const actor = `admin:${req.isSuperAdmin ? "superadmin" : "admin"}`;
+  try {
+    const result = await orderService.confirmPayment(parseInt(id), actor, upiRef || undefined);
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.get("/orders/:id/events", requireAdmin, async (_req, res): Promise<void> => {
+  const { id } = _req.params;
+  try {
+    const events = await orderService.getOrderEvents(parseInt(id));
+    res.json(events);
+  } catch { res.status(500).json({ error: "DB error" }); }
 });
 
 router.delete("/orders/:id", requireAdmin, async (req, res) => {
@@ -674,65 +682,28 @@ router.get("/wallet-requests", requireAdmin, async (_req, res) => {
   }
 });
 
-router.post("/wallet-requests/:id/approve", requireAdmin, async (req, res): Promise<void> => {
-  const { id } = req.params;
+router.post("/wallet-requests/:id/approve", requireAdmin, async (_req, res): Promise<void> => {
+  const { id } = _req.params;
   try {
-    const txRes = await pool.query(
-      "SELECT * FROM wallet_transactions WHERE id=$1 AND status='pending'",
-      [id]
-    );
-    if (!txRes.rows[0]) { res.status(404).json({ error: "Not found or already processed" }); return; }
-    const tx = txRes.rows[0];
-
-    await pool.query(
-      `INSERT INTO wallets (clerk_user_id, balance, updated_at)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (clerk_user_id)
-       DO UPDATE SET balance = wallets.balance + $2, updated_at = NOW()`,
-      [tx.clerk_user_id, tx.amount]
-    );
-
-    await pool.query(
-      "UPDATE wallet_transactions SET status='approved' WHERE id=$1",
-      [id]
-    );
-
-    insertNotification(
-      tx.clerk_user_id,
-      "wallet_approved",
-      "Wallet Topped Up ✅",
-      `Your top-up request of ₹${Number(tx.amount).toFixed(0)} has been approved and added to your wallet.`
-    );
-
+    const result = await walletService.approveTopup(parseInt(id));
+    if (!result.ok) { res.status(404).json({ error: result.error }); return; }
+    if (result.tx) {
+      notif.notifyWalletApproved(result.tx.clerk_user_id, parseFloat(result.tx.amount)).catch(() => {});
+    }
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: "DB error" });
   }
 });
 
-router.post("/wallet-requests/:id/reject", requireAdmin, async (req, res): Promise<void> => {
-  const { id } = req.params;
+router.post("/wallet-requests/:id/reject", requireAdmin, async (_req, res): Promise<void> => {
+  const { id } = _req.params;
   try {
-    const txRes = await pool.query(
-      "SELECT * FROM wallet_transactions WHERE id=$1 AND status='pending'",
-      [id]
-    );
-    const tx = txRes.rows[0];
-    const { rowCount } = await pool.query(
-      "UPDATE wallet_transactions SET status='rejected' WHERE id=$1 AND status='pending'",
-      [id]
-    );
-    if (!rowCount) { res.status(404).json({ error: "Not found or already processed" }); return; }
-
-    if (tx) {
-      insertNotification(
-        tx.clerk_user_id,
-        "wallet_rejected",
-        "Top-up Request Rejected",
-        `Your wallet top-up request of ₹${Number(tx.amount).toFixed(0)} was not approved. Please contact support if you need help.`
-      );
+    const result = await walletService.rejectTopup(parseInt(id));
+    if (!result.ok) { res.status(404).json({ error: result.error }); return; }
+    if (result.tx) {
+      notif.notifyWalletRejected(result.tx.clerk_user_id, parseFloat(result.tx.amount)).catch(() => {});
     }
-
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: "DB error" });
@@ -814,26 +785,14 @@ router.post("/wallet/direct-credit", requireAdmin, async (req, res): Promise<voi
     : (await pool.query("SELECT username FROM user_profiles WHERE clerk_user_id = $1", [clerk_user_id]).catch(() => ({ rows: [] }))).rows[0]?.username ?? null;
 
   try {
-    await pool.query(
-      `INSERT INTO wallets (clerk_user_id, balance, updated_at)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (clerk_user_id)
-       DO UPDATE SET balance = wallets.balance + $2, updated_at = NOW()`,
-      [clerk_user_id, Number(amount)]
+    const result = await walletService.adminDirectCredit(
+      clerk_user_id,
+      Number(amount),
+      note || "Admin credit",
+      "admin"
     );
-    await pool.query(
-      `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description, display_name)
-       VALUES ($1, $2, 'admin_credit', 'approved', $3, $4)
-       ON CONFLICT DO NOTHING`,
-      [clerk_user_id, Number(amount), note || "Admin credit", usernameForDisplay]
-    ).catch(async () => {
-      // display_name column might not exist on older installs — fall back without it
-      await pool.query(
-        `INSERT INTO wallet_transactions (clerk_user_id, amount, type, status, description)
-         VALUES ($1, $2, 'admin_credit', 'approved', $3)`,
-        [clerk_user_id, Number(amount), note || "Admin credit"]
-      );
-    });
+    if (!result.ok) { res.status(400).json({ error: result.error }); return; }
+
     insertNotification(
       clerk_user_id,
       "wallet_credited",
@@ -844,6 +803,28 @@ router.post("/wallet/direct-credit", requireAdmin, async (req, res): Promise<voi
   } catch {
     res.status(500).json({ error: "DB error" });
   }
+});
+
+// ── System / Provider Info ────────────────────────────────────────────────────
+router.get("/system/providers", requireAdmin, (_req, res) => {
+  const paymentProvider = getPaymentProvider();
+  const rechargeProvider = getRechargeProvider();
+  res.json({
+    payment: {
+      name: paymentProvider.name,
+      isAutomatic: paymentProvider.isAutomatic,
+      configured: paymentProvider.isAutomatic,
+    },
+    recharge: {
+      name: rechargeProvider.name,
+      isAutomatic: rechargeProvider.isAutomatic,
+      configured: rechargeProvider.isAutomatic,
+    },
+    mode: rechargeProvider.isAutomatic ? "auto" : "manual",
+    note: rechargeProvider.isAutomatic
+      ? "Orders will be processed automatically by the recharge provider."
+      : "Orders are routed to staff for manual fulfillment. Add RECHARGE_PROVIDER / RECHARGE_API_KEY / RECHARGE_API_BASE_URL to enable auto-processing.",
+  });
 });
 
 // ── Promo Events ──────────────────────────────────────────────────────────────

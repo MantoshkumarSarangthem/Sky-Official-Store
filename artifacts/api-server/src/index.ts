@@ -148,6 +148,43 @@ async function initDb() {
     );
   `);
 
+  // ── New engine tables (safe on both fresh and existing DBs) ──────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_events (
+      id          SERIAL PRIMARY KEY,
+      order_id    INT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      from_status TEXT NOT NULL,
+      to_status   TEXT NOT NULL,
+      actor       TEXT NOT NULL,
+      note        TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS wallet_ledger (
+      id             SERIAL PRIMARY KEY,
+      clerk_user_id  TEXT NOT NULL,
+      type           TEXT NOT NULL CHECK (type IN ('credit','debit')),
+      amount         NUMERIC(10,2) NOT NULL,
+      description    TEXT NOT NULL,
+      ref_id         TEXT,
+      created_at     TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS payment_attempts (
+      id           SERIAL PRIMARY KEY,
+      order_id     INT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+      provider     TEXT NOT NULL DEFAULT 'manual',
+      status       TEXT NOT NULL DEFAULT 'pending',
+      ref_id       TEXT,
+      actor        TEXT,
+      confirmed_at TIMESTAMPTZ,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_order_events_order_id   ON order_events(order_id);
+    CREATE INDEX IF NOT EXISTS idx_wallet_ledger_user_date ON wallet_ledger(clerk_user_id, created_at DESC);
+  `);
+
   // Step 2: Add columns that may be missing on older installs (all tables exist by now)
   await pool.query(`
     DO $$

@@ -1,5 +1,7 @@
 import { Router } from "express";
 import pool from "../lib/db";
+import * as orderService from "../services/orderService";
+import type { OrderStatus } from "../services/orderService";
 
 const router = Router();
 
@@ -68,7 +70,7 @@ router.get("/orders", requireStaffAuth, async (req: any, res: any) => {
        LEFT JOIN games g ON p.game_id = g.id
        WHERE o.assigned_staff_id = $1
        ORDER BY
-         CASE WHEN o.status IN ('pending','processing') THEN 0 ELSE 1 END,
+         CASE WHEN o.status IN ('waiting_staff','processing') THEN 0 ELSE 1 END,
          o.created_at DESC
        LIMIT 50`,
       [req.staffId]
@@ -77,21 +79,51 @@ router.get("/orders", requireStaffAuth, async (req: any, res: any) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
-router.put("/orders/:id/status", requireStaffAuth, async (req: any, res: any): Promise<void> => {
+router.get("/orders/:id/events", requireStaffAuth, async (req: any, res: any): Promise<void> => {
   const orderId = parseInt(req.params.id);
-  const { status } = req.body;
-  const allowed = ["processing", "completed", "pending"];
-  if (!allowed.includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
   try {
     const check = await pool.query(
       "SELECT id FROM orders WHERE id = $1 AND assigned_staff_id = $2",
       [orderId, req.staffId]
     );
     if (!check.rows[0]) { res.status(403).json({ error: "Not your order" }); return; }
-    await pool.query(
-      "UPDATE orders SET status = $1 WHERE id = $2",
-      [status, orderId]
+    const events = await orderService.getOrderEvents(orderId);
+    res.json(events);
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.put("/orders/:id/status", requireStaffAuth, async (req: any, res: any): Promise<void> => {
+  const orderId = parseInt(req.params.id);
+  const { status } = req.body;
+
+  const staffAllowed: OrderStatus[] = ["processing", "completed", "waiting_staff"];
+  if (!staffAllowed.includes(status as OrderStatus)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
+  }
+
+  try {
+    const check = await pool.query(
+      "SELECT id FROM orders WHERE id = $1 AND assigned_staff_id = $2",
+      [orderId, req.staffId]
     );
+    if (!check.rows[0]) { res.status(403).json({ error: "Not your order" }); return; }
+
+    const result = await orderService.transitionOrder(
+      orderId,
+      status as OrderStatus,
+      `staff:${req.staffId}`,
+      `Staff action — ${status}`
+    );
+
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    // Keep last_active updated
+    await pool.query("UPDATE recharge_staff SET last_active = NOW() WHERE id = $1", [req.staffId]);
+
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "DB error" }); }
 });
