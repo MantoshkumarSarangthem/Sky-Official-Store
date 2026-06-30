@@ -73,58 +73,6 @@ function stripBase(path: string): string {
     : path;
 }
 
-const clerkAppearance = {
-  cssLayerName: "clerk",
-  options: {
-    logoPlacement: "none" as const,
-  },
-  variables: {
-    colorPrimary: "#25D366",
-    colorForeground: "#3D2B1F",
-    colorMutedForeground: "#7a6558",
-    colorDanger: "#ef4444",
-    colorBackground: "#FAF9F6",
-    colorInput: "#FFFFFF",
-    colorInputForeground: "#3D2B1F",
-    colorNeutral: "#C5B4A2",
-    fontFamily: "Inter, sans-serif",
-    borderRadius: "0.65rem",
-    fontSize: "0.9rem",
-  },
-  elements: {
-    rootBox: "w-full",
-    cardBox: "w-full !shadow-none !bg-transparent",
-    card: "!shadow-none !border-0 !bg-transparent !rounded-none !p-0",
-    footer: "!shadow-none !border-0 !bg-transparent !rounded-none !pt-0",
-    headerTitle: "hidden",
-    headerSubtitle: "hidden",
-    header: "hidden",
-    socialButtonsBlockButtonArrow: "hidden",
-    socialButtonsBlockButton: "!transition-all !rounded-lg !h-11",
-    socialButtonsBlockButtonText: "!font-medium !text-sm",
-    formFieldLabel: "!text-[#9ca3af] !font-medium !text-xs !uppercase !tracking-wide",
-    footerActionLink: "!text-[#25D366] !font-semibold",
-    footerActionText: "!text-[#9ca3af] !text-sm",
-    dividerText: "!text-[#6b7280] !text-xs",
-    identityPreviewEditButton: "!text-[#25D366]",
-    formFieldSuccessText: "!text-green-500",
-    alertText: "!text-red-400 !text-sm",
-    socialButtonsBlockButtonIconBox: "!mr-2",
-    formButtonPrimary: "!text-white !font-bold !transition-all !rounded-lg !h-11",
-    formFieldInput: "!bg-[#1a1d27] !border-[rgba(255,255,255,0.15)] !text-[#f3f4f6] focus:!border-[#25D366] !rounded-lg !h-11 !text-sm",
-    footerAction: "!border-t-0 !mt-0",
-    dividerLine: "!bg-[#C5B4A2]/30",
-    alert: "!border !border-red-300 !bg-red-50 !rounded-lg",
-    otpCodeFieldInput: "!bg-white !border-[#C5B4A2] !text-[#3D2B1F]",
-    formFieldRow: "gap-3",
-    main: "gap-5",
-    socialButtons: "gap-2.5",
-    formHeader: "hidden",
-    footerPages: "!hidden",
-    internal__clerk_components_inner: "gap-5",
-    formField__username: "!hidden",
-  },
-};
 
 // ── Animated Diamonds ──────────────────────────────────────────────────────
 function AnimatedDiamonds({ size = 80 }: { size?: number }) {
@@ -2220,89 +2168,6 @@ function AuthPageShell({ children, title, subtitle, isSignUp = false }: { childr
           from { opacity: 0; transform: translateY(14px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
-        /* ── Hide Clerk branding ── */
-        [class*="powered-by-clerk"], .cl-footer__pages,
-        .cl-internal-powered-by-clerk { display: none !important; }
-
-        /* ── Fix overflow so Last Used badge and edges never clip ── */
-        .cl-rootBox, .cl-cardBox, .cl-card,
-        .cl-main, .cl-socialButtonsRoot, .cl-socialButtons {
-          overflow: visible !important;
-        }
-
-        /* ── Social buttons: dark bg + subtle ambient glow ── */
-        .cl-socialButtonsBlockButton {
-          background: #13151c !important;
-          border: 1.5px solid rgba(255,255,255,0.18) !important;
-          border-radius: 10px !important;
-          height: 44px !important;
-          transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease !important;
-          box-shadow:
-            0 0 0 1px rgba(255,255,255,0.06),
-            0 0 18px 3px rgba(255,255,255,0.07),
-            inset 0 1px 0 rgba(255,255,255,0.06) !important;
-        }
-        .cl-socialButtonsBlockButton:hover {
-          border-color: rgba(37,211,102,0.5) !important;
-          background: #181b22 !important;
-          box-shadow:
-            0 0 0 1px rgba(37,211,102,0.15),
-            0 0 18px 4px rgba(37,211,102,0.12),
-            inset 0 1px 0 rgba(255,255,255,0.06) !important;
-        }
-        .cl-socialButtonsBlockButtonText {
-          color: #e5e7eb !important;
-          font-weight: 500 !important;
-          font-size: 0.875rem !important;
-        }
-
-        /* ── Continue / primary button: WhatsApp green glow ── */
-        .cl-formButtonPrimary {
-          background: #25D366 !important;
-          box-shadow:
-            0 4px 20px rgba(37,211,102,0.45),
-            0 0 0 1px rgba(37,211,102,0.25) !important;
-          color: #fff !important;
-          font-weight: 700 !important;
-        }
-        .cl-formButtonPrimary:hover {
-          background: #1fbc59 !important;
-          box-shadow:
-            0 4px 28px rgba(37,211,102,0.6),
-            0 0 0 1px rgba(37,211,102,0.35) !important;
-        }
-
-        /* ── Footer section: transparent bg, clearly separated ── */
-        .cl-footer, .cl-footerAction, .cl-footerActionRow {
-          background: transparent !important;
-          box-shadow: none !important;
-          border: none !important;
-        }
-        .cl-footer {
-          margin-top: 28px !important;
-          padding-top: 20px !important;
-          border-top: 1px solid rgba(255,255,255,0.08) !important;
-        }
-
-        /* ── Input fields on dark background ── */
-        .cl-formFieldInput::placeholder {
-          color: rgba(156,163,175,0.6) !important;
-        }
-
-        /* ── Divider ── */
-        .cl-dividerLine {
-          background: rgba(255,255,255,0.1) !important;
-        }
-        .cl-dividerText {
-          color: #6b7280 !important;
-        }
-
-        /* ── Last used badge: ensure it never clips ── */
-        .cl-badge {
-          overflow: visible !important;
-          white-space: nowrap !important;
-        }
       `}</style>
 
       {/* Subtle background grain / gradient */}
@@ -2438,7 +2303,7 @@ function SignInPage() {
 
   return (
     <AuthPageShell title="Welcome back" subtitle="Log in to your Sky Official account.">
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form onSubmit={e => { e.preventDefault(); handleSignIn(); }} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
         {error && (
           <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#f87171" }}>
@@ -2451,6 +2316,7 @@ function SignInPage() {
           {(["apple", "facebook", "google"] as const).map((provider) => (
             <button
               key={provider}
+              type="button"
               onClick={() => handleOAuth(`oauth_${provider}` as "oauth_google" | "oauth_apple" | "oauth_facebook")}
               disabled={!!oauthLoading || !isLoaded}
               style={{
@@ -2545,7 +2411,7 @@ function SignInPage() {
 
         {/* Sign in button */}
         <button
-          onClick={handleSignIn}
+          type="submit"
           disabled={!ready || submitting || !isLoaded}
           style={{
             width: "100%", padding: "13px 0", borderRadius: 10,
@@ -2562,6 +2428,7 @@ function SignInPage() {
         <div style={{ textAlign: "center", fontSize: 12.5, color: "rgba(243,244,246,0.35)", marginTop: 2 }}>
           Don't have an account?{" "}
           <button
+            type="button"
             onClick={() => setLocation("/sign-up")}
             style={{ background: "none", border: "none", cursor: "pointer", color: "#25D366", fontWeight: 600, fontSize: 12.5, padding: 0 }}
           >
@@ -2569,7 +2436,7 @@ function SignInPage() {
           </button>
         </div>
 
-      </div>
+      </form>
     </AuthPageShell>
   );
 }
@@ -2778,7 +2645,7 @@ function SignUpPage() {
 
       {/* Phase 1 — account details */}
       {phase === 1 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <form onSubmit={e => { e.preventDefault(); handlePhase1Submit(); }} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
           {/* Fix 1: Error shown at top so it's visible immediately */}
           {p1Error && (
@@ -2792,6 +2659,7 @@ function SignUpPage() {
             {(["apple", "facebook", "google"] as const).map((provider) => (
               <button
                 key={provider}
+                type="button"
                 onClick={() => handleOAuth(`oauth_${provider}` as "oauth_google" | "oauth_apple" | "oauth_facebook")}
                 disabled={!!oauthLoading || !isLoaded}
                 className="su-field"
@@ -2950,7 +2818,7 @@ function SignUpPage() {
           </div>
 
           <button
-            onClick={handlePhase1Submit}
+            type="submit"
             disabled={!p1Ready || p1Submitting || !isLoaded}
             className="su-field"
             style={{
@@ -2967,18 +2835,19 @@ function SignUpPage() {
           <div style={{ textAlign: "center", fontSize: 12.5, color: "rgba(243,244,246,0.35)", marginTop: 2 }}>
             Already have an account?{" "}
             <button
+              type="button"
               onClick={() => setLocation("/sign-in")}
               style={{ background: "none", border: "none", cursor: "pointer", color: "#f59e0b", fontWeight: 600, fontSize: 12.5, padding: 0 }}
             >
               Sign in
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* Phase 2 — email verification */}
       {phase === 2 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <form onSubmit={e => { e.preventDefault(); handlePhase2Submit(); }} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "rgba(243,244,246,0.6)", lineHeight: 1.6 }}>
             Check your inbox at <strong style={{ color: "#f3f4f6" }}>{email}</strong> for a verification code.
           </div>
@@ -2993,7 +2862,6 @@ function SignUpPage() {
               onChange={e => { setCode(e.target.value.replace(/\D/g, "")); setVerifyError(null); }}
               placeholder="000000"
               autoFocus
-              onKeyDown={e => { if (e.key === "Enter") handlePhase2Submit(); }}
               style={inputStyle({ textAlign: "center", fontSize: 22, fontWeight: 700, letterSpacing: "0.25em" })}
             />
           </div>
@@ -3005,7 +2873,7 @@ function SignUpPage() {
           )}
 
           <button
-            onClick={handlePhase2Submit}
+            type="submit"
             disabled={code.length !== 6 || verifying}
             style={{
               width: "100%", padding: "13px 0", borderRadius: 10,
@@ -3026,6 +2894,7 @@ function SignUpPage() {
             )}
             <span style={{ fontSize: 12.5, color: "rgba(243,244,246,0.35)" }}>Didn't get it? </span>
             <button
+              type="button"
               onClick={handleResend}
               disabled={resendCooldown > 0 || resending}
               style={{
@@ -3040,12 +2909,13 @@ function SignUpPage() {
           </div>
 
           <button
+            type="button"
             onClick={() => { setPhase(1); setCode(""); setVerifyError(null); }}
             style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(243,244,246,0.35)", fontSize: 12.5, padding: 0, textAlign: "center" }}
           >
             ← Go back and change email
           </button>
-        </div>
+        </form>
       )}
     </AuthPageShell>
   );
