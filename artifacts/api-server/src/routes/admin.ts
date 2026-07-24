@@ -17,25 +17,34 @@ const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize
 
 const router = Router();
 
+const ADMIN_SESSION_COOKIE = "sky_admin_sess";
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+function adminCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict" as const,
+    maxAge: SESSION_MAX_AGE_MS,
+    path: "/",
+  };
+}
+
 async function requireAdmin(req: any, res: any, next: any) {
-  const auth = req.headers["authorization"] || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-
-  if (token === process.env.ADMIN_PASSWORD) {
-    req.isSuperAdmin = true;
-    return next();
-  }
-
+  const sessionId = req.cookies?.[ADMIN_SESSION_COOKIE];
+  if (!sessionId) return res.status(401).json({ error: "Unauthorized" });
   try {
-    const { rows } = await pool.query("SELECT id FROM admin_tokens WHERE token = $1", [token]);
-    if (rows.length > 0) {
-      req.isSuperAdmin = false;
-      return next();
-    }
-  } catch {}
-
-  return res.status(401).json({ error: "Unauthorized" });
+    const { rows } = await pool.query(
+      "SELECT role FROM admin_sessions WHERE id = $1 AND expires_at > NOW()",
+      [sessionId]
+    );
+    if (!rows[0]) return res.status(401).json({ error: "Session expired" });
+    req.isSuperAdmin = rows[0].role === "superadmin";
+    req.adminSessionId = sessionId;
+    return next();
+  } catch {
+    return res.status(500).json({ error: "DB error" });
+  }
 }
 
 function requireSuperAdmin(req: any, res: any, next: any) {
@@ -166,18 +175,78 @@ async function sendOrderCompletedEmail(to: string, order: any, customerName: str
   }
 }
 
-router.post("/login", async (req, res) => {
+router.post("/login", async (req: any, res: any) => {
   const { password } = req.body;
+  let role: string | null = null;
+
   if (password === process.env.ADMIN_PASSWORD) {
-    return res.json({ success: true, role: "superadmin" });
+    role = "superadmin";
+  } else {
+    try {
+      const { rows } = await pool.query("SELECT id FROM admin_tokens WHERE token = $1", [password]);
+      if (rows.length > 0) role = "admin";
+    } catch {}
   }
+
+  if (!role) return res.status(401).json({ error: "Wrong password" });
+
   try {
-    const { rows } = await pool.query("SELECT id FROM admin_tokens WHERE token = $1", [password]);
-    if (rows.length > 0) {
-      return res.json({ success: true, role: "admin" });
-    }
+    const sessionId = crypto.randomBytes(32).toString("hex");
+    await pool.query(
+      "INSERT INTO admin_sessions (id, role, expires_at) VALUES ($1, $2, NOW() + INTERVAL '12 hours')",
+      [sessionId, role]
+    );
+    res.cookie(ADMIN_SESSION_COOKIE, sessionId, adminCookieOptions());
+    return res.json({ success: true, role });
+  } catch {
+    return res.status(500).json({ error: "DB error" });
+  }
+});
+
+router.post("/logout", requireAdmin, async (req: any, res: any) => {
+  try {
+    await pool.query("DELETE FROM admin_sessions WHERE id = $1", [req.adminSessionId]);
   } catch {}
-  res.status(401).json({ error: "Wrong password" });
+  res.clearCookie(ADMIN_SESSION_COOKIE, { path: "/" });
+  res.json({ ok: true });
+});
+
+// Called after biometric credential creation — returns a device token stored in localStorage
+router.post("/bio-device-register", requireAdmin, async (req: any, res: any) => {
+  try {
+    const deviceToken = "ABDT-" + crypto.randomBytes(24).toString("hex");
+    const role = req.isSuperAdmin ? "superadmin" : "admin";
+    await pool.query(
+      "INSERT INTO admin_device_tokens (id, role, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 days')",
+      [deviceToken, role]
+    );
+    res.json({ deviceToken });
+  } catch {
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+// Called during biometric login — verifies device token, creates a new session cookie
+router.post("/bio-session", async (req: any, res: any) => {
+  const { deviceToken } = req.body;
+  if (!deviceToken) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const { rows } = await pool.query(
+      "SELECT role FROM admin_device_tokens WHERE id = $1 AND expires_at > NOW()",
+      [deviceToken]
+    );
+    if (!rows[0]) return res.status(401).json({ error: "Invalid device credential" });
+
+    const sessionId = crypto.randomBytes(32).toString("hex");
+    await pool.query(
+      "INSERT INTO admin_sessions (id, role, expires_at) VALUES ($1, $2, NOW() + INTERVAL '12 hours')",
+      [sessionId, rows[0].role]
+    );
+    res.cookie(ADMIN_SESSION_COOKIE, sessionId, adminCookieOptions());
+    return res.json({ role: rows[0].role });
+  } catch {
+    return res.status(500).json({ error: "DB error" });
+  }
 });
 
 router.get("/me", requireAdmin, (req: any, res) => {

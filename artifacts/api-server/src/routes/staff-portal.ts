@@ -2,33 +2,38 @@ import { Router } from "express";
 import pool from "../lib/db";
 import * as orderService from "../services/orderService";
 import type { OrderStatus } from "../services/orderService";
+import crypto from "crypto";
 
 const router = Router();
 
-function parseStaffAuth(authHeader: string | undefined): { id: number; pin: string } | null {
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  try {
-    const decoded = Buffer.from(authHeader.slice(7), "base64").toString("utf8");
-    const colonIdx = decoded.indexOf(":");
-    if (colonIdx < 1) return null;
-    const id = parseInt(decoded.slice(0, colonIdx));
-    const pin = decoded.slice(colonIdx + 1);
-    if (!id || !pin) return null;
-    return { id, pin };
-  } catch { return null; }
+const STAFF_SESSION_COOKIE = "sky_staff_sess";
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+function staffCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict" as const,
+    maxAge: SESSION_MAX_AGE_MS,
+    path: "/",
+  };
 }
 
 async function requireStaffAuth(req: any, res: any, next: any): Promise<void> {
-  const auth = parseStaffAuth(req.headers.authorization);
-  if (!auth) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const sessionId = req.cookies?.[STAFF_SESSION_COOKIE];
+  if (!sessionId) { res.status(401).json({ error: "Unauthorized" }); return; }
   try {
-    const result = await pool.query(
-      "SELECT id, name, status, qr_image FROM recharge_staff WHERE id = $1 AND staff_pin = $2",
-      [auth.id, auth.pin]
+    const { rows } = await pool.query(
+      `SELECT s.id, s.name, s.status, s.qr_image
+       FROM staff_sessions ss
+       JOIN recharge_staff s ON s.id = ss.staff_id
+       WHERE ss.id = $1 AND ss.expires_at > NOW()`,
+      [sessionId]
     );
-    if (!result.rows[0]) { res.status(401).json({ error: "Invalid credentials" }); return; }
-    req.staffId = auth.id;
-    req.staffMember = result.rows[0];
+    if (!rows[0]) { res.status(401).json({ error: "Session expired" }); return; }
+    req.staffId = rows[0].id;
+    req.staffMember = rows[0];
+    req.staffSessionId = sessionId;
     next();
   } catch { res.status(500).json({ error: "DB error" }); }
 }
@@ -44,8 +49,60 @@ router.post("/login", async (req: any, res: any): Promise<void> => {
     const staff = result.rows[0];
     if (!staff) { res.status(401).json({ error: "Invalid name or PIN" }); return; }
     await pool.query("UPDATE recharge_staff SET last_active = NOW() WHERE id = $1", [staff.id]);
-    const token = Buffer.from(`${staff.id}:${String(pin).trim()}`).toString("base64");
-    res.json({ token, staff: { id: staff.id, name: staff.name, status: staff.status, qr_image: staff.qr_image, shift_hours: staff.shift_hours } });
+
+    const sessionId = crypto.randomBytes(32).toString("hex");
+    await pool.query(
+      "INSERT INTO staff_sessions (id, staff_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '12 hours')",
+      [sessionId, staff.id]
+    );
+    res.cookie(STAFF_SESSION_COOKIE, sessionId, staffCookieOptions());
+    res.json({ staff: { id: staff.id, name: staff.name, status: staff.status, qr_image: staff.qr_image, shift_hours: staff.shift_hours } });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.post("/logout", requireStaffAuth, async (req: any, res: any) => {
+  try {
+    await pool.query("DELETE FROM staff_sessions WHERE id = $1", [req.staffSessionId]);
+  } catch {}
+  res.clearCookie(STAFF_SESSION_COOKIE, { path: "/" });
+  res.json({ ok: true });
+});
+
+// Called after biometric credential creation — returns a device token stored in localStorage
+router.post("/bio-device-register", requireStaffAuth, async (req: any, res: any) => {
+  try {
+    const deviceToken = "SBDT-" + crypto.randomBytes(24).toString("hex");
+    await pool.query(
+      "INSERT INTO staff_device_tokens (id, staff_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 days')",
+      [deviceToken, req.staffId]
+    );
+    res.json({ deviceToken });
+  } catch {
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+// Called during biometric login — verifies device token, creates a new session cookie
+router.post("/bio-session", async (req: any, res: any): Promise<void> => {
+  const { deviceToken } = req.body;
+  if (!deviceToken) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const { rows } = await pool.query(
+      `SELECT dt.staff_id, s.name, s.status, s.qr_image, s.shift_hours
+       FROM staff_device_tokens dt
+       JOIN recharge_staff s ON s.id = dt.staff_id
+       WHERE dt.id = $1 AND dt.expires_at > NOW()`,
+      [deviceToken]
+    );
+    if (!rows[0]) { res.status(401).json({ error: "Invalid device credential" }); return; }
+
+    const sessionId = crypto.randomBytes(32).toString("hex");
+    await pool.query(
+      "INSERT INTO staff_sessions (id, staff_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '12 hours')",
+      [sessionId, rows[0].staff_id]
+    );
+    res.cookie(STAFF_SESSION_COOKIE, sessionId, staffCookieOptions());
+    res.json({ staff: { id: rows[0].staff_id, name: rows[0].name, status: rows[0].status, qr_image: rows[0].qr_image, shift_hours: rows[0].shift_hours } });
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 

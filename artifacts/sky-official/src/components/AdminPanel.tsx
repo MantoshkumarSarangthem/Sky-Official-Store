@@ -4,8 +4,10 @@ import { useLocation } from "wouter";
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
 // ── Biometric (WebAuthn) helpers ──────────────────────────────────────────
+// Only the WebAuthn credential ID (non-sensitive) and a server-issued device
+// token are stored in localStorage. No passwords or session tokens are stored.
 const ADMIN_BIO_CRED = "admin_bio_cred_id";
-const ADMIN_BIO_TOKEN = "admin_bio_token";
+const ADMIN_BIO_DEVICE_TOKEN = "admin_bio_device_token";
 
 async function adminBioAvailable(): Promise<boolean> {
   if (!window.PublicKeyCredential) return false;
@@ -13,7 +15,9 @@ async function adminBioAvailable(): Promise<boolean> {
   catch { return false; }
 }
 
-async function adminBioRegister(token: string): Promise<boolean> {
+// Register a biometric credential. Requires an active session cookie.
+// Stores only the credential ID + a server-issued device token in localStorage.
+async function adminBioRegister(apiBase: string): Promise<boolean> {
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const userId = crypto.getRandomValues(new Uint8Array(16));
   const cred = await navigator.credentials.create({
@@ -26,14 +30,21 @@ async function adminBioRegister(token: string): Promise<boolean> {
     }
   }) as PublicKeyCredential | null;
   if (!cred) return false;
+  // Request a device token from the backend (session cookie proves identity)
+  const dtRes = await fetch(`${apiBase}/admin/bio-device-register`, { method: "POST" });
+  if (!dtRes.ok) return false;
+  const { deviceToken } = await dtRes.json();
   localStorage.setItem(ADMIN_BIO_CRED, btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
-  localStorage.setItem(ADMIN_BIO_TOKEN, token);
+  localStorage.setItem(ADMIN_BIO_DEVICE_TOKEN, deviceToken);
   return true;
 }
 
-async function adminBioAuthenticate(): Promise<string | null> {
+// Authenticate with biometrics. Device performs WebAuthn assertion, then backend
+// verifies the device token and sets a new HttpOnly session cookie.
+async function adminBioAuthenticate(apiBase: string): Promise<string | null> {
   const b64 = localStorage.getItem(ADMIN_BIO_CRED);
-  if (!b64) return null;
+  const deviceToken = localStorage.getItem(ADMIN_BIO_DEVICE_TOKEN);
+  if (!b64 || !deviceToken) return null;
   const credId = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const assertion = await navigator.credentials.get({
     publicKey: {
@@ -42,7 +53,16 @@ async function adminBioAuthenticate(): Promise<string | null> {
       userVerification: "required", timeout: 60000,
     }
   });
-  return assertion ? localStorage.getItem(ADMIN_BIO_TOKEN) : null;
+  if (!assertion) return null;
+  // Exchange device token for a new session cookie via the backend
+  const res = await fetch(`${apiBase}/admin/bio-session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceToken }),
+  });
+  if (!res.ok) return null;
+  const { role } = await res.json();
+  return role as string;
 }
 
 interface OfferBanner { id: string; title: string; subtitle?: string; emoji?: string; bgGradient?: string; ctaText?: string; ctaLink?: string; }
@@ -111,8 +131,8 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function AdminPanel({ onClose, fullPage = false }: { onClose: () => void; fullPage?: boolean }) {
   const [, setLocation] = useLocation();
-  const [authed, setAuthed] = useState(() => !!sessionStorage.getItem("admin_token"));
-  const [isSuperAdmin, setIsSuperAdmin] = useState(() => sessionStorage.getItem("admin_role") === "superadmin");
+  const [authed, setAuthed] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [bioAvail, setBioAvail] = useState(false);
@@ -371,7 +391,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       fd.append("sort_order", String(games.length));
       fd.append("region", newGame.region.trim());
       if (gameImgRef.current?.files?.[0]) fd.append("image", gameImgRef.current.files[0]);
-      const res = await fetch(`${API}/admin/games`, { method: "POST", headers: { Authorization: headers.Authorization }, body: fd });
+      const res = await fetch(`${API}/admin/games`, { method: "POST", body: fd });
       if (res.ok) {
         const g = await res.json();
         setGames(prev => [...prev, g]);
@@ -410,7 +430,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       fd.append("sort_order", String(game.sort_order || 0));
       fd.append("region", game.region?.trim() || "");
       fd.append("image", file);
-      const res = await fetch(`${API}/admin/games/${gameId}`, { method: "PUT", headers: { Authorization: headers.Authorization }, body: fd });
+      const res = await fetch(`${API}/admin/games/${gameId}`, { method: "PUT", body: fd });
       if (res.ok) {
         const updated = await res.json();
         setGames(prev => prev.map(g => g.id === gameId ? updated : g));
@@ -432,7 +452,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       fd.append("name", name.trim() || g.name);
       fd.append("sort_order", String(g.sort_order || 0));
       fd.append("region", region.trim());
-      const res = await fetch(`${API}/admin/games/${id}`, { method: "PUT", headers: { Authorization: headers.Authorization }, body: fd });
+      const res = await fetch(`${API}/admin/games/${id}`, { method: "PUT", body: fd });
       if (res.ok) {
         const updated = await res.json();
         setGames(prev => prev.map(x => x.id === id ? updated : x));
@@ -468,7 +488,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const fd = new FormData();
       fd.append("file", file);
       xhr.open("POST", `${API}/admin/upload-media`);
-      xhr.setRequestHeader("Authorization", `Bearer ${sessionStorage.getItem("admin_token") ?? ""}`);
+      xhr.withCredentials = true; // send session cookie
       xhr.send(fd);
     });
 
@@ -585,7 +605,6 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     try {
       const res = await fetch(`${API}/admin/upload-image`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
       if (res.ok) {
@@ -645,8 +664,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const [notifError, setNotifError] = useState<string | null>(null);
   const swRegRef = useRef<ServiceWorkerRegistration | null>(null);
 
-  const token = sessionStorage.getItem("admin_token") || "";
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  // Auth is handled via HttpOnly session cookie set by the backend — no token in JS
+  const headers = { "Content-Type": "application/json" };
 
   // Check current notification status on mount
   useEffect(() => {
@@ -712,7 +731,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
 
       await fetch(`${API}/push/subscribe`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sub.toJSON()),
       });
 
@@ -730,7 +749,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (sub) {
       await fetch(`${API}/push/unsubscribe`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: sub.endpoint }),
       });
       await sub.unsubscribe();
@@ -1167,7 +1186,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       fd.append("status", newStaff.status);
       if (staffQrFile) fd.append("qr_image", staffQrFile);
       if (newStaff.pin.trim()) fd.append("staff_pin", newStaff.pin.trim());
-      await fetch(`${API}/admin/staff`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
+      await fetch(`${API}/admin/staff`, { method: "POST", body: fd });
       await fetchStaff();
       setNewStaff({ name: "", email: "", whatsapp: "", upi_id: "", shift_hours: "", status: "offline", pin: "" });
       setStaffQrFile(null); setStaffQrPreview(null);
@@ -1269,6 +1288,16 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     setWalletLoading(null);
   };
 
+  // Restore session from HttpOnly cookie on mount
+  useEffect(() => {
+    fetch(`${API}/admin/me`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.role) { setAuthed(true); setIsSuperAdmin(data.role === "superadmin"); }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => { adminBioAvailable().then(setBioAvail); }, []);
   useEffect(() => { if (!authed && bioAvail && bioEnabled) loginWithBio(); }, [bioAvail]);
 
@@ -1281,8 +1310,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     });
     if (res.ok) {
       const data = await res.json();
-      sessionStorage.setItem("admin_token", password);
-      sessionStorage.setItem("admin_role", data.role);
+      // Session cookie is set by the backend — no token stored in JS
       setIsSuperAdmin(data.role === "superadmin");
       setAuthed(true);
     } else {
@@ -1293,17 +1321,10 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const loginWithBio = async () => {
     setBioLoading(true); setLoginError(""); setBioMsg("");
     try {
-      const token = await adminBioAuthenticate();
-      if (token) {
-        sessionStorage.setItem("admin_token", token);
-        try {
-          const meRes = await fetch(`${API}/admin/me`, { headers: { Authorization: `Bearer ${token}` } });
-          if (meRes.ok) {
-            const { role } = await meRes.json();
-            sessionStorage.setItem("admin_role", role);
-            setIsSuperAdmin(role === "superadmin");
-          }
-        } catch {}
+      const role = await adminBioAuthenticate(API);
+      if (role) {
+        // Session cookie set by backend during bio-session call
+        setIsSuperAdmin(role === "superadmin");
         setAuthed(true);
       } else setBioMsg("Biometric verification failed. Use password instead.");
     } catch (e: any) {
@@ -1314,7 +1335,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const enableBio = async () => {
     setBioLoading(true); setBioMsg("");
     try {
-      const ok = await adminBioRegister(password);
+      const ok = await adminBioRegister(API);
       if (ok) { setBioEnabled(true); setBioMsg("✓ Biometric login enabled for this device!"); }
       else setBioMsg("Could not save biometric credential.");
     } catch (e: any) {
@@ -1323,7 +1344,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   };
 
   const disableBio = () => {
-    localStorage.removeItem(ADMIN_BIO_CRED); localStorage.removeItem(ADMIN_BIO_TOKEN);
+    localStorage.removeItem(ADMIN_BIO_CRED);
+    localStorage.removeItem(ADMIN_BIO_DEVICE_TOKEN);
     setBioEnabled(false); setBioMsg("Biometric login removed.");
   };
 
@@ -1497,9 +1519,8 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     await fetchOrders();
   };
 
-  const logout = () => {
-    sessionStorage.removeItem("admin_token");
-    sessionStorage.removeItem("admin_role");
+  const logout = async () => {
+    try { await fetch(`${API}/admin/logout`, { method: "POST" }); } catch {}
     setAuthed(false);
     setIsSuperAdmin(false);
     onClose();
@@ -2859,10 +2880,9 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                           setBroadcastSending(true);
                           setBroadcastResult(null);
                           try {
-                            const token = sessionStorage.getItem("admin_token") || "";
                             const res = await fetch(`${API}/notifications/broadcast`, {
                               method: "POST",
-                              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                              headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ type: broadcastType, title: broadcastTitle.trim(), body: broadcastBody.trim() }),
                             });
                             const data = await res.json();

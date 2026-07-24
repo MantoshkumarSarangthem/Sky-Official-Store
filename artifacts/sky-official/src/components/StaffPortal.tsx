@@ -4,8 +4,10 @@ import { useLocation } from "wouter";
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
 // ── Biometric (WebAuthn) helpers ──────────────────────────────────────────
+// Only the WebAuthn credential ID (non-sensitive) and a server-issued device
+// token are stored in localStorage. No PINs or session tokens are stored.
 const STAFF_BIO_CRED = "staff_bio_cred_id";
-const STAFF_BIO_DATA = "staff_bio_data";
+const STAFF_BIO_DEVICE_TOKEN = "staff_bio_device_token";
 
 async function staffBioAvailable(): Promise<boolean> {
   if (!window.PublicKeyCredential) return false;
@@ -13,7 +15,8 @@ async function staffBioAvailable(): Promise<boolean> {
   catch { return false; }
 }
 
-async function staffBioRegister(token: string, staff: unknown): Promise<boolean> {
+// Register biometric credential. Requires active session cookie.
+async function staffBioRegister(apiBase: string): Promise<boolean> {
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const userId = crypto.getRandomValues(new Uint8Array(16));
   const cred = await navigator.credentials.create({
@@ -26,14 +29,19 @@ async function staffBioRegister(token: string, staff: unknown): Promise<boolean>
     }
   }) as PublicKeyCredential | null;
   if (!cred) return false;
+  const dtRes = await fetch(`${apiBase}/staff/bio-device-register`, { method: "POST" });
+  if (!dtRes.ok) return false;
+  const { deviceToken } = await dtRes.json();
   localStorage.setItem(STAFF_BIO_CRED, btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
-  localStorage.setItem(STAFF_BIO_DATA, JSON.stringify({ token, staff }));
+  localStorage.setItem(STAFF_BIO_DEVICE_TOKEN, deviceToken);
   return true;
 }
 
-async function staffBioAuthenticate(): Promise<{ token: string; staff: unknown } | null> {
+// Authenticate with biometrics. Backend verifies device token and sets session cookie.
+async function staffBioAuthenticate(apiBase: string): Promise<any> {
   const b64 = localStorage.getItem(STAFF_BIO_CRED);
-  if (!b64) return null;
+  const deviceToken = localStorage.getItem(STAFF_BIO_DEVICE_TOKEN);
+  if (!b64 || !deviceToken) return null;
   const credId = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const assertion = await navigator.credentials.get({
     publicKey: {
@@ -43,8 +51,14 @@ async function staffBioAuthenticate(): Promise<{ token: string; staff: unknown }
     }
   });
   if (!assertion) return null;
-  try { return JSON.parse(localStorage.getItem(STAFF_BIO_DATA) || "null"); }
-  catch { return null; }
+  const res = await fetch(`${apiBase}/staff/bio-session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceToken }),
+  });
+  if (!res.ok) return null;
+  const { staff } = await res.json();
+  return staff ?? null;
 }
 
 interface StaffOrder {
@@ -213,17 +227,15 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
 
 export default function StaffPortal() {
   const [, setLocation] = useLocation();
-  const [token, setToken] = useState(() => localStorage.getItem("staff_token") || "");
-  const [staff, setStaff] = useState<StaffInfo | null>(() => {
-    try { return JSON.parse(localStorage.getItem("staff_info") || "null"); } catch { return null; }
-  });
+  const [authed, setAuthed] = useState(false);
+  const [staff, setStaff] = useState<StaffInfo | null>(null);
   const [loginName, setLoginName] = useState("");
   const [loginPin, setLoginPin] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [bioAvail, setBioAvail] = useState(false);
   const [bioEnabled, setBioEnabled] = useState(() => !!localStorage.getItem(STAFF_BIO_CRED));
-  const [bioLoading, setBioLoading] = useState(() => !!localStorage.getItem(STAFF_BIO_CRED) && !localStorage.getItem("staff_token"));
+  const [bioLoading, setBioLoading] = useState(false);
   const [bioMsg, setBioMsg] = useState("");
   const [showPinForm, setShowPinForm] = useState(() => !localStorage.getItem(STAFF_BIO_CRED));
   const [orders, setOrders] = useState<StaffOrder[]>([]);
@@ -231,36 +243,42 @@ export default function StaffPortal() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<StaffOrder | null>(null);
 
-  const authHeader = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  // Auth handled via HttpOnly session cookie — no token in JS
+  const authHeader = { "Content-Type": "application/json" };
+
+  // Restore session from HttpOnly cookie on mount
+  useEffect(() => {
+    fetch(`${API}/staff/me`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) { setStaff(data); setAuthed(true); }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     staffBioAvailable().then(avail => {
       setBioAvail(avail);
-      if (avail && !!localStorage.getItem(STAFF_BIO_CRED) && !localStorage.getItem("staff_token")) {
-        setBioLoading(true);
-      }
     });
   }, []);
 
   const loginWithBio = async () => {
     setBioLoading(true); setLoginError(""); setBioMsg("");
     try {
-      const data = await staffBioAuthenticate();
-      if (data && data.token) {
-        setToken(data.token as string);
-        setStaff(data.staff as StaffInfo);
-        localStorage.setItem("staff_token", data.token as string);
-        localStorage.setItem("staff_info", JSON.stringify(data.staff));
+      const staffData = await staffBioAuthenticate(API);
+      if (staffData) {
+        setStaff(staffData as StaffInfo);
+        setAuthed(true);
       } else setBioMsg("Biometric verification failed. Use PIN instead.");
     } catch (e: any) {
       setBioMsg(e?.name === "NotAllowedError" ? "Biometric cancelled." : "Biometric login failed.");
     } finally { setBioLoading(false); }
   };
 
-  const enableBio = async (tok: string, staffData: StaffInfo) => {
+  const enableBio = async () => {
     setBioLoading(true); setBioMsg("");
     try {
-      const ok = await staffBioRegister(tok, staffData);
+      const ok = await staffBioRegister(API);
       if (ok) { setBioEnabled(true); setBioMsg("✓ Biometric login enabled for this device!"); }
       else setBioMsg("Could not save biometric credential.");
     } catch (e: any) {
@@ -269,31 +287,32 @@ export default function StaffPortal() {
   };
 
   const disableBio = () => {
-    localStorage.removeItem(STAFF_BIO_CRED); localStorage.removeItem(STAFF_BIO_DATA);
+    localStorage.removeItem(STAFF_BIO_CRED);
+    localStorage.removeItem(STAFF_BIO_DEVICE_TOKEN);
     setBioEnabled(false); setBioMsg("Biometric login removed.");
   };
 
   useEffect(() => {
-    if (!token && bioEnabled) loginWithBio();
-  }, [bioEnabled]);
+    if (!authed && bioAvail && bioEnabled) loginWithBio();
+  }, [bioAvail]);
 
   const fetchOrders = useCallback(async () => {
-    if (!token) return;
+    if (!authed) return;
     setLoadingOrders(true);
     try {
-      const res = await fetch(`${API}/staff/orders`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/staff/orders`);
       if (res.status === 401) { logout(); return; }
       if (res.ok) setOrders(await res.json());
     } catch {} finally { setLoadingOrders(false); }
-  }, [token]);
+  }, [authed]);
 
-  useEffect(() => { if (token) fetchOrders(); }, [token, fetchOrders]);
+  useEffect(() => { if (authed) fetchOrders(); }, [authed, fetchOrders]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!authed) return;
     const t = setInterval(fetchOrders, 30000);
     return () => clearInterval(t);
-  }, [token, fetchOrders]);
+  }, [authed, fetchOrders]);
 
   async function login() {
     if (!loginName.trim() || !loginPin.trim()) { setLoginError("Enter your name and PIN."); return; }
@@ -305,9 +324,9 @@ export default function StaffPortal() {
       });
       const data = await res.json();
       if (res.ok) {
-        setToken(data.token); setStaff(data.staff);
-        localStorage.setItem("staff_token", data.token);
-        localStorage.setItem("staff_info", JSON.stringify(data.staff));
+        // Session cookie set by backend — no token stored in JS
+        setStaff(data.staff);
+        setAuthed(true);
       } else {
         setLoginError(data.error ?? "Login failed.");
       }
@@ -315,9 +334,9 @@ export default function StaffPortal() {
     finally { setLoginLoading(false); }
   }
 
-  function logout() {
-    localStorage.removeItem("staff_token"); localStorage.removeItem("staff_info");
-    setToken(""); setStaff(null); setOrders([]);
+  async function logout() {
+    try { await fetch(`${API}/staff/logout`, { method: "POST" }); } catch {}
+    setAuthed(false); setStaff(null); setOrders([]);
   }
 
   async function updateStatus(orderId: number, status: string) {
@@ -337,7 +356,7 @@ export default function StaffPortal() {
     @keyframes staffFadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   `;
 
-  if (!token || !staff) {
+  if (!authed || !staff) {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <style>{STYLE}</style>
@@ -472,7 +491,7 @@ export default function StaffPortal() {
           <button onClick={fetchOrders} style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.6)", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>↻ Refresh</button>
           {bioAvail && !bioEnabled && (
             <button
-              onClick={() => enableBio(token, staff!)}
+              onClick={() => enableBio()}
               disabled={bioLoading}
               title="Enable biometric login for this device"
               style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", color: "#a5b4fc", fontSize: 11, cursor: bioLoading ? "default" : "pointer", fontWeight: 600 }}
