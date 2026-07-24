@@ -229,7 +229,11 @@ router.get("/settings/maintenance", async (_req, res) => {
 router.get("/packages", async (req, res) => {
   try {
     const gameId = req.query.game_id ? parseInt(req.query.game_id as string, 10) : null;
-    let query = "SELECT p.*, g.name AS game_name FROM packages p LEFT JOIN games g ON g.id = p.game_id";
+    // updated_at and sort_order are internal — omit from public response
+    let query = `SELECT p.id, p.name, p.diamonds, p.bonus_diamonds, p.price, p.old_price,
+                        p.label, p.is_popular, p.category, p.status, p.game_id,
+                        p.image, p.currency_label, g.name AS game_name
+                 FROM packages p LEFT JOIN games g ON g.id = p.game_id`;
     const params: unknown[] = [];
     if (gameId && !isNaN(gameId)) {
       query += " WHERE p.game_id = $1";

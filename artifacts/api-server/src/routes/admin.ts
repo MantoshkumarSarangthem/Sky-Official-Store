@@ -255,7 +255,8 @@ router.get("/me", requireAdmin, (req: any, res) => {
 
 router.get("/tokens", requireAdmin, requireSuperAdmin, async (_req, res): Promise<void> => {
   try {
-    const { rows } = await pool.query("SELECT id, name, token, created_at FROM admin_tokens ORDER BY created_at DESC");
+    // Token is intentionally omitted — it is shown only once at creation time
+    const { rows } = await pool.query("SELECT id, name, created_at FROM admin_tokens ORDER BY created_at DESC");
     res.json(rows);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
@@ -266,9 +267,10 @@ router.post("/tokens", requireAdmin, requireSuperAdmin, async (req, res): Promis
   try {
     const token = generateAdminToken();
     const { rows } = await pool.query(
-      "INSERT INTO admin_tokens (name, token) VALUES ($1, $2) RETURNING *",
+      "INSERT INTO admin_tokens (name, token) VALUES ($1, $2) RETURNING id, name, token, created_at",
       [name.trim(), token]
     );
+    // Token is returned ONCE here so admin can copy it — it will not appear in GET /tokens
     res.json(rows[0]);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
@@ -731,7 +733,8 @@ router.put("/settings/category_availability", requireAdmin, async (req, res) => 
 router.get("/wallet-requests", requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM wallet_transactions ORDER BY created_at DESC LIMIT 100`
+      `SELECT id, clerk_user_id, amount, type, status, upi_ref, description, created_at
+       FROM wallet_transactions ORDER BY created_at DESC LIMIT 100`
     );
     const uniqueIds: string[] = [...new Set(rows.map((r: any) => r.clerk_user_id).filter(Boolean) as string[])];
     const nameMap: Record<string, string> = {};
@@ -917,7 +920,12 @@ router.put("/promo-events", requireAdmin, async (req, res) => {
 // ── Recharge Staff ────────────────────────────────────────────────────────────
 router.get("/staff", requireAdmin, async (_req, res) => {
   try {
-    const { rows } = await pool.query("SELECT * FROM recharge_staff ORDER BY sort_order ASC, id ASC");
+    // staff_pin is intentionally excluded from all responses
+    const { rows } = await pool.query(
+      `SELECT id, name, email, qr_image, whatsapp, status, shift_hours,
+              sort_order, notify_orders, upi_id, last_active, created_at
+       FROM recharge_staff ORDER BY sort_order ASC, id ASC`
+    );
     res.json(rows);
   } catch { res.status(500).json({ error: "DB error" }); }
 });
@@ -930,7 +938,8 @@ router.post("/staff", requireAdmin, upload.single("qr_image"), async (req: any, 
   try {
     const { rows } = await pool.query(
       `INSERT INTO recharge_staff (name, email, qr_image, whatsapp, status, shift_hours, sort_order, staff_pin, notify_orders, upi_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, name, email, qr_image, whatsapp, status, shift_hours, sort_order, notify_orders, upi_id, last_active, created_at`,
       [name, email || null, qrImage, whatsapp || null, status || "offline", shift_hours || null, sort_order || 0, staff_pin || null, notifyOrders, upi_id || null]
     );
     res.json(rows[0]);
@@ -945,7 +954,8 @@ router.put("/staff/:id", requireAdmin, upload.single("qr_image"), async (req: an
   try {
     const { rows } = await pool.query(
       `UPDATE recharge_staff SET name=$1, email=$2, qr_image=COALESCE($3, qr_image), whatsapp=$4, status=$5, shift_hours=$6, sort_order=$7, notify_orders=$8, upi_id=$9
-       WHERE id=$10 RETURNING *`,
+       WHERE id=$10
+       RETURNING id, name, email, qr_image, whatsapp, status, shift_hours, sort_order, notify_orders, upi_id, last_active, created_at`,
       [name, email || null, qrImage, whatsapp || null, status || "offline", shift_hours || null, sort_order || 0, notifyOrders, upi_id || null, id]
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
@@ -959,7 +969,8 @@ router.put("/staff/:id/status", requireAdmin, requireSuperAdmin, async (req, res
   if (!["available", "offline"].includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
   try {
     const { rows } = await pool.query(
-      `UPDATE recharge_staff SET status=$1 WHERE id=$2 RETURNING *`,
+      `UPDATE recharge_staff SET status=$1 WHERE id=$2
+       RETURNING id, name, email, qr_image, whatsapp, status, shift_hours, sort_order, notify_orders, upi_id, last_active, created_at`,
       [status, id]
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
@@ -972,7 +983,8 @@ router.put("/staff/:id/notify", requireAdmin, async (req, res): Promise<void> =>
   const { notify_orders } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE recharge_staff SET notify_orders=$1 WHERE id=$2 RETURNING *`,
+      `UPDATE recharge_staff SET notify_orders=$1 WHERE id=$2
+       RETURNING id, name, email, qr_image, whatsapp, status, shift_hours, sort_order, notify_orders, upi_id, last_active, created_at`,
       [!!notify_orders, id]
     );
     if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }

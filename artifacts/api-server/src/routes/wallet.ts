@@ -12,8 +12,10 @@ router.get("/balance", requireAuth, async (req: any, res) => {
   try {
     const balance = await walletService.getBalance(userId);
 
+    // clerk_user_id is redundant (user is already authenticated) — omit from response
     const txRes = await pool.query(
-      "SELECT * FROM wallet_transactions WHERE clerk_user_id = $1 ORDER BY created_at DESC LIMIT 20",
+      `SELECT id, amount, type, status, upi_ref, description, created_at
+       FROM wallet_transactions WHERE clerk_user_id = $1 ORDER BY created_at DESC LIMIT 20`,
       [userId]
     );
 

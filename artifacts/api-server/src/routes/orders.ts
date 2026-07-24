@@ -75,8 +75,12 @@ async function recordOfferClaim(
 router.get("/my", requireAuth, async (req: any, res): Promise<void> => {
   const userId = req.clerkUserId as string;
   try {
+    // assigned_staff_id and clerk_user_id are internal — omit from user-facing response
     const { rows } = await pool.query(
-      `SELECT o.*, p.image AS pack_image, p.name AS pack_name, g.name AS game_name
+      `SELECT o.id, o.display_id, o.diamonds, o.price, o.mlbb_id, o.mlbb_ign,
+              o.mlbb_server_id, o.status, o.note, o.created_at, o.completed_at,
+              o.is_for_friend,
+              p.image AS pack_image, p.name AS pack_name, g.name AS game_name
        FROM orders o
        LEFT JOIN packages p ON o.package_id = p.id
        LEFT JOIN games g ON p.game_id = g.id
