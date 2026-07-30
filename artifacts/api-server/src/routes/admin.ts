@@ -705,6 +705,32 @@ router.put("/settings/starlight_images", requireAdmin, async (req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+// ── Rank Boost Rates ──────────────────────────────────────────────────────
+const DEFAULT_RANK_BOOST_RATES = {
+  warrior: 5, elite: 5, master: 5, epic: 5,
+  legend: 10, mythic: 10,
+  mythic_honor: 15,
+  mythic_glory: 20, mythic_immortal: 20,
+  urgent_pct: 20,
+};
+
+router.get("/settings/rank_boost_rates", requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT value FROM settings WHERE key='rank_boost_rates'");
+    res.json(rows[0] ? JSON.parse(rows[0].value) : DEFAULT_RANK_BOOST_RATES);
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
+router.put("/settings/rank_boost_rates", requireAdmin, async (req, res) => {
+  try {
+    await pool.query(
+      `INSERT INTO settings (key,value) VALUES ('rank_boost_rates',$1) ON CONFLICT (key) DO UPDATE SET value=$1`,
+      [JSON.stringify(req.body)]
+    );
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 router.post("/upload-image", requireAdmin, upload.single("image"), async (req: any, res: any) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   try {

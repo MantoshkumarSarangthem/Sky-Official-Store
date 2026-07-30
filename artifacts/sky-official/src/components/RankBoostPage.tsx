@@ -16,6 +16,29 @@ const RANK_LABELS: Record<RankKey, string> = {
   mythic:"Mythic", mythic_honor:"Mythic Honor", mythic_glory:"Mythic Glory", mythic_immortal:"Mythic Immortal",
 };
 
+// Per-rank star ranges (upper bound exclusive; mythic_immortal is open-ended)
+const RANK_RANGES: { rank: RankKey; from: number; to: number }[] = [
+  { rank: "warrior",         from: 0,   to: 10  },
+  { rank: "elite",           from: 10,  to: 27  },
+  { rank: "master",          from: 27,  to: 44  },
+  { rank: "epic",            from: 44,  to: 70  },
+  { rank: "legend",          from: 70,  to: 96  },
+  { rank: "mythic",          from: 96,  to: 121 },
+  { rank: "mythic_honor",    from: 121, to: 146 },
+  { rank: "mythic_glory",    from: 146, to: 196 },
+  { rank: "mythic_immortal", from: 196, to: 99999 },
+];
+
+type RankBoostRates = Record<RankKey, number> & { urgent_pct: number };
+
+const DEFAULT_RATES: RankBoostRates = {
+  warrior: 5, elite: 5, master: 5, epic: 5,
+  legend: 10, mythic: 10,
+  mythic_honor: 15,
+  mythic_glory: 20, mythic_immortal: 20,
+  urgent_pct: 20,
+};
+
 interface SubOption { value: string; label: string; }
 
 function getTotalStars(rank: string, sub: string) { return (RANK_BASE[rank as RankKey] ?? 0) + parseInt(sub || "0"); }
@@ -43,28 +66,26 @@ function buildSubOptions(rank: string): SubOption[] {
   return opts;
 }
 
-function calcTieredBase(curT: number, tarT: number): number {
-  const ZONE2 = 70, ZONE3 = 121, ZONE4 = 146;
+function calcTieredBase(curT: number, tarT: number, rates: RankBoostRates): number {
   let price = 0;
-  const z1 = Math.min(tarT, ZONE2) - Math.min(curT, ZONE2);
-  if (z1 > 0) price += z1 * 5;
-  const z2 = Math.min(tarT, ZONE3) - Math.min(Math.max(curT, ZONE2), ZONE3);
-  if (z2 > 0) price += z2 * 10;
-  const z3 = Math.min(tarT, ZONE4) - Math.min(Math.max(curT, ZONE3), ZONE4);
-  if (z3 > 0) price += z3 * 15;
-  const z4 = tarT - Math.max(curT, ZONE4);
-  if (z4 > 0) price += z4 * 20;
+  for (const seg of RANK_RANGES) {
+    const from = Math.max(curT, seg.from);
+    const to = Math.min(tarT, seg.to);
+    const stars = to - from;
+    if (stars > 0) price += stars * (rates[seg.rank] ?? 5);
+  }
   return price;
 }
 
-function calcPrice(curRank: string, curSub: string, tarRank: string, tarSub: string, service: "urgent" | "not-urgent") {
+function calcPrice(curRank: string, curSub: string, tarRank: string, tarSub: string, service: "urgent" | "not-urgent", rates: RankBoostRates = DEFAULT_RATES) {
   if (!curRank || !tarRank) return null;
   const curT = getTotalStars(curRank, curSub), tarT = getTotalStars(tarRank, tarSub);
   if (tarT <= curT) return null;
   const stars = tarT - curT;
-  const base = calcTieredBase(curT, tarT);
-  const price = service === "urgent" ? Math.round(base * 1.2) : base;
-  const note = service === "urgent" ? `${stars} stars (tiered rate) + 20% urgent` : `${stars} stars (tiered rate)`;
+  const base = calcTieredBase(curT, tarT, rates);
+  const urgentPct = rates.urgent_pct ?? 20;
+  const price = service === "urgent" ? Math.round(base * (1 + urgentPct / 100)) : base;
+  const note = service === "urgent" ? `${stars} stars (per-rank rate) + ${urgentPct}% urgent` : `${stars} stars (per-rank rate)`;
   return { stars, price, note };
 }
 
@@ -162,6 +183,7 @@ export default function RankBoostPage({ onBack }: { onBack?: () => void }) {
   const [submitted,  setSubmitted]  = useState(false);
   const [error,      setError]      = useState("");
   const [staffWA,    setStaffWA]    = useState(WA_NUMBER_FALLBACK);
+  const [boostRates, setBoostRates] = useState<RankBoostRates>(DEFAULT_RATES);
   const [curImmortalStars, setCurImmortalStars] = useState(100);
   const [curImmortalRaw, setCurImmortalRaw] = useState("100");
   const [tarImmortalStars, setTarImmortalStars] = useState(100);
@@ -177,11 +199,15 @@ export default function RankBoostPage({ onBack }: { onBack?: () => void }) {
       .then(r => r.json())
       .then(d => { if (d.whatsapp) setStaffWA(d.whatsapp); })
       .catch(() => {});
+    fetch(`${API}/settings/rank_boost_rates`)
+      .then(r => r.json())
+      .then(d => { if (d && typeof d === "object") setBoostRates({ ...DEFAULT_RATES, ...d }); })
+      .catch(() => {});
   }, []);
 
   const curSubOpts = buildSubOptions(curRank);
   const tarSubOpts = buildSubOptions(tarRank);
-  const priceResult = calcPrice(curRank, curSub, tarRank, tarSub, service);
+  const priceResult = calcPrice(curRank, curSub, tarRank, tarSub, service, boostRates);
 
   useEffect(() => {
     if (curRank === "mythic_immortal") setCurSub(String(Math.max(0, curImmortalStars - 100)));

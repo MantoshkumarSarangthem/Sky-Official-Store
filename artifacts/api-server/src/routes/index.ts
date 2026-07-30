@@ -122,6 +122,19 @@ router.get("/settings/staff-contact", async (_req, res) => {
   } catch { res.status(500).json({ error: "DB error" }); }
 });
 
+router.get("/settings/rank_boost_rates", async (_req, res) => {
+  try {
+    const { rows } = await pool.query("SELECT value FROM settings WHERE key='rank_boost_rates'");
+    res.json(rows[0] ? JSON.parse(rows[0].value) : {
+      warrior: 5, elite: 5, master: 5, epic: 5,
+      legend: 10, mythic: 10,
+      mythic_honor: 15,
+      mythic_glory: 20, mythic_immortal: 20,
+      urgent_pct: 20,
+    });
+  } catch { res.status(500).json({ error: "DB error" }); }
+});
+
 router.get("/settings/trustpilot", async (_req, res) => {
   try {
     const { rows } = await pool.query("SELECT key, value FROM settings WHERE key IN ('trustpilot_url','trustpilot_enabled')");

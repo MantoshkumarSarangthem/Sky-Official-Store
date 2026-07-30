@@ -377,6 +377,51 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const gameUpdateImgRef = useRef<HTMLInputElement>(null);
   const [editingGameMeta, setEditingGameMeta] = useState<{id: number; name: string; region: string} | null>(null);
 
+  // ── Rank Boost Rates ──────────────────────────────────────────────────────
+  type RankKey = "warrior"|"elite"|"master"|"epic"|"legend"|"mythic"|"mythic_honor"|"mythic_glory"|"mythic_immortal";
+  type BoostRates = Record<RankKey, number> & { urgent_pct: number };
+  const RANK_LABELS_BOOST: Record<RankKey, string> = {
+    warrior:"Warrior", elite:"Elite", master:"Master", epic:"Epic", legend:"Legend",
+    mythic:"Mythic", mythic_honor:"Mythic Honor", mythic_glory:"Mythic Glory", mythic_immortal:"Mythic Immortal",
+  };
+  const RANK_KEYS_BOOST: RankKey[] = ["warrior","elite","master","epic","legend","mythic","mythic_honor","mythic_glory","mythic_immortal"];
+  const DEFAULT_BOOST_RATES: BoostRates = {
+    warrior:5, elite:5, master:5, epic:5, legend:10, mythic:10, mythic_honor:15, mythic_glory:20, mythic_immortal:20, urgent_pct:20,
+  };
+  const [showRankBoostPanel, setShowRankBoostPanel] = useState(false);
+  const [boostRates, setBoostRates] = useState<BoostRates>(DEFAULT_BOOST_RATES);
+  const [boostRatesEdit, setBoostRatesEdit] = useState<BoostRates>(DEFAULT_BOOST_RATES);
+  const [boostRatesSaving, setBoostRatesSaving] = useState(false);
+  const [boostRatesSaved, setBoostRatesSaved] = useState(false);
+
+  const fetchBoostRates = async () => {
+    try {
+      const res = await fetch(`${API}/admin/settings/rank_boost_rates`, { headers });
+      if (res.ok) {
+        const d = await res.json();
+        const merged = { ...DEFAULT_BOOST_RATES, ...d };
+        setBoostRates(merged);
+        setBoostRatesEdit(merged);
+      }
+    } catch {}
+  };
+
+  const saveBoostRates = async () => {
+    setBoostRatesSaving(true);
+    try {
+      const res = await fetch(`${API}/admin/settings/rank_boost_rates`, {
+        method: "PUT",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(boostRatesEdit),
+      });
+      if (res.ok) {
+        setBoostRates(boostRatesEdit);
+        setBoostRatesSaved(true);
+        setTimeout(() => setBoostRatesSaved(false), 2000);
+      }
+    } catch {} finally { setBoostRatesSaving(false); }
+  };
+
   const fetchGames = async () => {
     setGamesLoading(true);
     try {
@@ -1115,7 +1160,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     if (authed && tab === "banners") fetchPromoBanners();
     if (authed && tab === "offer-banners") { fetchDailyOfferIds(); fetchGames(); }
     if (authed && tab === "offers") fetchAdminOffers();
-    if (authed && (tab === "games" || tab === "packages")) fetchGames();
+    if (authed && (tab === "games" || tab === "packages")) { fetchGames(); if (tab === "packages") fetchBoostRates(); }
     if (authed && tab === "access" && isSuperAdmin) fetchAdminTokens();
   }, [authed, tab]);
 
@@ -1913,10 +1958,93 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               {/* ── PACKAGES TAB ── */}
               {tab === "packages" && (
                 <div className="flex flex-col gap-4" style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-                  {!selectedPkgGame ? (
+                  {showRankBoostPanel ? (
+                    /* ── Rank Boost Rates Editor ── */
+                    <>
+                      <div className="flex items-center gap-2 mb-1">
+                        <button
+                          onClick={() => setShowRankBoostPanel(false)}
+                          style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", padding: 0, fontSize: 20, lineHeight: 1 }}>←</button>
+                        <span style={{ fontSize: 20 }}>⚔️</span>
+                        <span className="text-white font-bold text-sm">Rank Boosting — Price Rates</span>
+                      </div>
+                      <div className="text-xs text-gray-500 mb-3">Set the price per star (₹) charged for each rank tier. Changes apply live to the booking page.</div>
+
+                      {/* Rank rates */}
+                      <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div className="text-xs text-amber-400 font-bold mb-1">Price per ★ by Rank</div>
+                        {RANK_KEYS_BOOST.map(rk => (
+                          <div key={rk} className="flex items-center gap-3">
+                            <div className="text-white text-xs font-medium" style={{ minWidth: 110 }}>{RANK_LABELS_BOOST[rk]}</div>
+                            <div className="flex items-center gap-1 flex-1">
+                              <span className="text-gray-400 text-xs">₹</span>
+                              <input
+                                type="number" min="0" step="0.5"
+                                value={boostRatesEdit[rk]}
+                                onChange={e => setBoostRatesEdit(prev => ({ ...prev, [rk]: parseFloat(e.target.value) || 0 }))}
+                                className="w-full px-3 py-1.5 rounded-lg text-white text-sm outline-none"
+                                style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)" }}
+                              />
+                              <span className="text-gray-500 text-xs whitespace-nowrap">/star</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Urgent surcharge */}
+                      <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div className="text-xs text-amber-400 font-bold mb-1">Urgent Order Surcharge</div>
+                        <div className="text-xs text-gray-500">Extra % added on top of base price for urgent bookings.</div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number" min="0" max="100" step="1"
+                            value={boostRatesEdit.urgent_pct}
+                            onChange={e => setBoostRatesEdit(prev => ({ ...prev, urgent_pct: parseFloat(e.target.value) || 0 }))}
+                            className="w-24 px-3 py-1.5 rounded-lg text-white text-sm outline-none"
+                            style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)" }}
+                          />
+                          <span className="text-gray-400 text-xs">% surcharge</span>
+                        </div>
+                      </div>
+
+                      {/* Preview table */}
+                      <div className="rounded-xl p-4" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div className="text-xs text-amber-400 font-bold mb-2">Rate Preview</div>
+                        <div className="text-xs text-gray-500 mb-2">Price for 1 star boost (not urgent):</div>
+                        <div className="grid grid-cols-2 gap-1">
+                          {RANK_KEYS_BOOST.map(rk => (
+                            <div key={rk} className="flex justify-between items-center px-2 py-1 rounded" style={{ background: "#1a1a1a" }}>
+                              <span className="text-gray-400 text-xs">{RANK_LABELS_BOOST[rk]}</span>
+                              <span className="text-white text-xs font-bold">₹{boostRatesEdit[rk]}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Save */}
+                      <button
+                        onClick={saveBoostRates}
+                        disabled={boostRatesSaving}
+                        className="py-3 rounded-xl text-sm font-bold"
+                        style={{ background: boostRatesSaved ? "#16a34a" : "#f59e0b", color: boostRatesSaved ? "#fff" : "#000", transition: "background 0.3s" }}>
+                        {boostRatesSaving ? "Saving…" : boostRatesSaved ? "✓ Saved!" : "Save Rates"}
+                      </button>
+                    </>
+                  ) : !selectedPkgGame ? (
                     /* ── Game Grid View ── */
                     <>
                       <div className="text-white font-bold text-sm">Select a Game</div>
+                      {/* Rank Boosting service card */}
+                      <button
+                        onClick={() => { setShowRankBoostPanel(true); setBoostRatesEdit({ ...boostRates }); }}
+                        className="flex flex-col items-center gap-2 p-4 rounded-xl text-center w-full"
+                        style={{ background: "linear-gradient(135deg,#1a0832,#0f1a32)", border: "1px solid rgba(139,92,246,0.35)", cursor: "pointer" }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 10, background: "rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ fontSize: 26 }}>⚔️</span>
+                        </div>
+                        <span className="text-white text-xs font-semibold">Rank Boosting</span>
+                        <span style={{ color: "#a78bfa", fontSize: 11 }}>Edit star prices</span>
+                      </button>
                       {games.length === 0 ? (
                         <div className="text-xs text-gray-500 py-8 text-center">No games added yet. Add games in the Games tab first.</div>
                       ) : (
@@ -2253,7 +2381,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-white font-bold text-sm">{pkg.name || `${pkg.diamonds.toLocaleString()} ${adminCurrLabel(pkg.game_id)}`}</span>
+                                    <span className="text-white font-bold text-sm">{pkg.name || `${pkg.diamonds.toLocaleString()} ${adminCurrLabel(pkg.game_id ?? null)}`}</span>
                                   </div>
                                   <div className="text-amber-400 text-xs font-semibold mt-0.5 flex items-center gap-1">
                                     {pkg.image ? <img src={pkg.image} alt="icon" style={{ width: 12, height: 12, objectFit: "cover", flexShrink: 0, borderRadius: 3 }} /> : <img src="/diamond.png" alt="♦" style={{ width: 12, height: 12, objectFit: "contain", flexShrink: 0 }} />} {pkg.diamonds.toLocaleString()}{pkg.bonus_diamonds > 0 ? <span className="text-green-400"> +{pkg.bonus_diamonds.toLocaleString()} bonus</span> : null}
