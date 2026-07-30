@@ -375,4 +375,9 @@ router.post("/support", async (req, res) => {
   }
 });
 
+// 404 — catch all unknown /api/* paths
+router.use((_req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
 export default router;

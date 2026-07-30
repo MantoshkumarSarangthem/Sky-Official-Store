@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import path from "path";
+import rateLimit from "express-rate-limit";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import {
@@ -37,6 +38,29 @@ app.use(
 );
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+// Rate limiting — max 120 requests per minute per IP (normal users never hit this)
+// Tighter limit on sensitive endpoints: 10 attempts per 15 min
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please slow down." },
+});
+
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts, please try again later." },
+});
+
+app.use("/api", generalLimiter);
+app.use("/api/admin/login", strictLimiter);
+app.use("/api/admin/bio-session", strictLimiter);
+app.use("/api/staff/login", strictLimiter);
 
 app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
