@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
-import { usePWAInstall } from "../hooks/usePWAInstall";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
@@ -228,7 +227,6 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
 
 export default function StaffPortal() {
   const [, setLocation] = useLocation();
-  const { canInstall: pwaCanInstall, installed: pwaInstalled, install: pwaInstall } = usePWAInstall("/staff-manifest.json");
   const [authed, setAuthed] = useState(false);
   const [staff, setStaff] = useState<StaffInfo | null>(null);
   const [loginName, setLoginName] = useState("");
