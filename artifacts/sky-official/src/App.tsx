@@ -3653,7 +3653,10 @@ export default function App() {
     // skyContentReady never fires — mark content ready immediately so
     // only the minimum timer is needed before the loading screen dismisses
     const path = window.location.pathname;
-    const isAuthPage = path.includes("/sign-in") || path.includes("/sign-up");
+    // Admin/staff pages also never mount GameSelectSection, so skyContentReady
+    // never fires for them — mark content ready immediately just like auth pages
+    const isAuthPage = path.includes("/sign-in") || path.includes("/sign-up")
+      || path.startsWith("/admin") || path.startsWith("/staff");
     // If skyContentReady already fired before this effect ran (race condition on
     // cache hits or after OAuth full-page reload) mark content ready immediately
     if (isAuthPage || _skyContentFired) {

@@ -3440,7 +3440,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                           <div key={t.id} className="rounded-lg p-3 flex items-center justify-between gap-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)" }}>
                             <div className="flex flex-col gap-0.5 min-w-0">
                               <span className="text-white text-sm font-semibold">{t.name}</span>
-                              <span className="text-gray-600 text-xs font-mono">{t.token.slice(0, 12)}…</span>
+                              <span className="text-gray-600 text-xs font-mono">Token hidden for security</span>
                               <span className="text-gray-600 text-xs">Added {new Date(t.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                             </div>
                             <button
