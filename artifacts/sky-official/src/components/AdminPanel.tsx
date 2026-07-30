@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
@@ -131,6 +132,7 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function AdminPanel({ onClose, fullPage = false }: { onClose: () => void; fullPage?: boolean }) {
   const [, setLocation] = useLocation();
+  const { canInstall: pwaCanInstall, installed: pwaInstalled, install: pwaInstall } = usePWAInstall("/admin-manifest.json");
   const [authed, setAuthed] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [password, setPassword] = useState("");
@@ -760,7 +762,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const fetchPackages = useCallback(async () => {
     const res = await fetch(`${API}/admin/packages`, { headers });
     if (res.ok) setPackages(await res.json());
-  }, [token]);
+  }, [authed]);
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch(`${API}/admin/orders`, { headers });
@@ -769,22 +771,22 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setOrders(data.orders);
       setStats(data.stats);
     }
-  }, [token]);
+  }, [authed]);
 
   const fetchWalletRequests = useCallback(async () => {
     const res = await fetch(`${API}/admin/wallet-requests`, { headers });
     if (res.ok) setWalletRequests(await res.json());
-  }, [token]);
+  }, [authed]);
 
   const fetchKnownUsers = useCallback(async () => {
     const res = await fetch(`${API}/admin/wallet/known-users`, { headers });
     if (res.ok) setKnownUsers(await res.json());
-  }, [token]);
+  }, [authed]);
 
   const fetchCategoryPopular = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/category_popular`, { headers });
     if (res.ok) setCategoryPopular(await res.json());
-  }, [token]);
+  }, [authed]);
 
   const saveCategoryPopular = async (updated: Record<string, boolean>) => {
     setFeaturedSaving(true);
@@ -803,7 +805,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setQrCurrent(data.qr || null);
       setAdminUpiId(data.upi_id || "");
     }
-  }, [token]);
+  }, [authed]);
 
   const fetchAdminStatus = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/admin-status`, { headers });
@@ -811,7 +813,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const data = await res.json();
       setAdminAvailable(data.status === "available");
     }
-  }, [token]);
+  }, [authed]);
 
   const saveAdminUpiId = async () => {
     setAdminUpiSaving(true);
@@ -842,7 +844,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setTrustpilotUrl(data.url || "");
       setTrustpilotEnabled(data.enabled || false);
     }
-  }, [token]);
+  }, [authed]);
 
   const fetchCommunityLinks = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/community_links`, { headers });
@@ -852,17 +854,17 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setCommunityInstagram(data.instagram || "");
       setCommunitySupport(data.support_wa || "");
     }
-  }, [token]);
+  }, [authed]);
 
   const fetchBanners = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/offer_banners`, { headers });
     if (res.ok) setBanners(await res.json());
-  }, [token]);
+  }, [authed]);
 
   const fetchDailyOfferIds = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/daily_offer_packages`, { headers });
     if (res.ok) setDailyOfferIds(await res.json());
-  }, [token]);
+  }, [authed]);
 
   const fetchOfferGamePkgs = useCallback(async (gameId: number) => {
     setOfferPkgLoading(true);
@@ -895,7 +897,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) setPackImages(data);
     }
-  }, [token]);
+  }, [authed]);
 
   const fetchPassImages = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/pass_images`, { headers });
@@ -903,7 +905,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const data = await res.json();
       if (data && typeof data === "object" && !Array.isArray(data)) setPassImages(data);
     }
-  }, [token]);
+  }, [authed]);
 
   const fetchStarlightImages = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/starlight_images`, { headers });
@@ -911,7 +913,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const data = await res.json();
       if (data && typeof data === "object" && !Array.isArray(data)) setStarlightImages(data);
     }
-  }, [token]);
+  }, [authed]);
 
   const fetchCategoryAvailability = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/category_availability`, { headers });
@@ -919,7 +921,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       const data = await res.json();
       if (data && typeof data === "object") setCategoryAvailability(data);
     }
-  }, [token]);
+  }, [authed]);
 
   const saveCategoryAvailability = async (updated: Record<string, string>) => {
     setCatAvailSaving(true);
@@ -933,7 +935,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const fetchLatestEvent = useCallback(async () => {
     const res = await fetch(`${API}/admin/settings/latest_event`, { headers });
     if (res.ok) setLatestEvent(await res.json());
-  }, [token]);
+  }, [authed]);
 
   const saveLatestEvent = async (data: typeof latestEvent) => {
     setLatestEventSaving(true);
@@ -953,7 +955,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
       setMaintenanceEndTime(d.end_time ? new Date(d.end_time).toISOString().slice(0, 16) : "");
       setMaintenanceMessage(d.message || "We'll be back soon.");
     }
-  }, [token]);
+  }, [authed]);
 
   const saveMaintenance = async () => {
     setMaintenanceSaving(true);
@@ -1627,6 +1629,22 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               >
                 <span style={{ fontSize: 13 }}>🔑</span>
               </button>
+            )}
+            {authed && pwaCanInstall && (
+              <button
+                onClick={pwaInstall}
+                title="Install Sky Admin as an app on this device"
+                className="flex items-center justify-center text-xs font-semibold transition-all"
+                style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.28)", color: "#f59e0b", whiteSpace: "nowrap", flexShrink: 0, gap: 5, display: "flex" }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4"/><path d="M8 12l4 4 4-4"/><rect x="3" y="18" width="18" height="3" rx="1"/></svg>
+                Install
+              </button>
+            )}
+            {authed && pwaInstalled && (
+              <span className="flex items-center text-xs font-semibold" style={{ height: 28, padding: "0 10px", borderRadius: 7, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#4ade80", whiteSpace: "nowrap", flexShrink: 0 }}>
+                ✓ Installed
+              </span>
             )}
             {authed && (
               <button

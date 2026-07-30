@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace(/^\/[^/]+/, "") + "/api";
 
@@ -227,6 +228,7 @@ function OrderCard({ order, index, onOpen, onUpdate, updatingId, done }: {
 
 export default function StaffPortal() {
   const [, setLocation] = useLocation();
+  const { canInstall: pwaCanInstall, installed: pwaInstalled, install: pwaInstall } = usePWAInstall("/staff-manifest.json");
   const [authed, setAuthed] = useState(false);
   const [staff, setStaff] = useState<StaffInfo | null>(null);
   const [loginName, setLoginName] = useState("");
@@ -507,6 +509,19 @@ export default function StaffPortal() {
             >
               🔑
             </button>
+          )}
+          {pwaCanInstall && (
+            <button
+              onClick={pwaInstall}
+              title="Install Sky Staff as an app on this device"
+              style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(99,102,241,0.10)", border: "1px solid rgba(99,102,241,0.28)", color: "#a5b4fc", fontSize: 11, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4"/><path d="M8 12l4 4 4-4"/><rect x="3" y="18" width="18" height="3" rx="1"/></svg>
+              Install
+            </button>
+          )}
+          {pwaInstalled && (
+            <span style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#4ade80", fontSize: 11, fontWeight: 600 }}>✓ Installed</span>
           )}
           <button onClick={logout} style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Logout</button>
         </div>
