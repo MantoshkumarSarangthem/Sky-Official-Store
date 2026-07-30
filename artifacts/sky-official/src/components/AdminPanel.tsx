@@ -135,6 +135,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
   const { canInstall: pwaCanInstall, installed: pwaInstalled, install: pwaInstall } = usePWAInstall("/admin-manifest.json");
   const [authed, setAuthed] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [bioAvail, setBioAvail] = useState(false);
@@ -1308,7 +1309,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
     const res = await fetch(`${API}/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ username, password }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -1668,7 +1669,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)" }}>🔐</div>
             <div className="text-center">
               <div className="text-white font-bold text-lg">Admin Access</div>
-              <div className="text-gray-400 text-sm mt-1">Enter your password to continue</div>
+              <div className="text-gray-400 text-sm mt-1">Enter your credentials to continue</div>
             </div>
             <div className="w-full max-w-xs flex flex-col gap-3">
               {bioAvail && bioEnabled && (
@@ -1692,6 +1693,17 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
               {(!bioEnabled || !bioAvail || showPwForm) && (
                 <>
                   <input
+                    type="text"
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && login()}
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
+                    style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}
+                    autoFocus
+                    autoComplete="username"
+                  />
+                  <input
                     type="password"
                     placeholder="Password"
                     value={password}
@@ -1699,7 +1711,7 @@ export default function AdminPanel({ onClose, fullPage = false }: { onClose: () 
                     onKeyDown={(e) => e.key === "Enter" && login()}
                     className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none"
                     style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}
-                    autoFocus
+                    autoComplete="current-password"
                   />
                   <button
                     onClick={login}

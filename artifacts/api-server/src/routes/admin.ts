@@ -176,10 +176,21 @@ async function sendOrderCompletedEmail(to: string, order: any, customerName: str
 }
 
 router.post("/login", async (req: any, res: any) => {
-  const { password } = req.body;
+  const { username, password } = req.body;
   let role: string | null = null;
 
-  if (password === process.env.ADMIN_PASSWORD) {
+  const adminUsername = process.env.ADMIN_USERNAME;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  // Superadmin: must supply correct username AND password
+  if (
+    adminUsername && adminPassword &&
+    username === adminUsername &&
+    password === adminPassword
+  ) {
+    role = "superadmin";
+  } else if (!adminUsername && password === adminPassword) {
+    // Fallback: if ADMIN_USERNAME not set yet, allow password-only (backward compat)
     role = "superadmin";
   } else {
     try {
@@ -188,7 +199,7 @@ router.post("/login", async (req: any, res: any) => {
     } catch {}
   }
 
-  if (!role) return res.status(401).json({ error: "Wrong password" });
+  if (!role) return res.status(401).json({ error: "Wrong username or password" });
 
   try {
     const sessionId = crypto.randomBytes(32).toString("hex");
