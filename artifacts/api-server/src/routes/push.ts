@@ -4,14 +4,21 @@ import pool from "../lib/db";
 
 const router = Router();
 
-function requireAdmin(req: any, res: any, next: any) {
-  const auth = req.headers["authorization"] || "";
-  const password = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
+// Uses session-cookie auth — same as the rest of the admin routes
+async function requireAdmin(req: any, res: any, next: any) {
+  const ADMIN_SESSION_COOKIE = "sky_admin_session";
+  const sessionId = req.cookies?.[ADMIN_SESSION_COOKIE];
+  if (!sessionId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const { rows } = await pool.query(
+      "SELECT role FROM admin_sessions WHERE id = $1 AND expires_at > NOW()",
+      [sessionId]
+    );
+    if (!rows.length) { res.status(401).json({ error: "Session expired" }); return; }
+    next();
+  } catch {
+    res.status(500).json({ error: "DB error" });
   }
-  next();
 }
 
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY!;
