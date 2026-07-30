@@ -58,6 +58,11 @@ app.use("/api", router);
 app.use("/api/staff", staffPortalRouter);
 
 if (process.env.NODE_ENV === "production") {
+  app.use((_req, res, next) => {
+    res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    next();
+  });
+
   const staticDir = path.join(process.cwd(), "artifacts/sky-official/dist/public");
   app.use("/uploads", express.static(path.join(process.cwd(), "artifacts/sky-official/public/uploads")));
   app.use(express.static(staticDir, {
