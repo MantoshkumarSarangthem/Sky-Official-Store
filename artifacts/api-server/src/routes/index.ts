@@ -36,8 +36,6 @@ router.use((req, res, next) => {
     res.set("Cache-Control", "public, max-age=86400");
   } else if (p === "/settings/promo_banners") {
     res.set("Cache-Control", "public, max-age=600");
-  } else if (p === "/settings/rank_boost_rates") {
-    res.set("Cache-Control", "no-store");
   } else if (
     p === "/settings/pack_images" || p === "/settings/pass_images" ||
     p === "/settings/starlight_images" || p.startsWith("/games")
